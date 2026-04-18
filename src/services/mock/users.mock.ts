@@ -1,0 +1,43 @@
+import defaultAvatar from '../../assets/img/default-user.svg';
+
+export const usersMock = [
+  {
+    id: 1,
+    idVaiTro: 2,
+    hoVaTen: 'Nguyễn Minh Quân',
+    email: '[email protected]',
+    diaChi: 'Sơn Trà, Đà Nẵng',
+    soDienThoai: '0905000111',
+    trangThai: 1,
+    matKhau: '',
+    facebookAccount: null,
+    googleAccount: null,
+    anhDaiDien: defaultAvatar,
+  },
+  {
+    id: 2,
+    idVaiTro: 2,
+    hoVaTen: 'Trần Hoài An',
+    email: '[email protected]',
+    diaChi: 'Hải Châu, Đà Nẵng',
+    soDienThoai: '0905000222',
+    trangThai: 1,
+    matKhau: '',
+    facebookAccount: null,
+    googleAccount: null,
+    anhDaiDien: defaultAvatar,
+  },
+  {
+    id: 3,
+    idVaiTro: 2,
+    hoVaTen: 'Lê Phúc Thành',
+    email: '[email protected]',
+    diaChi: 'Ngũ Hành Sơn, Đà Nẵng',
+    soDienThoai: '0905000333',
+    trangThai: 1,
+    matKhau: '',
+    facebookAccount: null,
+    googleAccount: null,
+    anhDaiDien: defaultAvatar,
+  },
+];

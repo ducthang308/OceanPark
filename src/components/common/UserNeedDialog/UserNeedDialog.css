@@ -1,0 +1,162 @@
+.user-need-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+}
+
+.user-need-dialog__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(8, 16, 21, 0.58);
+  backdrop-filter: blur(4px);
+}
+
+.user-need-dialog__panel {
+  position: relative;
+  z-index: 1;
+  width: min(760px, calc(100vw - 32px));
+  margin: 72px auto;
+  background: #ffffff;
+  border-radius: 24px;
+  box-shadow: 0 26px 60px rgba(17, 24, 30, 0.18);
+  overflow: hidden;
+}
+
+.user-need-dialog__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 28px 28px 0;
+}
+
+.user-need-dialog__eyebrow {
+  margin: 0 0 10px;
+  color: #b88452;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.user-need-dialog__header h2 {
+  margin: 0 0 8px;
+  font-size: 2rem;
+  line-height: 1.15;
+  color: #182028;
+}
+
+.user-need-dialog__description {
+  margin: 0;
+  color: #6f7b86;
+  line-height: 1.7;
+}
+
+.user-need-dialog__close {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 999px;
+  background: #f5f1eb;
+  color: #182028;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.user-need-dialog__form {
+  padding: 24px 28px 28px;
+}
+
+.user-need-dialog__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.user-need-field {
+  display: grid;
+  gap: 8px;
+}
+
+.user-need-field label {
+  color: #182028;
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.user-need-field input,
+.user-need-field select {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid rgba(18, 32, 40, 0.12);
+  border-radius: 14px;
+  background: #fff;
+  color: #182028;
+  outline: none;
+}
+
+.user-need-dialog__options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.user-need-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 0 14px;
+  border-radius: 14px;
+  background: #f7f3ee;
+  color: #182028;
+}
+
+.user-need-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.user-need-dialog__btn {
+  min-height: 46px;
+  padding: 0 20px;
+  border-radius: 999px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+}
+
+.user-need-dialog__btn--ghost {
+  background: #f3eee6;
+  color: #182028;
+}
+
+.user-need-dialog__btn--primary {
+  background: #c89b67;
+  color: #fff;
+}
+
+@media (max-width: 640px) {
+  .user-need-dialog__panel {
+    width: calc(100vw - 20px);
+    margin: 20px auto;
+  }
+
+  .user-need-dialog__header,
+  .user-need-dialog__form {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .user-need-dialog__grid,
+  .user-need-dialog__options {
+    grid-template-columns: 1fr;
+  }
+
+  .user-need-dialog__actions {
+    flex-direction: column;
+  }
+}
