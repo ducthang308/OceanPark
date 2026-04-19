@@ -1,0 +1,35 @@
+# =====================
+# FE (React + Vite)
+# =====================
+
+# node_modules (QUAN TRỌNG nhất)
+FE/node_modules/
+
+# build output
+FE/dist/
+FE/build/
+
+# logs
+FE/npm-debug.log*
+FE/yarn-debug.log*
+FE/yarn-error.log*
+
+# env
+FE/.env
+FE/.env.local
+FE/.env.*.local
+
+# cache
+FE/.vite
+FE/.cache
+
+# system
+FE/.DS_Store
+FE/thumbs.db
+
+# IDE
+FE/.idea/
+FE/.vscode/
+
+# typescript
+FE/*.tsbuildinfo
