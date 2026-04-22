@@ -19,6 +19,7 @@ import PaymentPage from './pages/Payment/PaymentPage.tsx';
 import './assets/styles/Global.css'
 import Listing from './pages/ManagementPage/components/ListingPage/listing.tsx';
 import ListPost from './pages/ManagementPage/components/ListPostPage/listPost.tsx';
+import FavoritePostsPage from './pages/FavoritePostsPage/FavoritePostsPage';
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
         <Route path="/listing" element={<Listing />} />
         <Route path="/list-post" element={<ListPost />} />
         <Route path="/payment/:id" element={<PaymentPage />} />
+        <Route path="/favorite-posts" element={<FavoritePostsPage />} />
       </Routes>
     </Router>
   );

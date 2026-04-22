@@ -17,7 +17,7 @@ const AccountManagement = () => {
                 <i className="fas fa-user"></i>
               </div>
               <div className="user-details">
-                <div className="username">Huy 089644505</div>
+                <div className="username">Thắng 0325043590</div>
                 <div className="user-id">ID: USR-20250710</div>
                 <a href="#" className="change-link">
                   <i className="fas fa-camera"></i> Đổi ảnh đại diện
@@ -31,7 +31,7 @@ const AccountManagement = () => {
                 <div className="info-label">
                   <i className="fas fa-mobile-alt"></i> Số điện thoại
                 </div>
-                <div className="info-value">089644505</div>
+                <div className="info-value">0325043590</div>
                 <a href="#" className="change-link" onClick={() => setActiveTab('phone')}>
                   <i className="fas fa-exchange-alt"></i> Đổi số điện thoại
                 </a>
@@ -40,7 +40,7 @@ const AccountManagement = () => {
                 <div className="info-label">
                   <i className="fas fa-user-tag"></i> Tên hiển thị
                 </div>
-                <div className="info-value">Huy</div>
+                <div className="info-value">Thắng</div>
                 <a href="#" className="change-link">
                   <i className="fas fa-edit"></i> Thay đổi
                 </a>
@@ -49,7 +49,7 @@ const AccountManagement = () => {
                 <div className="info-label">
                   <i className="fas fa-envelope"></i> Email
                 </div>
-                <div className="info-value">huy@example.com</div>
+                <div className="info-value">ducthang@gmail.com</div>
                 <a href="#" className="change-link">
                   <i className="fas fa-edit"></i> Cập nhật
                 </a>

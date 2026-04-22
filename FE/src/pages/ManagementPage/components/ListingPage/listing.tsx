@@ -28,6 +28,19 @@ const Listing = () => {
         diaChiCuThe: ''
     });
 
+    const fullAddress = [
+        address.diaChiCuThe,
+        address.diaChi,
+        address.phuong,
+        address.thanhPho,
+    ]
+    .filter(Boolean)
+    .join(', ');
+
+    const [position, setPosition] = useState<[number, number]>([16.047079, 108.20623]);
+    const [isLocatingByAddress, setIsLocatingByAddress] = useState(false);
+    const markerRef = useRef<L.Marker | null>(null);
+
     const mapRef = useRef<HTMLDivElement | null>(null);
     const mapInstanceRef = useRef<L.Map | null>(null);
 
@@ -80,24 +93,122 @@ const Listing = () => {
     useEffect(() => {
         if (!mapRef.current || mapInstanceRef.current) return;
 
-        // 🎯 Tọa độ Đà Nẵng
         const danangLatLng: [number, number] = [16.047079, 108.206230];
 
-        const map = L.map(mapRef.current).setView(danangLatLng, 13);
+        const map = L.map(mapRef.current, {
+            zoomControl: false,
+        }).setView(danangLatLng, 13);
+
         mapInstanceRef.current = map;
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>',
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+            subdomains: 'abcd',
+            maxZoom: 20,
         }).addTo(map);
 
-        const marker = L.marker(danangLatLng).addTo(map);
+        const customIcon = L.divIcon({
+            className: 'custom-map-marker',
+            html: `<div class="custom-map-marker__pin"></div>`,
+            iconSize: [28, 28],
+            iconAnchor: [14, 28],
+        });
+
+        const marker = L.marker(danangLatLng, {
+            icon: customIcon,
+            draggable: true,
+        }).addTo(map);
+
+        markerRef.current = marker;
+        setPosition(danangLatLng);
+
+        marker.bindPopup('Vị trí bài đăng').openPopup();
+
+        marker.on('dragend', () => {
+            const latLng = marker.getLatLng();
+            setPosition([latLng.lat, latLng.lng]);
+            marker
+                .bindPopup(
+                    `Vĩ độ: ${latLng.lat.toFixed(6)}<br/>Kinh độ: ${latLng.lng.toFixed(6)}`
+                )
+                .openPopup();
+            console.log('Tọa độ được kéo tới:', latLng.lat, latLng.lng);
+        });
 
         map.on('click', function (e) {
             const { lat, lng } = e.latlng;
             marker.setLatLng([lat, lng]);
-            console.log("Tọa độ được chọn:", lat, lng);
+            setPosition([lat, lng]);
+            marker
+                .bindPopup(`Vĩ độ: ${lat.toFixed(6)}<br/>Kinh độ: ${lng.toFixed(6)}`)
+                .openPopup();
+            console.log('Tọa độ được chọn:', lat, lng);
         });
+
+        return () => {
+            map.remove();
+            mapInstanceRef.current = null;
+            markerRef.current = null;
+        };
     }, []);
+
+    const handleLocateByAddress = async () => {
+        if (!fullAddress) {
+            alert('Vui lòng nhập địa chỉ trước.');
+            return;
+        }
+
+        try {
+            setIsLocatingByAddress(true);
+
+            const query = encodeURIComponent(fullAddress);
+            const response = await fetch(
+                `https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=1}`
+            );
+
+            if (!response.ok) {
+                throw new Error('Không tìm thấy địa chỉ');
+            }
+
+            const data = await response.json();
+
+            if (!Array.isArray(data) || data.length === 0) {
+                alert('Không tìm thấy vị trí từ địa chỉ này.');
+                return;
+            }
+
+            const lat = Number(data[0].lat);
+            const lon = Number(data[0].lon);
+
+            if (Number.isNaN(lat) || Number.isNaN(lon)) {
+                alert('Dữ liệu tọa độ không hợp lệ.');
+                return;
+            }
+
+            const nextPosition: [number, number] = [lat, lon];
+            setPosition(nextPosition);
+
+            if (mapInstanceRef.current) {
+                mapInstanceRef.current.flyTo(nextPosition, 16, {
+                    duration: 1.5,
+                });
+            }
+
+            if (markerRef.current) {
+                markerRef.current
+                    .setLatLng(nextPosition)
+                    .bindPopup(`Đã định vị theo địa chỉ:<br/>${fullAddress}`)
+                    .openPopup();
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Có lỗi khi định vị địa chỉ.');
+        } finally {
+            setIsLocatingByAddress(false);
+        }
+    };
 
     useEffect(() => {
         const { thanhPho, phuong, diaChi } = address;
@@ -210,8 +321,42 @@ const Listing = () => {
             </div>
 
             <div className="map-listing">
-                <div className="title-listing">Bản đồ</div>
-                <div ref={mapRef} id="map" style={{ height: "400px", width: "100%" }}></div>
+                <div className="map-listing__header">
+                    <div>
+                        <div className="title-listing">Bản đồ</div>
+                        <p className="map-listing__subtitle">
+                            Click trên bản đồ hoặc kéo ghim để chọn vị trí chính xác
+                        </p>
+                    </div>
+
+                    <button
+                        type="button"
+                        className="map-listing__locate-btn"
+                        onClick={handleLocateByAddress}
+                        disabled={isLocatingByAddress}
+                    >
+                        {isLocatingByAddress ? 'Đang định vị...' : 'Định vị theo địa chỉ'}
+                    </button>
+                </div>
+
+                <div className="map-listing__address-preview">
+                    <span>Địa chỉ hiện tại:</span>
+                    <strong>{fullAddress || 'Chưa có địa chỉ'}</strong>
+                </div>
+
+                <div ref={mapRef} id="map" className="map-listing__map"></div>
+
+                <div className="map-listing__footer">
+                    <div className="map-listing__coords">
+                        <span>Latitude:</span>
+                        <strong>{position[0].toFixed(6)}</strong>
+                    </div>
+
+                    <div className="map-listing__coords">
+                        <span>Longitude:</span>
+                        <strong>{position[1].toFixed(6)}</strong>
+                    </div>
+                </div>
             </div>
 
             <div className="detail-listing">
