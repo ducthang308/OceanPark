@@ -1,5 +1,5 @@
 import React from 'react'
-import AVT from "../../../assets/img/default-user.svg"
+import AVT from "../../../../assets/img/default-user.svg";
 import { Button, Flex } from 'antd';
 import "./navbar.css";
 

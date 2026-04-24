@@ -54,7 +54,7 @@ const Header: React.FC = () => {
     {
         key: '3',
         label: 'Căn hộ cao cấp',
-        to: '/danh-muc/can-ho-cao-cap',
+        to: '/postsadmin',
     },
     {
         key: '4',

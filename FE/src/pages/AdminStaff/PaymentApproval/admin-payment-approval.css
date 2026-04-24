@@ -1,0 +1,478 @@
+/* ============================================
+   admin-payment-approval.css
+   Giao diện danh sách phê duyệt thanh toán
+   ============================================ */
+
+/* Biến màu sắc & spacing */
+.payment-approval-page {
+  --primary: #2d6a4f;
+  --primary-dark: #1b4d3e;
+  --success: #2e7d32;
+  --danger: #d32f2f;
+  --warning: #ed6c02;
+  --info: #0288d1;
+  --gray-50: #f8fafc;
+  --gray-100: #f1f5f9;
+  --gray-200: #e2e8f0;
+  --gray-300: #cbd5e1;
+  --gray-400: #94a3b8;
+  --gray-500: #64748b;
+  --gray-600: #475569;
+  --gray-700: #334155;
+  --gray-800: #1e293b;
+  --gray-900: #0f172a;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --transition: all 0.2s ease;
+}
+
+/* Container chính */
+.payment-approval-page {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  font-family: system-ui, 'Segoe UI', 'Inter', sans-serif;
+  background: var(--gray-100);
+  min-height: 100vh;
+}
+
+/* Hero section */
+.payment-approval-hero {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.payment-approval-kicker {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--primary);
+  margin-bottom: 0.5rem;
+}
+
+.payment-approval-title {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin-bottom: 0.5rem;
+  line-height: 1.2;
+}
+
+.payment-approval-desc {
+  color: var(--gray-600);
+  max-width: 600px;
+  font-size: 0.95rem;
+}
+
+.payment-approval-hero-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+/* Summary cards grid */
+.payment-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.payment-summary-card {
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+  border-left: 4px solid transparent;
+}
+
+.payment-summary-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.payment-summary-card--blue {
+  border-left-color: var(--info);
+}
+.payment-summary-card--cyan {
+  border-left-color: #0ea5e9;
+}
+.payment-summary-card--green {
+  border-left-color: var(--success);
+}
+.payment-summary-card--red {
+  border-left-color: var(--danger);
+}
+
+.payment-summary-card__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.payment-summary-card__icon {
+  font-size: 1.5rem;
+  color: var(--gray-500);
+}
+
+.payment-summary-card__tag {
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: var(--gray-100);
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  color: var(--gray-600);
+}
+
+.payment-summary-card__label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--gray-500);
+  margin-bottom: 0.5rem;
+}
+
+.payment-summary-card__value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--gray-900);
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
+
+.payment-summary-card__note {
+  font-size: 0.75rem;
+  color: var(--gray-500);
+}
+
+/* Toolbar & bộ lọc */
+.payment-toolbar-card {
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.admin-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.payment-toolbar-left {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  flex: 2;
+}
+
+.payment-search-box {
+  display: flex;
+  align-items: center;
+  background: var(--gray-100);
+  border-radius: 2rem;
+  padding: 0.25rem 1rem;
+  border: 1px solid var(--gray-200);
+  transition: var(--transition);
+}
+
+.payment-search-box:focus-within {
+  border-color: var(--primary);
+  background: white;
+  box-shadow: 0 0 0 3px rgba(45, 106, 79, 0.1);
+}
+
+.payment-search-box__icon {
+  color: var(--gray-400);
+  margin-right: 0.5rem;
+}
+
+.payment-search-box__input {
+  border: none;
+  background: transparent;
+  padding: 0.5rem 0;
+  font-size: 0.875rem;
+  width: 240px;
+  outline: none;
+  font-family: inherit;
+}
+
+.payment-filter-select {
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: 2rem;
+  padding: 0 1rem;
+  font-size: 0.875rem;
+  height: 40px;
+  cursor: pointer;
+  background-color: white;
+  font-family: inherit;
+}
+
+.payment-toolbar-result {
+  font-size: 0.875rem;
+  color: var(--gray-600);
+}
+
+/* Danh sách giao dịch dạng card */
+.payment-list-card {
+  background: white;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.payment-table-card__head {
+  padding: 1.5rem 1.5rem 0.5rem 1.5rem;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.payment-table-card__head h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  color: var(--gray-800);
+}
+
+.payment-table-card__head p {
+  font-size: 0.875rem;
+  color: var(--gray-500);
+}
+
+.payment-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.payment-list-item {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--gray-200);
+  transition: var(--transition);
+}
+
+.payment-list-item:hover {
+  background: var(--gray-50);
+}
+
+.payment-list-item__main {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  flex: 3;
+}
+
+.payment-cell-main {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 180px;
+}
+
+.payment-cell-icon {
+  width: 40px;
+  height: 40px;
+  background: var(--gray-100);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+  font-size: 1.25rem;
+}
+
+.payment-transaction-code {
+  font-weight: 600;
+  color: var(--gray-800);
+  font-size: 0.9rem;
+}
+
+.payment-list-item__content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  flex: 2;
+}
+
+.payment-customer,
+.payment-purpose {
+  min-width: 140px;
+}
+
+.payment-customer strong,
+.payment-purpose strong {
+  display: block;
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+  color: var(--gray-800);
+}
+
+.payment-list-item__side {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  text-align: right;
+}
+
+.payment-amount {
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: var(--gray-900);
+  white-space: nowrap;
+}
+
+.payment-created-at {
+  font-size: 0.75rem;
+  color: var(--gray-500);
+  white-space: nowrap;
+}
+
+.admin-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.admin-badge.success {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+.admin-badge.danger {
+  background: #ffebee;
+  color: #c62828;
+}
+.admin-badge.info {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+.admin-badge.pending {
+  background: #fff3e0;
+  color: #ef6c00;
+}
+
+.admin-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.admin-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border-radius: 2rem;
+  border: none;
+  cursor: pointer;
+  transition: var(--transition);
+  background: transparent;
+  font-family: inherit;
+}
+
+.admin-btn.ghost {
+  background: var(--gray-100);
+  color: var(--gray-700);
+  border: 1px solid var(--gray-200);
+}
+.admin-btn.ghost:hover {
+  background: var(--gray-200);
+}
+
+.admin-btn.success {
+  background: var(--success);
+  color: white;
+}
+.admin-btn.success:hover {
+  background: #1b5e20;
+  transform: translateY(-1px);
+}
+
+.admin-btn.danger {
+  background: var(--danger);
+  color: white;
+}
+.admin-btn.danger:hover {
+  background: #b71c1c;
+}
+
+.admin-btn.primary {
+  background: var(--primary);
+  color: white;
+}
+.admin-btn.primary:hover {
+  background: var(--primary-dark);
+}
+
+.payment-list-empty {
+  text-align: center;
+  padding: 3rem;
+  color: var(--gray-500);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .payment-list-item__main {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .payment-list-item__side {
+    justify-content: flex-start;
+    width: 100%;
+  }
+  .payment-amount {
+    white-space: normal;
+  }
+}
+
+@media (max-width: 768px) {
+  .payment-approval-page {
+    padding: 1rem;
+  }
+  .payment-summary-grid {
+    grid-template-columns: 1fr;
+  }
+  .payment-toolbar-left {
+    width: 100%;
+    flex-direction: column;
+  }
+  .payment-search-box__input {
+    width: 100%;
+  }
+  .payment-list-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .payment-list-item__side {
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+  .admin-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}

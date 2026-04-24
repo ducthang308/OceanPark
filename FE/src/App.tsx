@@ -1,12 +1,9 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import { DatePicker } from 'antd';
+import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom';
 
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './components/layout/Header/header.tsx';
 import Footer from './components/layout/Footer/footer.tsx';
-import Navbar from "./components/layout/Navbar/navbar.tsx";
+// import Navbar from "./components/layout/Navbar/navbar.tsx";
+
 import LoginPage from './pages/Login/LoginPage.tsx';
 import History from './pages/PayManagement/HistoryPay.tsx';
 import Home from './pages/Home/Home.tsx';
@@ -15,30 +12,60 @@ import AccountManagement from './pages/AccountManagement/AccountManagement.tsx';
 import BlogAboutUs from './pages/Blog/AboutUsBlog.tsx';
 import PostDetail from './pages/PostDetail/PostDetail.tsx';
 import PaymentPage from './pages/Payment/PaymentPage.tsx';
-
-import './assets/styles/Global.css'
 import Listing from './pages/ManagementPage/components/ListingPage/listing.tsx';
 import ListPost from './pages/ManagementPage/components/ListPostPage/listPost.tsx';
+
+import AdminLayout from './pages/AdminStaff/components/AdminLayout.tsx';
+import AdminDashboard from './pages/AdminStaff/Dashboard/AdminDashboard.tsx';
+import AdminPostApproval from './pages/AdminStaff/PostApproval/AdminPostApproval.tsx';
+import AdminPaymentApproval from './pages/AdminStaff/PaymentApproval/AdminPaymentApproval.tsx';
+import PostApprovalDetail from './pages/AdminStaff/PostApproval/PostApprovalDetail.tsx';
+import PaymentDetailPanel from './pages/AdminStaff/PaymentApproval/PaymentDetailPanel.tsx';
+
+import './assets/styles/Global.css';
+
+function UserLayout() {
+  return (
+    <>
+      <Header />
+      {/* <Navbar /> nếu muốn dùng chung cho user thì bật lên */}
+      <main>
+        <Outlet />
+      </main>
+      <Footer />
+    </>
+  );
+}
 
 function App() {
   return (
     <Router>
-      <Header />
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/history" element={<History />} />
-        <Route path="/recharge/:method" element={<TopUpPage />} />
-        <Route path="/AccountManagement" element={<AccountManagement />} />
-        <Route path="/blog" element={<BlogAboutUs />} />
+        {/* User routes */}
+        <Route element={<UserLayout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/history" element={<History />} />
+          <Route path="/recharge/:method" element={<TopUpPage />} />
+          <Route path="/AccountManagement" element={<AccountManagement />} />
+          <Route path="/blog" element={<BlogAboutUs />} />
+          <Route path="/posts/:id" element={<PostDetail />} />
+          <Route path="/listing" element={<Listing />} />
+          <Route path="/list-post" element={<ListPost />} />
+          <Route path="/payment/:id" element={<PaymentPage />} />
+        </Route>
 
-        <Route path="/posts/:id" element={<PostDetail />} />
-        <Route path="/listing" element={<Listing />} />
-        <Route path="/list-post" element={<ListPost />} />
-        <Route path="/payment/:id" element={<PaymentPage />} />
+        {/* Admin routes */}
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="posts" element={<AdminPostApproval />} />
+          <Route path="post-approval/:id" element={<PostApprovalDetail />} />
+          <Route path="payment-approval/:id" element={<PaymentDetailPanel />} />
+          <Route path="payments" element={<AdminPaymentApproval />} />
+        </Route>
       </Routes>
     </Router>
   );
 }
 
-export default App
+export default App;
