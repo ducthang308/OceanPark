@@ -14,6 +14,7 @@ import PostDetail from './pages/PostDetail/PostDetail.tsx';
 import PaymentPage from './pages/Payment/PaymentPage.tsx';
 import Listing from './pages/ManagementPage/components/ListingPage/listing.tsx';
 import ListPost from './pages/ManagementPage/components/ListPostPage/listPost.tsx';
+import FavoritePostsPage from './pages/FavoritePostsPage/FavoritePostsPage';
 
 import AdminLayout from './pages/AdminStaff/components/AdminLayout.tsx';
 import AdminDashboard from './pages/AdminStaff/Dashboard/AdminDashboard.tsx';
@@ -53,6 +54,7 @@ function App() {
           <Route path="/listing" element={<Listing />} />
           <Route path="/list-post" element={<ListPost />} />
           <Route path="/payment/:id" element={<PaymentPage />} />
+          
         </Route>
 
         {/* Admin routes */}

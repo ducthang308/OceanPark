@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import './header.css';
+import { useNavigate } from 'react-router-dom';
 
 type NavItem = {
   key: string;
@@ -22,6 +23,7 @@ type CurrentUser = {
 } | null;
 
 const Header: React.FC = () => {
+  const navigate = useNavigate();
   const location = useLocation();
 
   const [isScrolled, setIsScrolled] = useState(false);
@@ -96,7 +98,7 @@ const Header: React.FC = () => {
   const authenticatedMenuItems: UserMenuItem[] = useMemo(
     () => [
       { key: 'profile', label: 'Thông tin tài khoản', to: '/AccountManagement' },
-      { key: 'my-posts', label: 'Bài đăng của tôi', to: '/management' },
+      { key: 'my-posts', label: 'Bài đăng của tôi', to: '/list-post' },
       { key: 'transactions', label: 'Quản lý giao dịch', to: '/history?tab=paymentHistory' },
       { key: 'topup', label: 'Nạp tiền', to: '/topup' },
       { key: 'logout', label: 'Đăng xuất', action: 'logout' },
@@ -206,6 +208,7 @@ const Header: React.FC = () => {
             type="button"
             className="rental-header__icon-button"
             aria-label="Yêu thích"
+            onClick={() => navigate('/favorite-posts')}
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path
