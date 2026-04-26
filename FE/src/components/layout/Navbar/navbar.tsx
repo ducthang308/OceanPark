@@ -41,16 +41,21 @@ const items: MenuProps['items'] = [
     },
     {
         key: '6',
+        icon: <FileTextOutlined />,
+        label: 'Quản lý thanh toán thuê căn hộ',
+    },
+    {
+        key: '7',
         icon: <DollarOutlined />,
         label: 'Bảng giá dịch vụ',
     },
     {
-        key: '7',
+        key: '8',
         icon: <UserOutlined />,
         label: 'Quản lý tài khoản',
     },
     {
-        key: '8',
+        key: '9',
         icon: <LogoutOutlined />,
         label: 'Đăng xuất',
     },
@@ -75,6 +80,9 @@ const navbar = () => {
                 break;
             case '5':
                 navigate('/history');
+                break;
+            case '6':
+                navigate('/payment-history');
                 break;
             case '8': //    Đăng xuất
                 break;

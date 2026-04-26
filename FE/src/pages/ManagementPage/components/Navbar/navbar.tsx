@@ -44,16 +44,21 @@ const items: MenuProps['items'] = [
     },
     {
         key: '6',
+        icon: <FileTextOutlined />,
+        label: 'Lịch sử thanh toán thuê căn hộ',
+    },
+    {
+        key: '7',
         icon: <DollarOutlined />,
         label: 'Bảng giá dịch vụ',
     },
     {
-        key: '7',
+        key: '8',
         icon: <UserOutlined />,
         label: 'Quản lý tài khoản',
     },
     {
-        key: '8',
+        key: '9',
         icon: <LogoutOutlined />,
         label: 'Đăng xuất',
     },

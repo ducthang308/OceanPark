@@ -22,6 +22,9 @@ import AdminPostApproval from './pages/AdminStaff/PostApproval/AdminPostApproval
 import AdminPaymentApproval from './pages/AdminStaff/PaymentApproval/AdminPaymentApproval.tsx';
 import PostApprovalDetail from './pages/AdminStaff/PostApproval/PostApprovalDetail.tsx';
 import PaymentDetailPanel from './pages/AdminStaff/PaymentApproval/PaymentDetailPanel.tsx';
+import PaymentHistory from './pages/PayHistoryRent/PaymentHistory.tsx';
+import PaymentDetail from './pages/PayDetailRent/PaymentDetail.tsx';
+
 
 import './assets/styles/Global.css';
 
@@ -54,7 +57,10 @@ function App() {
           <Route path="/listing" element={<Listing />} />
           <Route path="/list-post" element={<ListPost />} />
           <Route path="/payment/:id" element={<PaymentPage />} />
-          
+          <Route path="/favorite-posts" element={<FavoritePostsPage />} />
+          <Route path="/payment-history" element={<PaymentHistory />} />
+          <Route path="/payment-history/:maGiaoDich" element={<PaymentDetail />} />
+
         </Route>
 
         {/* Admin routes */}
