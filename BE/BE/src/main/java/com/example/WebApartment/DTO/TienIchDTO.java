@@ -8,7 +8,6 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class TienIchDTO {
-
     private String maTienIch;
     private String tenTienIch;
 }

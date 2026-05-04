@@ -16,14 +16,7 @@ import java.util.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-<<<<<<< HEAD
 public class NguoiDung implements UserDetails, OAuth2User {
-=======
-@NoArgsConstructor
-@AllArgsConstructor
-public class NguoiDung {
->>>>>>> b677cefbcc96b6702ecf1b31ca9056bb27815150
-
     @Id
     @Column(name = "maNguoiDung", length = 36)
     private String maNguoiDung;
