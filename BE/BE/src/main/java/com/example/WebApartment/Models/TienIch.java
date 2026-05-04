@@ -10,6 +10,8 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class TienIch {
 
     @Id

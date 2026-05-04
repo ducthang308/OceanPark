@@ -1,157 +1,216 @@
-CREATE TABLE VaiTro (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    tenVaiTro VARCHAR(50)
-) ENGINE=InnoDB;
+CREATE DATABASE WebApartment;
+USE WebApartment;
 
+-- ================= ROLE =================
+CREATE TABLE VaiTro (
+    maVaiTro VARCHAR(100) PRIMARY KEY,
+    tenVaiTro VARCHAR(50)
+);
+
+-- ================= USER =================
 CREATE TABLE NguoiDung (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    idVaiTro INT,
+    maNguoiDung VARCHAR(100) PRIMARY KEY,
+    maVaiTro VARCHAR(100),
     hoVaTen VARCHAR(255),
     email VARCHAR(255),
     diaChi VARCHAR(255),
     soDienThoai VARCHAR(30),
-    trangThai TINYINT(1),
+    trangThai BOOLEAN,
     matKhau VARCHAR(255),
     facebookAccount VARCHAR(255),
     googleAccount VARCHAR(255),
     anhDaiDien VARCHAR(255),
-    FOREIGN KEY (idVaiTro) REFERENCES VaiTro(id)
-) ENGINE=InnoDB;
 
+    FOREIGN KEY (maVaiTro) REFERENCES VaiTro(maVaiTro)
+);
+
+-- ================= DANH MUC =================
 CREATE TABLE DanhMuc (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    maDanhMuc VARCHAR(100) PRIMARY KEY,
     tenDanhMuc VARCHAR(255)
-) ENGINE=InnoDB;
+);
 
+-- ================= BAI DANG =================
 CREATE TABLE BaiDang (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    idNguoiDung INT,
-    idDanhMuc INT,
+    maBaiDang VARCHAR(100) PRIMARY KEY,
+    maNguoiDung VARCHAR(100),
+    maDanhMuc VARCHAR(100),
     tieuDe VARCHAR(255),
-    noiDung VARCHAR(255),
+    noiDung TEXT,
     ngayDang DATE,
     trangThai VARCHAR(255),
-    lienHe VARCHAR(255),
+    lienHe VARCHAR(50),
     phuongThucThanhToan VARCHAR(255),
-    FOREIGN KEY (idNguoiDung) REFERENCES NguoiDung(id),
-    FOREIGN KEY (idDanhMuc) REFERENCES DanhMuc(id)
-) ENGINE=InnoDB;
 
-CREATE TABLE HinhAnhBaiDang (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    idBaiDang INT,
-    loai VARCHAR(255),
-    duongDan VARCHAR(255),
-    thumbnailUrl VARCHAR(255),
-    thuTu INT,
-    FOREIGN KEY (idBaiDang) REFERENCES BaiDang(id)
-) ENGINE=InnoDB;
+    FOREIGN KEY (maNguoiDung) REFERENCES NguoiDung(maNguoiDung),
+    FOREIGN KEY (maDanhMuc) REFERENCES DanhMuc(maDanhMuc)
+);
 
+-- ================= CHI TIET CAN HO =================
 CREATE TABLE ChiTietCanHo (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    idBaiDang INT,
+    maChiTietCanHo VARCHAR(100) PRIMARY KEY,
+    maBaiDang VARCHAR(100),
     gia DOUBLE,
     dienTich FLOAT,
     phongNgu INT,
     diaChiCuThe VARCHAR(255),
     huongCanHo VARCHAR(255),
-    ngayTao DATETIME,
     phuong VARCHAR(255),
-    phongThuy VARCHAR(255),
-    FOREIGN KEY (idBaiDang) REFERENCES BaiDang(id)
-) ENGINE=InnoDB;
+    lat DOUBLE,
+    lng DOUBLE,
+    ngayTao DATETIME,
 
+    FOREIGN KEY (maBaiDang) REFERENCES BaiDang(maBaiDang)
+);
+
+-- ================= TIEN ICH =================
 CREATE TABLE TienIch (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    maTienIch VARCHAR(100) PRIMARY KEY,
     tenTienIch VARCHAR(255)
-) ENGINE=InnoDB;
+);
 
+-- ================= BAI DANG - TIEN ICH =================
 CREATE TABLE BaiDang_TienIch (
-    idBaiDang INT,
-    idTienIch INT,
-    PRIMARY KEY (idBaiDang, idTienIch),
-    FOREIGN KEY (idBaiDang) REFERENCES BaiDang(id),
-    FOREIGN KEY (idTienIch) REFERENCES TienIch(id)
-) ENGINE=InnoDB;
+    maBaiDang VARCHAR(100),
+    maTienIch VARCHAR(100),
+    PRIMARY KEY (maBaiDang, maTienIch),
 
+    FOREIGN KEY (maBaiDang) REFERENCES BaiDang(maBaiDang),
+    FOREIGN KEY (maTienIch) REFERENCES TienIch(maTienIch)
+);
+
+-- ================= HINH ANH =================
+CREATE TABLE HinhAnhBaiDang (
+    maHinhAnhBaiDang VARCHAR(100) PRIMARY KEY,
+    maBaiDang VARCHAR(100),
+    loai VARCHAR(255),
+    duongDan VARCHAR(255),
+    thumbnailUrl VARCHAR(255),
+    thuTu INT,
+
+    FOREIGN KEY (maBaiDang) REFERENCES BaiDang(maBaiDang)
+);
+
+-- ================= YEU THICH =================
 CREATE TABLE BaiDangYeuThich (
-    idNguoiDung INT,
-    idBaiDang INT,
+    maNguoiDung VARCHAR(100),
+    maBaiDang VARCHAR(100),
     ngayTao DATETIME,
-    PRIMARY KEY (idNguoiDung, idBaiDang),
-    FOREIGN KEY (idNguoiDung) REFERENCES NguoiDung(id),
-    FOREIGN KEY (idBaiDang) REFERENCES BaiDang(id)
-) ENGINE=InnoDB;
+    PRIMARY KEY (maNguoiDung, maBaiDang),
 
-CREATE TABLE TuongTacNguoiDung (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    idNguoiDung INT,
-    idBaiDang INT,
-    loaiHanhDong VARCHAR(255),
-    ngayTao DATETIME,
-    FOREIGN KEY (idNguoiDung) REFERENCES NguoiDung(id),
-    FOREIGN KEY (idBaiDang) REFERENCES BaiDang(id)
-) ENGINE=InnoDB;
+    FOREIGN KEY (maNguoiDung) REFERENCES NguoiDung(maNguoiDung),
+    FOREIGN KEY (maBaiDang) REFERENCES BaiDang(maBaiDang)
+);
 
+-- ================= NHU CAU USER (AI) =================
 CREATE TABLE NhuCauNguoiDung (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    idNguoiDung INT,
+    maNhuCauNguoiDung VARCHAR(100) PRIMARY KEY,
+    maNguoiDung VARCHAR(100),
     minPrice DOUBLE,
     maxPrice DOUBLE,
     phuong VARCHAR(50),
     loaiCanHo VARCHAR(50),
-    coBanCong TINYINT(1),
-    dayDuNoiThat TINYINT(1),
-    ganTrungTam TINYINT(1),
-    ganBien TINYINT(1),
+    coBanCong BOOLEAN,
+    dayDuNoiThat BOOLEAN,
+    ganTrungTam BOOLEAN,
+    ganBien BOOLEAN,
     ngayTao DATETIME,
-    FOREIGN KEY (idNguoiDung) REFERENCES NguoiDung(id)
-) ENGINE=InnoDB;
 
+    FOREIGN KEY (maNguoiDung) REFERENCES NguoiDung(maNguoiDung)
+);
+
+-- ================= LICH SU TIM KIEM =================
 CREATE TABLE LichSuTimKiem (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    idNguoiDung INT,
+    maLichSuTimKiem VARCHAR(100) PRIMARY KEY,
+    maNguoiDung VARCHAR(100),
     tuKhoa VARCHAR(255),
     minPrice DOUBLE,
     maxPrice DOUBLE,
     phuong VARCHAR(255),
     thoiGian DATETIME,
-    FOREIGN KEY (idNguoiDung) REFERENCES NguoiDung(id)
-) ENGINE=InnoDB;
 
+    FOREIGN KEY (maNguoiDung) REFERENCES NguoiDung(maNguoiDung)
+);
+
+-- ================= TUONG TAC USER =================
+CREATE TABLE TuongTacNguoiDung (
+    maTuongTacNguoiDung VARCHAR(100) PRIMARY KEY,
+    maNguoiDung VARCHAR(100),
+    maBaiDang VARCHAR(100),
+    loaiHanhDong VARCHAR(255),
+    ngayTao DATETIME,
+
+    FOREIGN KEY (maNguoiDung) REFERENCES NguoiDung(maNguoiDung),
+    FOREIGN KEY (maBaiDang) REFERENCES BaiDang(maBaiDang)
+);
+
+-- ================= PHUONG THUC THANH TOAN =================
 CREATE TABLE PhuongThucThanhToan (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    maPhuongThucThanhToan VARCHAR(100) PRIMARY KEY,
     tenPhuongThucThanhToan VARCHAR(255),
     moTa VARCHAR(255)
-) ENGINE=InnoDB;
+);
 
+-- ================= MUC DICH THANH TOAN =================
 CREATE TABLE MucDichThanhToan (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    maMucDichThanhToan VARCHAR(100) PRIMARY KEY,
     tenMucDich VARCHAR(255)
-) ENGINE=InnoDB;
+);
 
+-- ================= GIAO DICH =================
+CREATE TABLE GiaoDich (
+    maGiaoDich VARCHAR(100) PRIMARY KEY,
+    maNguoiDung VARCHAR(100),
+    maThanhToan VARCHAR(100),
+    maMucDichThanhToan VARCHAR(100),
+    soTien DOUBLE,
+    trangThai VARCHAR(255),
+    ngayTao DATETIME,
+    noiDung VARCHAR(255),
+
+    FOREIGN KEY (maNguoiDung) REFERENCES NguoiDung(maNguoiDung),
+    FOREIGN KEY (maThanhToan) REFERENCES PhuongThucThanhToan(maPhuongThucThanhToan),
+    FOREIGN KEY (maMucDichThanhToan) REFERENCES MucDichThanhToan(maMucDichThanhToan)
+);
+
+-- ================= HOA DON =================
+CREATE TABLE HoaDonThueCanHo (
+    maHoaDon VARCHAR(100) PRIMARY KEY,
+    maNguoiDung VARCHAR(100),
+    maMucDichThanhToan VARCHAR(100),
+    ngayLapHoaDon DATETIME,
+    tongTien DOUBLE,
+    trangThai VARCHAR(50),
+    ghiChu VARCHAR(255),
+
+    FOREIGN KEY (maNguoiDung) REFERENCES NguoiDung(maNguoiDung),
+    FOREIGN KEY (maMucDichThanhToan) REFERENCES MucDichThanhToan(maMucDichThanhToan)
+);
+
+-- ================= CHI TIET HOA DON =================
+CREATE TABLE ChiTietHoaDon (
+    maChiTietHoaDon VARCHAR(100) PRIMARY KEY,
+    maHoaDon VARCHAR(100),
+    maBaiDang VARCHAR(100),
+    noiDung VARCHAR(255),
+    soTien DOUBLE,
+    ngayTao DATETIME,
+
+    FOREIGN KEY (maHoaDon) REFERENCES HoaDonThueCanHo(maHoaDon),
+    FOREIGN KEY (maBaiDang) REFERENCES BaiDang(maBaiDang)
+);
+
+-- ================= CHI TIET THANH TOAN =================
 CREATE TABLE ChiTietThanhToan (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    idNguoiDung INT,
-    idThanhToan INT,
+    maChiTietThanhToan VARCHAR(100) PRIMARY KEY,
+    maNguoiDung VARCHAR(100),
+    maThanhToan VARCHAR(100),
     ngayBatDau DATE,
     ngayKetThuc DATE,
     soTien DOUBLE,
     trangThai VARCHAR(255),
     ngayTao DATETIME,
-    FOREIGN KEY (idNguoiDung) REFERENCES NguoiDung(id)
-) ENGINE=InnoDB;
 
-CREATE TABLE LichSuGiaoDich (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    idNguoiDung INT,
-    idThanhToan INT,
-    soTien DOUBLE,
-    trangThai VARCHAR(255),
-    ngayTao DATETIME,
-    noiDung VARCHAR(255),
-    idMucDichThanhToan INT,
-    FOREIGN KEY (idNguoiDung) REFERENCES NguoiDung(id),
-    FOREIGN KEY (idThanhToan) REFERENCES ChiTietThanhToan(id),
-    FOREIGN KEY (idMucDichThanhToan) REFERENCES MucDichThanhToan(id)
-) ENGINE=InnoDB;
+    FOREIGN KEY (maNguoiDung) REFERENCES NguoiDung(maNguoiDung),
+    FOREIGN KEY (maThanhToan) REFERENCES PhuongThucThanhToan(maPhuongThucThanhToan)
+);

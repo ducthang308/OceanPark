@@ -9,6 +9,8 @@ import java.time.LocalDateTime;
 @Table(name = "NhuCauNguoiDung")
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class NhuCauNguoiDung {
     @Id
     private String maNhuCauNguoiDung;

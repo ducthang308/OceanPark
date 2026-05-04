@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/mucdich-thanhtoan")
+@RequestMapping("${api.prefix}/mucdich-thanhtoan")
 @RequiredArgsConstructor
 public class MucDichThanhToanController {
 

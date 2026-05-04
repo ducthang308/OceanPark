@@ -8,6 +8,8 @@ import java.time.LocalDateTime;
 @Table(name = "LichSuTimKiem")
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class LichSuTimKiem {
 
     @Id

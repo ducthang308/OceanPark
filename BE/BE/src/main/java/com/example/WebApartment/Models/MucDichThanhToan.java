@@ -10,6 +10,8 @@ import java.util.List;
 @Table(name = "MucDichThanhToan")
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class MucDichThanhToan {
     @Id
     private String maMucDichThanhToan;
