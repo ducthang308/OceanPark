@@ -8,7 +8,10 @@ import java.util.List;
 
 @Entity
 @Table(name = "DanhMuc")
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class DanhMuc {
     @Id

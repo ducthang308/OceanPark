@@ -5,18 +5,22 @@ import lombok.*;
 
 @Entity
 @Table(name = "BaiDang_TienIch")
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class BaiDangTienIch {
 
     @EmbeddedId
     private BaiDangTienIchId id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @MapsId("maBaiDang")
     @JoinColumn(name = "maBaiDang")
     private BaiDang baiDang;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @MapsId("maTienIch")
     @JoinColumn(name = "maTienIch")
     private TienIch tienIch;

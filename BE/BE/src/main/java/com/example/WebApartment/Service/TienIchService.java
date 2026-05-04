@@ -16,9 +16,8 @@ import java.util.stream.Collectors;
 public class TienIchService {
 
     private final TienIchRepository repo;
-    private final BaiDangTienIchRepository baiDangTienIchRepo; // nhớ inject
+    private final BaiDangTienIchRepository baiDangTienIchRepo;
 
-    // ===== GET ALL =====
     public List<TienIchDTO> getAll() {
         return repo.findAll()
                 .stream()
@@ -26,7 +25,6 @@ public class TienIchService {
                 .collect(Collectors.toList());
     }
 
-    // ===== GET BY ID =====
     public TienIchDTO getById(String ma) {
         TienIch entity = repo.findById(ma)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy tiện ích"));
@@ -34,42 +32,55 @@ public class TienIchService {
         return toDto(entity);
     }
 
-    // ===== CREATE =====
     public TienIchDTO create(TienIchDTO dto) {
+        if (dto == null) {
+            throw new RuntimeException("Dữ liệu tiện ích không hợp lệ");
+        }
+
+        if (dto.getTenTienIch() == null || dto.getTenTienIch().isBlank()) {
+            throw new RuntimeException("Tên tiện ích không được để trống");
+        }
 
         if (repo.existsByTenTienIch(dto.getTenTienIch())) {
             throw new RuntimeException("Tiện ích đã tồn tại");
         }
 
-        TienIch entity = toEntity(dto);
-
-        if (entity.getMaTienIch() == null) {
-            entity.setMaTienIch(UUID.randomUUID().toString());
-        }
+        TienIch entity = TienIch.builder()
+                .maTienIch(
+                        dto.getMaTienIch() == null || dto.getMaTienIch().isBlank()
+                                ? UUID.randomUUID().toString()
+                                : dto.getMaTienIch()
+                )
+                .tenTienIch(dto.getTenTienIch())
+                .build();
 
         return toDto(repo.save(entity));
     }
 
-    // ===== UPDATE =====
     public TienIchDTO update(String ma, TienIchDTO dto) {
+        if (dto == null) {
+            throw new RuntimeException("Dữ liệu cập nhật không hợp lệ");
+        }
 
         TienIch existing = repo.findById(ma)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy tiện ích"));
 
-        if (dto.getTenTienIch() != null) {
+        if (dto.getTenTienIch() != null && !dto.getTenTienIch().isBlank()) {
+            if (!dto.getTenTienIch().equals(existing.getTenTienIch())
+                    && repo.existsByTenTienIch(dto.getTenTienIch())) {
+                throw new RuntimeException("Tiện ích đã tồn tại");
+            }
+
             existing.setTenTienIch(dto.getTenTienIch());
         }
 
         return toDto(repo.save(existing));
     }
 
-    // ===== DELETE =====
     public void delete(String ma) {
-
         TienIch existing = repo.findById(ma)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy tiện ích"));
 
-        //check bảng trung gian
         if (baiDangTienIchRepo.existsByTienIch_MaTienIch(ma)) {
             throw new RuntimeException("Không thể xóa tiện ích đang được sử dụng");
         }
@@ -77,19 +88,12 @@ public class TienIchService {
         repo.delete(existing);
     }
 
-    // ===== MAPPER =====
-
     private TienIchDTO toDto(TienIch e) {
+        if (e == null) return null;
+
         return TienIchDTO.builder()
                 .maTienIch(e.getMaTienIch())
                 .tenTienIch(e.getTenTienIch())
-                .build();
-    }
-
-    private TienIch toEntity(TienIchDTO dto) {
-        return TienIch.builder()
-                .maTienIch(dto.getMaTienIch())
-                .tenTienIch(dto.getTenTienIch())
                 .build();
     }
 }

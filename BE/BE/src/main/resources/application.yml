@@ -11,10 +11,8 @@ spring:
   jpa:
     hibernate:
       ddl-auto: none
-    show-sql: true
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.MySQL8Dialect
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
   mail:
     host: smtp.gmail.com
     port: 587
@@ -45,11 +43,11 @@ logging:
           factory=DEBUG:
 
 api:
-  prefix: api/v1
+  prefix: /api/v1
 
 jwt:
   expiration: 604800 #7 days = 60 * 60 * 24 * 7
-  secretKey: XvUHD0eOVtv/QUI8EDt1xAHjgGBJrM8TLCRzvZtnIgA=
+  secretKey: 2NWHQt4BeUzp4bo3PJyZkK39tU9HLckNPBCDMz30zZ4=
 
 cloudinary:
   cloud-name: de7vukn0u

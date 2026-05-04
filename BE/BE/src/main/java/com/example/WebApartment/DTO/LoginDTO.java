@@ -7,8 +7,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class TienIchDTO {
-
-    private String maTienIch;
-    private String tenTienIch;
+public class LoginDTO {
+    private String soDienThoai;
+    private String matKhau;
 }
