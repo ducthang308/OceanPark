@@ -2,8 +2,13 @@ package com.example.WebApartment.DTO;
 
 import lombok.*;
 
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class HinhAnhBaiDangDTO {
+
     private String maHinhAnhBaiDang;
     private String maBaiDang;
 

@@ -7,8 +7,16 @@ import lombok.*;
 import java.io.Serializable;
 
 @Embeddable
-@Data
-public class BaiDangYeuThichId implements java.io.Serializable {
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class BaiDangYeuThichId implements Serializable {
+
+    @Column(name = "maNguoiDung")
     private String maNguoiDung;
+
+    @Column(name = "maBaiDang")
     private String maBaiDang;
 }

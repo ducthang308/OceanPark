@@ -10,11 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-<<<<<<< HEAD
 @RequestMapping("${api.prefix}/tien-ich")
-=======
-@RequestMapping("${api.prefix}/tienich")
->>>>>>> b677cefbcc96b6702ecf1b31ca9056bb27815150
 @RequiredArgsConstructor
 public class TienIchController {
 

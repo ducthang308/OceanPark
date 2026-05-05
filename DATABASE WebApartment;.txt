@@ -214,3 +214,16 @@ CREATE TABLE ChiTietThanhToan (
     FOREIGN KEY (maNguoiDung) REFERENCES NguoiDung(maNguoiDung),
     FOREIGN KEY (maThanhToan) REFERENCES PhuongThucThanhToan(maPhuongThucThanhToan)
 );
+
+INSERT INTO VaiTro (maVaiTro, tenVaiTro) VALUES
+('1', 'Admin'),
+('2', 'Người Thuê'),
+('3', 'Người Cho Thuê');
+
+INSERT INTO DanhMuc (maDanhMuc, tenDanhMuc) VALUES
+('1', 'Căn hộ');
+
+INSERT INTO TienIch (maTienIch, tenTienIch) VALUES
+('1', 'Điều hòa'),
+('2', 'Tủ lạnh'),
+('3', 'Máy giặt');

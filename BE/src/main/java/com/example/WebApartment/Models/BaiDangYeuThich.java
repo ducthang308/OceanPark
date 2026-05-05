@@ -7,7 +7,11 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "BaiDangYeuThich")
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class BaiDangYeuThich {
 
     @EmbeddedId
@@ -23,5 +27,6 @@ public class BaiDangYeuThich {
     @JoinColumn(name = "maBaiDang")
     private BaiDang baiDang;
 
-    private java.time.LocalDateTime ngayTao;
+    @Column(name = "ngayTao")
+    private LocalDateTime ngayTao;
 }

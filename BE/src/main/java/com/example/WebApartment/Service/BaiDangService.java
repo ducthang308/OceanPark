@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -46,7 +47,7 @@ public class BaiDangService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy danh mục"));
 
         BaiDang entity = BaiDang.builder()
-                .maBaiDang(UUID.randomUUID().toString())
+                .maBaiDang(generateMaBaiDang()) // 🔥 ở đây
                 .nguoiDung(nguoiDung)
                 .danhMuc(danhMuc)
                 .tieuDe(dto.getTieuDe())
@@ -94,5 +95,18 @@ public class BaiDangService {
                 .lienHe(e.getLienHe())
                 .phuongThucThanhToan(e.getPhuongThucThanhToan())
                 .build();
+    }
+
+    private String generateMaBaiDang() {
+        Optional<BaiDang> last = repo.findTopByOrderByMaBaiDangDesc();
+
+        if (last.isEmpty()) {
+            return "BD1";
+        }
+
+        String lastId = last.get().getMaBaiDang(); // VD: BD15
+
+        int number = Integer.parseInt(lastId.replace("BD", ""));
+        return "BD" + (number + 1);
     }
 }

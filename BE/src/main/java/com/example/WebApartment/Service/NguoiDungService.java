@@ -6,12 +6,14 @@ import com.example.WebApartment.Models.VaiTro;
 import com.example.WebApartment.Repository.NguoiDungRepository;
 import com.example.WebApartment.Repository.VaiTroRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.data.domain.PageRequest;
 
 @Service
 @RequiredArgsConstructor
@@ -47,7 +49,7 @@ public class NguoiDungService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy vai trò với id: " + dto.getMaVaiTro()));
 
         NguoiDung entity = buildNguoiDungFromDto(dto, vaiTro);
-        entity.setMaNguoiDung(UUID.randomUUID().toString());
+        entity.setMaNguoiDung(generateMaNguoiDung());
         entity.setTrangThai(true);
         entity.setMatKhau(passwordEncoder.encode(dto.getMatKhau()));
 
@@ -64,7 +66,7 @@ public class NguoiDungService {
         NguoiDung entity = buildNguoiDungFromDto(dto, vaiTro);
 
         if (entity.getMaNguoiDung() == null || entity.getMaNguoiDung().isBlank()) {
-            entity.setMaNguoiDung(UUID.randomUUID().toString());
+            entity.setMaNguoiDung(generateMaNguoiDung());
         }
 
         if (entity.getTrangThai() == null) {
@@ -235,5 +237,18 @@ public class NguoiDungService {
                 .googleAccount(entity.getGoogleAccount())
                 .anhDaiDien(entity.getAnhDaiDien())
                 .build();
+    }
+
+    private String generateMaNguoiDung() {
+        List<String> list = nguoiDungRepository.findTopMaNguoiDung(PageRequest.of(0, 1));
+
+        if (list.isEmpty()) {
+            return "ND1";
+        }
+
+        String lastId = list.get(0); // VD: ND15
+
+        int number = Integer.parseInt(lastId.replace("ND", ""));
+        return "ND" + (number + 1);
     }
 }

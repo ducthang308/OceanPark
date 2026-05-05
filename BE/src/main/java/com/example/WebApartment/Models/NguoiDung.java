@@ -60,9 +60,25 @@ public class NguoiDung implements UserDetails, OAuth2User {
             return List.of();
         }
 
-        return List.of(
-                new SimpleGrantedAuthority("ROLE_" + vaiTro.getTenVaiTro().toUpperCase())
-        );
+        String tenVaiTro = vaiTro.getTenVaiTro().trim();
+
+        String role;
+
+        switch (tenVaiTro) {
+            case "Admin":
+                role = "ROLE_ADMIN";
+                break;
+            case "Người thuê":
+                role = "ROLE_NGUOI_THUE";
+                break;
+            case "Người cho thuê":
+                role = "ROLE_NGUOI_CHO_THUE";
+                break;
+            default:
+                role = "ROLE_USER";
+        }
+
+        return List.of(new SimpleGrantedAuthority(role));
     }
 
     @Override

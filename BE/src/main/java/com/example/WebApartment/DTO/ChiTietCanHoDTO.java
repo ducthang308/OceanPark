@@ -4,8 +4,13 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class ChiTietCanHoDTO {
+
     private String maChiTietCanHo;
     private String maBaiDang;
 
