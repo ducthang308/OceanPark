@@ -1,0 +1,102 @@
+import axiosClient from "./AxiosClient";
+
+export interface BaiDangDTO {
+  maBaiDang?: string;
+  maNguoiDung?: string;
+  maDanhMuc?: string;
+  tieuDe?: string;
+  noiDung?: string;
+  ngayDang?: string;
+  trangThai?: string;
+  lienHe?: string;
+  phuongThucThanhToan?: string;
+}
+
+export interface ChiTietCanHoDTO {
+  maChiTietCanHo?: string;
+  maBaiDang?: string;
+  gia?: number;
+  dienTich?: number;
+  phongNgu?: number;
+  diaChiCuThe?: string;
+  huongCanHo?: string;
+  phuong?: string;
+  lat?: number;
+  lng?: number;
+  ngayTao?: string;
+}
+
+export interface HinhAnhBaiDangDTO {
+  maHinhAnhBaiDang?: string;
+  maBaiDang?: string;
+  loai?: string;
+  duongDan?: string;
+  thumbnailUrl?: string;
+  thuTu?: number;
+}
+
+export interface DanhMucDTO {
+  maDanhMuc: string;
+  tenDanhMuc: string;
+}
+
+export const getCategories = async () => {
+  const res = await axiosClient.get<DanhMucDTO[]>("/api/v1/danhmuc");
+  return res.data;
+};
+
+export const getPosts = async () => {
+  const res = await axiosClient.get<BaiDangDTO[]>("/api/v1/bai-dang");
+  return res.data;
+};
+
+export const createPost = async (payload: BaiDangDTO) => {
+  const res = await axiosClient.post<BaiDangDTO>("/api/v1/bai-dang", payload);
+  return res.data;
+};
+
+export const updatePost = async (maBaiDang: string, payload: BaiDangDTO) => {
+  const res = await axiosClient.put<BaiDangDTO>(`/api/v1/bai-dang/${maBaiDang}`, payload);
+  return res.data;
+};
+
+export const getApartmentDetailByPost = async (maBaiDang: string) => {
+  const res = await axiosClient.get<ChiTietCanHoDTO>(`/api/v1/chi-tiet-can-ho/bai-dang/${maBaiDang}`);
+  return res.data;
+};
+
+export const createApartmentDetail = async (payload: ChiTietCanHoDTO) => {
+  const res = await axiosClient.post<ChiTietCanHoDTO>("/api/v1/chi-tiet-can-ho", payload);
+  return res.data;
+};
+
+export const updateApartmentDetail = async (
+  maChiTietCanHo: string,
+  payload: ChiTietCanHoDTO
+) => {
+  const res = await axiosClient.put<ChiTietCanHoDTO>(
+    `/api/v1/chi-tiet-can-ho/${maChiTietCanHo}`,
+    payload
+  );
+  return res.data;
+};
+
+export const getPostImages = async (maBaiDang: string) => {
+  const res = await axiosClient.get<HinhAnhBaiDangDTO[]>(`/api/v1/hinh-anh-bai-dang/bai-dang/${maBaiDang}`);
+  return res.data;
+};
+
+export const uploadPostImages = async (maBaiDang: string, files: File[]) => {
+  const formData = new FormData();
+  formData.append("maBaiDang", maBaiDang);
+  formData.append("loai", "IMAGE");
+  files.forEach((file) => formData.append("files", file));
+
+  const res = await axiosClient.post<HinhAnhBaiDangDTO[]>(
+    "/api/v1/hinh-anh-bai-dang/upload-multiple",
+    formData,
+    { headers: { "Content-Type": "multipart/form-data" } }
+  );
+
+  return res.data;
+};
