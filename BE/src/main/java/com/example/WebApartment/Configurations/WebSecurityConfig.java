@@ -18,6 +18,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
+import org.springframework.http.HttpMethod;
 
 @Configuration
 @RequiredArgsConstructor
@@ -41,7 +42,8 @@ public class WebSecurityConfig {
                 .authorizeHttpRequests(requests -> requests
                         .requestMatchers(
                                 String.format("%s/nguoi-dung/register", apiPrefix),
-                                String.format("%s/nguoi-dung/login", apiPrefix)
+                                String.format("%s/nguoi-dung/login", apiPrefix),
+                                String.format("%s/sepay/webhook", apiPrefix)
                         ).permitAll()
                         .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/error").permitAll()

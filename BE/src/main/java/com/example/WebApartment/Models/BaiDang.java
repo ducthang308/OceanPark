@@ -44,6 +44,6 @@ public class BaiDang {
     @Column(name = "lienHe")
     private String lienHe;
 
-    @Column(name = "phuongThucThanhToan")
-    private String phuongThucThanhToan;
+    @Column(name = "hinhThucThanhToan")
+    private String hinhThucThanhToan;
 }

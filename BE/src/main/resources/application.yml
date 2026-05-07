@@ -53,3 +53,15 @@ cloudinary:
   cloud-name: de7vukn0u
   api-key: 749648341948272
   api-secret: McRmuwPpfPZg6Y93H98kWKcdIjw
+
+vnpay:
+  tmn-code: WBRTA2N0
+  hash-secret: ZV3QXXE6ZY38LE2F6GDGHFHUFCPZWV2D
+  pay-url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+  return-url: http://localhost:8082/api/v1/thanh-toan/vnpay-return
+
+sepay:
+  api-key: webapartment_sepay_2026
+  bank-code: TPBank
+  bank-account: 00002784934
+  account-name: NGUYEN DUC THANG

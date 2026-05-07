@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface GiaoDichRepository extends JpaRepository<GiaoDich, String> {
+    boolean existsByProviderTransactionNo(String providerTransactionNo);
 }
