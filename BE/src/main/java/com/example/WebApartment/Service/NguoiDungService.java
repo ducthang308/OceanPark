@@ -1,11 +1,13 @@
 package com.example.WebApartment.Service;
 
 import com.example.WebApartment.DTO.NguoiDungDTO;
+import com.example.WebApartment.JWT.JwtToken;
 import com.example.WebApartment.Models.NguoiDung;
 import com.example.WebApartment.Models.VaiTro;
 import com.example.WebApartment.Repository.NguoiDungRepository;
 import com.example.WebApartment.Repository.VaiTroRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -22,6 +24,12 @@ public class NguoiDungService {
     private final NguoiDungRepository nguoiDungRepository;
     private final VaiTroRepository vaiTroRepository;
     private final PasswordEncoder passwordEncoder;
+
+    private final EmailService emailService;
+    private final JwtToken jwtToken;
+
+    @Value("${app.frontend-reset-password-url:http://localhost:5173/reset-password}")
+    private String frontendResetPasswordUrl;
 
     private static final String ROLE_ADMIN = "1";
     private static final String ROLE_NGUOI_THUE = "2";
@@ -250,5 +258,56 @@ public class NguoiDungService {
 
         int number = Integer.parseInt(lastId.replace("ND", ""));
         return "ND" + (number + 1);
+    }
+
+    public void forgotPassword(String email) {
+        if (email == null || email.isBlank()) {
+            throw new RuntimeException("Email không được để trống");
+        }
+
+        NguoiDung nguoiDung = nguoiDungRepository.findByEmail(email.trim());
+
+        // Không báo email tồn tại hay không để tránh lộ tài khoản
+        if (nguoiDung == null || Boolean.FALSE.equals(nguoiDung.getTrangThai())) {
+            return;
+        }
+
+        try {
+            String token = jwtToken.generateResetPasswordToken(nguoiDung);
+            String resetLink = frontendResetPasswordUrl + "?token=" +
+                    java.net.URLEncoder.encode(token, java.nio.charset.StandardCharsets.UTF_8);
+
+            emailService.sendPasswordResetEmail(
+                    nguoiDung.getEmail(),
+                    nguoiDung.getHoVaTen(),
+                    resetLink
+            );
+        } catch (Exception e) {
+            throw new RuntimeException("Không tạo được yêu cầu đặt lại mật khẩu");
+        }
+    }
+
+    public void resetPassword(String token, String matKhauMoi) {
+        if (matKhauMoi == null || matKhauMoi.isBlank() || matKhauMoi.length() < 6) {
+            throw new RuntimeException("Mật khẩu mới tối thiểu 6 ký tự");
+        }
+
+        try {
+            var claims = jwtToken.validateResetPasswordToken(token);
+            String maNguoiDung = claims.get("maNguoiDung", String.class);
+            String email = claims.get("email", String.class);
+
+            NguoiDung nguoiDung = nguoiDungRepository.findById(maNguoiDung)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+
+            if (!email.equals(nguoiDung.getEmail())) {
+                throw new RuntimeException("Token không hợp lệ");
+            }
+
+            nguoiDung.setMatKhau(passwordEncoder.encode(matKhauMoi));
+            nguoiDungRepository.save(nguoiDung);
+        } catch (Exception e) {
+            throw new RuntimeException("Link đặt lại mật khẩu không hợp lệ hoặc đã hết hạn");
+        }
     }
 }

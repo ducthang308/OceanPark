@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import './LoginPage.css';
 import Register from '../Register/Register.tsx';
 import Footer from '../../components/layout/Footer/footer.tsx';
@@ -82,9 +82,9 @@ const LoginPage = () => {
                                 </button>
                             </form>
 
-                            <a href="#" className="forgot-password">
+                            <Link to="/forgot-password" className="forgot-password">
                                 Quên mật khẩu?
-                            </a>
+                            </Link>
 
                             <div className="divider">
                                 <span>hoặc đăng nhập bằng</span>

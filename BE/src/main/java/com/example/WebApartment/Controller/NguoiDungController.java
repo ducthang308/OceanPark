@@ -1,11 +1,10 @@
 package com.example.WebApartment.Controller;
 
-import com.example.WebApartment.DTO.LoginDTO;
-import com.example.WebApartment.DTO.LoginResponseDTO;
-import com.example.WebApartment.DTO.NguoiDungDTO;
+import com.example.WebApartment.DTO.*;
 import com.example.WebApartment.JWT.JwtToken;
 import com.example.WebApartment.Models.NguoiDung;
 import com.example.WebApartment.Service.NguoiDungService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -13,6 +12,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("${api.prefix}/nguoi-dung")
@@ -84,4 +84,21 @@ public class NguoiDungController {
         nguoiDungService.delete(maNguoiDung);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequestDTO dto) {
+        nguoiDungService.forgotPassword(dto.getEmail());
+        return ResponseEntity.ok(Map.of(
+                "message", "Nếu email tồn tại, hệ thống đã gửi link đặt lại mật khẩu"
+        ));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequestDTO dto) {
+        nguoiDungService.resetPassword(dto.getToken(), dto.getMatKhauMoi());
+        return ResponseEntity.ok(Map.of(
+                "message", "Đổi mật khẩu thành công. Vui lòng đăng nhập lại"
+        ));
+    }
+
 }

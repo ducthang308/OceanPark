@@ -96,7 +96,9 @@ public class JwtFilter extends OncePerRequestFilter {
     private boolean isByPassToken(@NotNull HttpServletRequest request) {
         final List<Pair<String, String>> byPassTokens = Arrays.asList(
                 Pair.of(String.format("%s/nguoi-dung/login", apiPrefix), "POST"),
-                Pair.of(String.format("%s/nguoi-dung/register", apiPrefix), "POST")
+                Pair.of(String.format("%s/nguoi-dung/register", apiPrefix), "POST"),
+                Pair.of(String.format("%s/nguoi-dung/forgot-password", apiPrefix), "POST"),
+                Pair.of(String.format("%s/nguoi-dung/reset-password", apiPrefix), "POST")
         );
 
         for (Pair<String, String> byPassToken : byPassTokens) {

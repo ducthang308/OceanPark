@@ -25,6 +25,8 @@ import PaymentDetailPanel from './pages/AdminStaff/PaymentApproval/PaymentDetail
 import PaymentHistory from './pages/PayHistoryRent/PaymentHistory.tsx';
 import PaymentDetail from './pages/PayDetailRent/PaymentDetail.tsx';
 
+import ForgotPasswordPage from './pages/ForgotPassword/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ForgotPassword/ResetPasswordPage';
 
 import './assets/styles/Global.css';
 
@@ -60,6 +62,8 @@ function App() {
           <Route path="/favorite-posts" element={<FavoritePostsPage />} />
           <Route path="/payment-history" element={<PaymentHistory />} />
           <Route path="/payment-history/:maGiaoDich" element={<PaymentDetail />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
 
         </Route>
 

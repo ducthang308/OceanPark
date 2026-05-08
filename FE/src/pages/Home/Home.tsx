@@ -11,8 +11,6 @@ const Home: React.FC = () => {
   const [activeDistrict, setActiveDistrict] = useState('all');
   const [favoriteIds, setFavoriteIds] = useState<number[]>([102, 104]);
 
-  const userId = Number(localStorage.getItem("1"));
-
   const maNguoiDung = localStorage.getItem("userId");
 
   const {
@@ -328,7 +326,6 @@ const Home: React.FC = () => {
         onClose={close}
         onSubmit={submit}
       />
-      <Footer />
     </>
   );
 };
