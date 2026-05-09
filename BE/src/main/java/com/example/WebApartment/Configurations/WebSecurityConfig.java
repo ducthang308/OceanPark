@@ -27,6 +27,7 @@ public class WebSecurityConfig {
 
     private final JwtFilter jwtTokenFilter;
     private final CustomOAuth2UserService oauth2UserService;
+    private final OAuth2LoginSuccessHandler oauth2LoginSuccessHandler;
 
     @Value("${api.prefix}")
     private String apiPrefix;
@@ -48,6 +49,9 @@ public class WebSecurityConfig {
                         .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated()
+                )
+                .oauth2Login(oauth2 -> oauth2
+                        .successHandler(oauth2LoginSuccessHandler)
                 )
                 .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class);
 

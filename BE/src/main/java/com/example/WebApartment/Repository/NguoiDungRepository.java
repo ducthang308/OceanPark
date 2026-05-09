@@ -9,11 +9,12 @@ import org.springframework.stereotype.Repository;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface NguoiDungRepository extends JpaRepository<NguoiDung, String> {
 
-    NguoiDung findByEmail(String email);
+    Optional<NguoiDung> findByEmail(String email);
 
     boolean existsByEmail(String email);
 

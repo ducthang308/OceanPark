@@ -28,3 +28,4 @@ application.yml
 *.yml
 *.yaml
 BE/src/main/resources/application.yml
+BE/.env

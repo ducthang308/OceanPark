@@ -35,7 +35,14 @@ public class JwtFilter extends OncePerRequestFilter {
                                     @NotNull HttpServletResponse response,
                                     @NotNull FilterChain filterChain)
             throws ServletException, IOException {
+        String path = request.getServletPath();
 
+        if (path.startsWith("/oauth2/")
+                || path.startsWith("/login/oauth2/")
+                || path.equals("/login")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
         try {
             if (isByPassToken(request)) {
                 filterChain.doFilter(request, response);
