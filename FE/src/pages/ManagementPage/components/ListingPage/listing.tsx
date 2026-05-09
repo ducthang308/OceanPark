@@ -1,595 +1,821 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from "react";
 import "./listing.css";
-import { Select, Input } from 'antd';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import TextArea from 'antd/es/input/TextArea';
-import { Checkbox, Col, Row } from 'antd';
-// import Image from "../../../assets/img/upload-image.png"
-// import Video from "../../../assets/img/upload-video.png"
-import Image from "../../../../assets/img/co4la.png"
-import Video from "../../../../assets/img/co4la.png"
-import { Button } from 'antd';
-import { ArrowRightOutlined } from '@ant-design/icons';
+import { Button, Checkbox, Col, Input, message, Row, Select } from "antd";
+import { ArrowRightOutlined } from "@ant-design/icons";
+import TextArea from "antd/es/input/TextArea";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+
+import Image from "../../../../assets/img/co4la.png";
+import VideoIcon from "../../../../assets/img/upload-video.png";
+
+import { useNavigate } from "react-router-dom";
+import {
+  createApartmentDetail,
+  createPost,
+  getCategories,
+  uploadPostImages,
+  type DanhMucDTO,
+} from "../../../../services/api/PostManagementService";
 
 interface UploadedImage {
-    id: string;
-    file: File;
-    url: string;
+  id: string;
+  file: File;
+  url: string;
+}
+
+interface UploadedVideo {
+  file: File;
+  url: string;
+}
+
+interface StoredUser {
+  maNguoiDung?: string;
+  hoVaTen?: string;
+  soDienThoai?: string;
+  email?: string;
+  vaiTro?: string;
 }
 
 const { Option } = Select;
 
+const getStoredUser = (): StoredUser | null => {
+  const rawUser = localStorage.getItem("user");
+  if (!rawUser) return null;
+
+  try {
+    return JSON.parse(rawUser) as StoredUser;
+  } catch {
+    return null;
+  }
+};
+
 const Listing = () => {
-    const [address, setAddress] = useState({
-        thanhPho: '',
-        phuong: '',
-        diaChi: '',
-        diaChiCuThe: ''
+  const storedUser = getStoredUser();
+  const navigate = useNavigate();
+
+  const [categories, setCategories] = useState<DanhMucDTO[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [formData, setFormData] = useState({
+    maDanhMuc: "",
+    tieuDe: "",
+    noiDung: "",
+    phuongThucThanhToan: "",
+    gia: "",
+    dienTich: "",
+    phongNgu: "",
+    huongCanHo: "",
+  });
+
+  const [address, setAddress] = useState({
+    thanhPho: "",
+    phuong: "",
+    diaChi: "",
+    diaChiCuThe: "",
+  });
+
+  const fullAddress =
+    address.diaChiCuThe ||
+    [address.diaChi, address.phuong, address.thanhPho].filter(Boolean).join(", ");
+
+  const [position, setPosition] = useState<[number, number]>([
+    16.047079, 108.20623,
+  ]);
+  const [isLocatingByAddress, setIsLocatingByAddress] = useState(false);
+
+  const markerRef = useRef<L.Marker | null>(null);
+  const mapRef = useRef<HTMLDivElement | null>(null);
+  const mapInstanceRef = useRef<L.Map | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [images, setImages] = useState<UploadedImage[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  
+  const videoInputRef = useRef<HTMLInputElement | null>(null);
+  const [video, setVideo] = useState<UploadedVideo | null>(null);
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false);
+
+  useEffect(() => {
+    getCategories()
+      .then(setCategories)
+      .catch(() => message.error("Không tải được danh mục"));
+  }, []);
+
+  useEffect(() => {
+    if (!mapRef.current || mapInstanceRef.current) return;
+
+    const danangLatLng: [number, number] = [16.047079, 108.20623];
+
+    const map = L.map(mapRef.current, {
+      zoomControl: false,
+    }).setView(danangLatLng, 13);
+
+    mapInstanceRef.current = map;
+
+    L.control.zoom({ position: "bottomright" }).addTo(map);
+
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+      attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
+      subdomains: "abcd",
+      maxZoom: 20,
+    }).addTo(map);
+
+    const customIcon = L.divIcon({
+      className: "custom-map-marker",
+      html: `<div class="custom-map-marker__pin"></div>`,
+      iconSize: [28, 28],
+      iconAnchor: [14, 28],
     });
 
-    const fullAddress = [
-        address.diaChiCuThe,
-        address.diaChi,
-        address.phuong,
-        address.thanhPho,
-    ]
-    .filter(Boolean)
-    .join(', ');
+    const marker = L.marker(danangLatLng, {
+      icon: customIcon,
+      draggable: true,
+    }).addTo(map);
 
-    const [position, setPosition] = useState<[number, number]>([16.047079, 108.20623]);
-    const [isLocatingByAddress, setIsLocatingByAddress] = useState(false);
-    const markerRef = useRef<L.Marker | null>(null);
+    markerRef.current = marker;
+    setPosition(danangLatLng);
 
-    const mapRef = useRef<HTMLDivElement | null>(null);
-    const mapInstanceRef = useRef<L.Map | null>(null);
+    marker.bindPopup("Vị trí bài đăng").openPopup();
 
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const [images, setImages] = useState<UploadedImage[]>([]);
-    const [isUploading, setIsUploading] = useState(false);
+    setTimeout(() => {
+        map.invalidateSize();
+        }, 0);
 
-    const videoInputRef = useRef<HTMLInputElement | null>(null);
-    const [video, setVideo] = useState<{ file: File; url: string } | null>(null);
-    const [isUploadingVideo, setIsUploadingVideo] = useState(false);
-
-    const handleSelectVideo = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        // Giới hạn dung lượng nếu cần
-        if (file.size > 50 * 1024 * 1024) { // 50MB
-            alert("Video quá lớn. Vui lòng chọn video dưới 50MB.");
-            return;
-        }
-
-        const url = URL.createObjectURL(file);
-        setVideo({ file, url });
-        setIsUploadingVideo(false);
-    };
-
-    const handleSelectImages = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = Array.from(e.target.files || []);
-        const fileURLs: UploadedImage[] = files.map((file) => ({
-            id: Math.random().toString(36).substr(2, 9),
-            file,
-            url: URL.createObjectURL(file),
-        }));
-
-        // ✅ Giới hạn 20 ảnh
-        if (images.length + fileURLs.length > 20) {
-            alert("Bạn chỉ được tải tối đa 20 ảnh!");
-            return;
-        }
-
-        setImages((prev) => [...prev, ...fileURLs]);
-        setIsUploading(false);
-    };
-
-    const handleRemove = (id: string) => {
-        setImages((prev) => prev.filter((img) => img.id !== id));
-    };
-
-
-    useEffect(() => {
-        if (!mapRef.current || mapInstanceRef.current) return;
-
-        const danangLatLng: [number, number] = [16.047079, 108.206230];
-
-        const map = L.map(mapRef.current, {
-            zoomControl: false,
-        }).setView(danangLatLng, 13);
-
-        mapInstanceRef.current = map;
-
-        L.control.zoom({ position: 'bottomright' }).addTo(map);
-
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-            subdomains: 'abcd',
-            maxZoom: 20,
-        }).addTo(map);
-
-        const customIcon = L.divIcon({
-            className: 'custom-map-marker',
-            html: `<div class="custom-map-marker__pin"></div>`,
-            iconSize: [28, 28],
-            iconAnchor: [14, 28],
+        const resizeObserver = new ResizeObserver(() => {
+        map.invalidateSize();
         });
 
-        const marker = L.marker(danangLatLng, {
-            icon: customIcon,
-            draggable: true,
-        }).addTo(map);
+        resizeObserver.observe(mapRef.current);
 
-        markerRef.current = marker;
-        setPosition(danangLatLng);
+    marker.on("dragend", () => {
+      const latLng = marker.getLatLng();
+      setPosition([latLng.lat, latLng.lng]);
+      marker
+        .bindPopup(
+          `Vĩ độ: ${latLng.lat.toFixed(6)}<br/>Kinh độ: ${latLng.lng.toFixed(6)}`
+        )
+        .openPopup();
+    });
 
-        marker.bindPopup('Vị trí bài đăng').openPopup();
+    map.on("click", (event) => {
+      const { lat, lng } = event.latlng;
+      marker.setLatLng([lat, lng]);
+      setPosition([lat, lng]);
+      marker
+        .bindPopup(`Vĩ độ: ${lat.toFixed(6)}<br/>Kinh độ: ${lng.toFixed(6)}`)
+        .openPopup();
+    });
 
-        marker.on('dragend', () => {
-            const latLng = marker.getLatLng();
-            setPosition([latLng.lat, latLng.lng]);
-            marker
-                .bindPopup(
-                    `Vĩ độ: ${latLng.lat.toFixed(6)}<br/>Kinh độ: ${latLng.lng.toFixed(6)}`
-                )
-                .openPopup();
-            console.log('Tọa độ được kéo tới:', latLng.lat, latLng.lng);
-        });
-
-        map.on('click', function (e) {
-            const { lat, lng } = e.latlng;
-            marker.setLatLng([lat, lng]);
-            setPosition([lat, lng]);
-            marker
-                .bindPopup(`Vĩ độ: ${lat.toFixed(6)}<br/>Kinh độ: ${lng.toFixed(6)}`)
-                .openPopup();
-            console.log('Tọa độ được chọn:', lat, lng);
-        });
-
-        return () => {
-            map.remove();
-            mapInstanceRef.current = null;
-            markerRef.current = null;
-        };
-    }, []);
-
-    const handleLocateByAddress = async () => {
-        if (!fullAddress) {
-            alert('Vui lòng nhập địa chỉ trước.');
-            return;
-        }
-
-        try {
-            setIsLocatingByAddress(true);
-
-            const query = encodeURIComponent(fullAddress);
-            const response = await fetch(
-                `https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=1}`
-            );
-
-            if (!response.ok) {
-                throw new Error('Không tìm thấy địa chỉ');
-            }
-
-            const data = await response.json();
-
-            if (!Array.isArray(data) || data.length === 0) {
-                alert('Không tìm thấy vị trí từ địa chỉ này.');
-                return;
-            }
-
-            const lat = Number(data[0].lat);
-            const lon = Number(data[0].lon);
-
-            if (Number.isNaN(lat) || Number.isNaN(lon)) {
-                alert('Dữ liệu tọa độ không hợp lệ.');
-                return;
-            }
-
-            const nextPosition: [number, number] = [lat, lon];
-            setPosition(nextPosition);
-
-            if (mapInstanceRef.current) {
-                mapInstanceRef.current.flyTo(nextPosition, 16, {
-                    duration: 1.5,
-                });
-            }
-
-            if (markerRef.current) {
-                markerRef.current
-                    .setLatLng(nextPosition)
-                    .bindPopup(`Đã định vị theo địa chỉ:<br/>${fullAddress}`)
-                    .openPopup();
-            }
-        } catch (error) {
-            console.error(error);
-            alert('Có lỗi khi định vị địa chỉ.');
-        } finally {
-            setIsLocatingByAddress(false);
-        }
+    return () => {
+        resizeObserver.disconnect();
+        map.off();
+        map.remove();
+        mapInstanceRef.current = null;
+        markerRef.current = null;
     };
 
-    useEffect(() => {
-        const { thanhPho, phuong, diaChi } = address;
+  }, []);
 
-        if (thanhPho && phuong && diaChi) {
-            const fullAddress = `${diaChi}, ${phuong}, ${thanhPho}`;
+  useEffect(() => {
+    const { thanhPho, phuong, diaChi } = address;
 
-            setAddress(prev => ({
-                ...prev,
-                diaChiCuThe: fullAddress
-            }));
+    if (thanhPho && phuong && diaChi) {
+      setAddress((prev) => ({
+        ...prev,
+        diaChiCuThe: `${diaChi}, ${phuong}, ${thanhPho}`,
+      }));
+    }
+  }, [address.thanhPho, address.phuong, address.diaChi]);
 
-            // nếu bạn muốn sync luôn với ChiTietCanHo
-            // setChiTietCanHo(prev => ({
-            //     ...prev,
-            //     diaChiCuThe: fullAddress
-            // }));
-        }
-    }, [address.thanhPho, address.phuong, address.diaChi]);
+  const handleSelectImages = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
 
-    return (
-        <div className="container-listing">
-            <div className="category-listing">
-                <div className="title-listing">Loại chuyên mục</div>
-                <div className="form-group-listing">
-                    <label className="label" htmlFor="category">
-                        Loại chuyên mục <span className="required">(*)</span>
-                    </label>
-                    <Select
-                        className="select-listing"
-                        placeholder="-- Chọn loại chuyên mục --"
-                        style={{ width: '50%' }}
-                        size="large"
-                        allowClear
-                    >
-                        <Option value="nha-dat">Nhà đất</Option>
-                        <Option value="can-ho">Căn hộ</Option>
-                        <Option value="van-phong">Văn phòng</Option>
-                    </Select>
-                </div>
-            </div>
+    if (images.length + files.length > 20) {
+      message.error("Bạn chỉ được tải tối đa 20 ảnh");
+      return;
+    }
 
-            <div className="area-listing">
-                <div className="title-listing">Khu vực</div>
+    const invalidFile = files.find((file) => file.size > 10 * 1024 * 1024);
+    if (invalidFile) {
+      message.error("Dung lượng mỗi ảnh tối đa 10MB");
+      return;
+    }
 
-                <div className="area-select">
-                    <div className="area-left">
-                        <div className="form-group-listing">
-                            <label className="label" htmlFor="category">
-                                Thành phố <span className="required">(*)</span>
-                            </label>
-                            <Select
-                                className="select-listing"
-                                placeholder="-- Chọn tỉnh/thành phố --"
-                                size="large"
-                                onChange={(value) =>
-                                    setAddress(prev => ({ ...prev, thanhPho: value }))
-                                }
-                            >
-                                <Option value="Đà Nẵng">Đà Nẵng</Option>
-                            </Select>
-                        </div>
+    const fileURLs: UploadedImage[] = files.map((file) => ({
+      id: Math.random().toString(36).slice(2, 11),
+      file,
+      url: URL.createObjectURL(file),
+    }));
 
-                        <div className="form-group-listing">
-                            <label className="label" htmlFor="category">
-                                Phường
-                            </label>
-                            <Select
-                                className="select-listing"
-                                placeholder="-- Chọn phường/xã --"
-                                size="large"
-                                onChange={(value) =>
-                                    setAddress(prev => ({ ...prev, phuong: value }))
-                                }
-                            >
-                                <Option value="An Hải">An Hải</Option>
-                                <Option value="Hải Châu">Hải Châu</Option>
-                                <Option value="Hòa Xuân">Hòa Xuân</Option>
-                            </Select>
-                        </div>
-                    </div>
+    setImages((prev) => [...prev, ...fileURLs]);
+    setIsUploading(false);
+  };
+  
+  const handleSelectVideo = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-                    <div className="area-right">
-                        <div className="form-group-listing">
-                            <label className="label" htmlFor="category">
-                                Địa chỉ
-                            </label>
-                            <Input
-                                className='input-height'
-                                placeholder="Nhập địa chỉ"
-                                onChange={(e) =>
-                                    setAddress(prev => ({ ...prev, diaChi: e.target.value }))
-                                }
-                            />
-                        </div>
+    if (file.size > 50 * 1024 * 1024) {
+        message.error("Dung lượng video tối đa 50MB");
+        return;
+    }
 
-                        <div className="form-group-listing">
-                            <label className="label" htmlFor="category">
-                                Địa chỉ cụ thể
-                            </label>
-                            <Input
-                                className='input-height'
-                                value={address.diaChiCuThe}
-                                readOnly
-                                style={{ backgroundColor: '#f5f5f5' }}
-                            />
-                        </div>
-                    </div>
-                </div>
-            </div>
+    if (video?.url) {
+        URL.revokeObjectURL(video.url);
+    }
 
-            <div className="map-listing">
-                <div className="map-listing__header">
-                    <div>
-                        <div className="title-listing">Bản đồ</div>
-                        <p className="map-listing__subtitle">
-                            Click trên bản đồ hoặc kéo ghim để chọn vị trí chính xác
-                        </p>
-                    </div>
+    setVideo({
+        file,
+        url: URL.createObjectURL(file),
+    });
+    setIsUploadingVideo(false);
+    };
 
-                    <button
-                        type="button"
-                        className="map-listing__locate-btn"
-                        onClick={handleLocateByAddress}
-                        disabled={isLocatingByAddress}
-                    >
-                        {isLocatingByAddress ? 'Đang định vị...' : 'Định vị theo địa chỉ'}
-                    </button>
-                </div>
+    const handleRemoveVideo = () => {
+    if (video?.url) {
+        URL.revokeObjectURL(video.url);
+    }
 
-                <div className="map-listing__address-preview">
-                    <span>Địa chỉ hiện tại:</span>
-                    <strong>{fullAddress || 'Chưa có địa chỉ'}</strong>
-                </div>
+    setVideo(null);
 
-                <div ref={mapRef} id="map" className="map-listing__map"></div>
+    if (videoInputRef.current) {
+        videoInputRef.current.value = "";
+    }
+    };
 
-                <div className="map-listing__footer">
-                    <div className="map-listing__coords">
-                        <span>Latitude:</span>
-                        <strong>{position[0].toFixed(6)}</strong>
-                    </div>
+  const handleRemove = (id: string) => {
+    setImages((prev) => prev.filter((img) => img.id !== id));
+  };
 
-                    <div className="map-listing__coords">
-                        <span>Longitude:</span>
-                        <strong>{position[1].toFixed(6)}</strong>
-                    </div>
-                </div>
-            </div>
+  const handleLocateByAddress = async () => {
+    if (!fullAddress) {
+      message.warning("Vui lòng nhập địa chỉ trước");
+      return;
+    }
 
-            <div className="detail-listing">
-                <div className="title-listing">Thông tin mô tả</div>
-                <div className="form-group-listing">
-                    <label className="label" htmlFor="category">
-                        Tiêu đề <span className="required">(*)</span>
-                    </label>
-                    <TextArea rows={2} />
-                </div>
-                <div className="form-group-listing gap">
-                    <label className="label" htmlFor="category">
-                        Nội dung mô tả <span className="required">(*)</span>
-                    </label>
-                    <TextArea rows={10} />
-                </div>
-                <div className="form-group-listing gap width">
-                    <label className="label" htmlFor="category">
-                        Phương thức thanh toán <span className="required">(*)</span>
-                    </label>
-                    <Select
-                        className="select-listing"
-                        placeholder="-- Chọn phương thức thanh toán --"
-                        size="large"
-                    >
-                        <Option value="Cash">Tiền mặt</Option>
-                        <Option value="Transfer">Chuyển khoản</Option>
-                    </Select>
-                </div>
-                <div className="form-group-listing gap">
-                    <label className="label" htmlFor="category">
-                        Giá cho thuê <span className="required">(*)</span>
-                    </label>
-                    <Input
-                        className='input-height input-width'
-                        placeholder="Nhập giá thuê"
-                    />
-                    <span className='listing-span'>Nhập đầy đủ số, ví dụ 1 triệu thì nhập là 1000000</span>
-                </div>
-                <div className="form-group-listing gap">
-                    <label className="label" htmlFor="category">
-                        Diện tích <span className="required">(*)</span>
-                    </label>
-                    <Input
-                        className='input-height input-width'
-                        placeholder="Nhập diện tích"
-                    />
-                    <span className='listing-span'>Đơn vị tính: m<sup>2</sup></span>
-                </div>
-                <div className="form-group-listing gap width">
-                    <label className="label" htmlFor="category">
-                        Phòng ngủ <span className="required">(*)</span>
-                    </label>
-                    <Select
-                        className="select-listing"
-                        placeholder="-- Chọn phòng ngủ --"
-                        size="large"
-                    >
-                        <Option value="1">1 phòng ngủ</Option>
-                        <Option value="2">2 phòng ngủ</Option>
-                        <Option value="3">3 phòng ngủ</Option>
-                    </Select>
-                </div>
-                <div className="form-group-listing gap width">
-                    <label className="label" htmlFor="category">
-                        Hướng căn hộ <span className="required">(*)</span>
-                    </label>
-                    <Select
-                        className="select-listing"
-                        placeholder="-- Chọn hướng căn hộ --"
-                        size="large"
-                    >
-                        <Option value="North">Đông</Option>
-                        <Option value="West">Tây</Option>
-                        <Option value="South">Nam</Option>
-                        <Option value="East">Bắc</Option>
-                        <Option value="Northeast">Đông Bắc</Option>
-                        <Option value="Southeast">Đông Nam</Option>
-                        <Option value="Northwest">Tây Bắc</Option>
-                        <Option value="Southwest">Tây Nam</Option>
-                    </Select>
-                </div>
-            </div>
+    try {
+      setIsLocatingByAddress(true);
 
-            <div className="features-listing">
-                <div className="title-listing">Điểm nổi bật</div>
-                <Checkbox.Group style={{ width: '100%' }}>
-                    <Row>
-                        <Col span={8}>
-                            <Checkbox value="A">Đầy đủ nội thất</Checkbox>
-                        </Col>
-                        <Col span={8}>
-                            <Checkbox value="B">Có máy lạnh</Checkbox>
-                        </Col>
-                        <Col span={8}>
-                            <Checkbox value="C">Có thang máy</Checkbox>
-                        </Col>
-                        <Col span={8}>
-                            <Checkbox value="D">Có bảo vệ 24/24</Checkbox>
-                        </Col>
-                        <Col span={8}>
-                            <Checkbox value="E">Có máy giặt</Checkbox>
-                        </Col>
-                        <Col span={8}>
-                            <Checkbox value="E">Không chung chủ</Checkbox>
-                        </Col>
-                        <Col span={8}>
-                            <Checkbox value="E">Có hầm để xe</Checkbox>
-                        </Col>
-                        <Col span={8}>
-                            <Checkbox value="E">Có kệ bếp</Checkbox>
-                        </Col>
-                        <Col span={8}>
-                            <Checkbox value="E">Có tủ lạnh</Checkbox>
-                        </Col>
-                        <Col span={8}>
-                            <Checkbox value="E">Giờ giấc tự do</Checkbox>
-                        </Col>
-                        <Col span={8}>
-                            <Checkbox value="E">Có ban công</Checkbox>
-                        </Col>
-                    </Row>
-                </Checkbox.Group>
-            </div>
+      const query = encodeURIComponent(fullAddress);
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=1`
+      );
 
-            <div className="img-listing">
-                <div className="title-listing">Hình ảnh</div>
+      if (!response.ok) {
+        throw new Error("Không tìm thấy địa chỉ");
+      }
 
-                {/* Khu vực upload ảnh */}
-                <div className="browse_photos" onClick={() => fileInputRef.current?.click()}>
-                    <div className="upload-image">
-                        <img className="icon-upload-image" src={Image} alt="upload icon" />
-                        <span className="upload-text">{isUploading ? 'Đang đăng hình...' : 'Tải ảnh từ thiết bị'}</span>
-                    </div>
-                    <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={handleSelectImages}
-                        multiple
-                        accept="image/*"
-                        style={{ display: 'none' }}
-                    />
-                </div>
+      const data = await response.json();
 
-                {/* Ghi chú upload */}
-                <div className="note-span">
-                    <span className="listing-span">• Tải lên tối đa 20 ảnh trong một bài đăng</span>
-                    <span className="listing-span">• Dung lượng ảnh tối đa 10MB</span>
-                    <span className="listing-span">• Hình ảnh phải liên quan đến phòng trọ, nhà cho thuê</span>
-                    <span className="listing-span">• Không chèn văn bản, số điện thoại lên ảnh</span>
-                </div>
+      if (!Array.isArray(data) || data.length === 0) {
+        message.warning("Không tìm thấy vị trí từ địa chỉ này");
+        return;
+      }
 
-                {/* Danh sách ảnh đã chọn */}
-                <div className="image-grid">
-                    {images.map((img) => (
-                        <div key={img.id} className="image-card">
-                            <img src={img.url} alt="preview" />
-                            <button onClick={() => handleRemove(img.id)} className="delete-btn">🗑️ Xóa</button>
-                        </div>
-                    ))}
-                </div>
-            </div>
+      const lat = Number(data[0].lat);
+      const lon = Number(data[0].lon);
 
-            <div className="video-listing">
-                <div className="title-listing">Video</div>
+      if (Number.isNaN(lat) || Number.isNaN(lon)) {
+        message.error("Dữ liệu tọa độ không hợp lệ");
+        return;
+      }
 
-                <div className="browse_photos" onClick={() => videoInputRef.current?.click()}>
-                    <div className="upload-image">
-                        <img className="icon-upload-image" src={Video} alt="upload icon" />
-                        <span className="upload-text">
-                            {isUploadingVideo ? "Đang đăng video..." : video ? "Thay đổi video" : "Tải video từ thiết bị"}
-                        </span>
-                    </div>
-                    <input
-                        type="file"
-                        ref={videoInputRef}
-                        onChange={handleSelectVideo}
-                        accept="video/*"
-                        style={{ display: "none" }}
-                    />
-                </div>
+      const nextPosition: [number, number] = [lat, lon];
+      setPosition(nextPosition);
 
-                {video && (
-                    <div className="video-preview">
-                        <video controls width="100%" src={video.url} />
-                        <button onClick={() => setVideo(null)} className="delete-btn">🗑️ Xóa video</button>
-                    </div>
-                )}
-            </div>
+      mapInstanceRef.current?.flyTo(nextPosition, 16, {
+        duration: 1.5,
+      });
 
-            <div className="contact-listing">
-                <div className="title-listing">Thông tin liên hệ</div>
-                <div className="contact-flex">
-                    <div className="form-group-listing">
-                        <label className="label" htmlFor="category">
-                            Họ Tên
-                        </label>
-                        <Input
-                            className='input-height'
-                            placeholder="Nguyễn Đức Thắng"
-                            value="Nguyễn Đức Thắng"
-                            readOnly
-                            onChange={() => { }}
-                        />
-                    </div>
-                    <div className="form-group-listing">
-                        <label className="label" htmlFor="category">
-                            Số điện thoại
-                        </label>
-                        <Input
-                            className="input-height"
-                            placeholder="0325043590"
-                            value="0325043590"
-                            readOnly
-                            onChange={() => { }}
-                        />
-                    </div>
-                </div>
-            </div>
+      setTimeout(() => {
+        mapInstanceRef.current?.invalidateSize();
+      }, 300);
 
-            <div className="button-listing">
-                <Button
-                    type="primary"
-                    className="continue-btn"
-                    icon={<ArrowRightOutlined />}
-                    iconPosition="end"
-                    block
-                >
-                    Tiếp tục
-                </Button>
-            </div>
+      markerRef.current
+        ?.setLatLng(nextPosition)
+        .bindPopup(`Đã định vị theo địa chỉ:<br/>${fullAddress}`)
+        .openPopup();
+    } catch (error) {
+      console.error(error);
+      message.error("Có lỗi khi định vị địa chỉ");
+    } finally {
+      setIsLocatingByAddress(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    const maNguoiDung = localStorage.getItem("userId") || storedUser?.maNguoiDung;
+    const phone = storedUser?.soDienThoai || "";
+
+    if (!maNguoiDung) {
+      message.error("Vui lòng đăng nhập trước khi đăng tin");
+      return;
+    }
+
+    if (!formData.maDanhMuc || !formData.tieuDe || !formData.noiDung) {
+      message.error("Vui lòng nhập đầy đủ loại chuyên mục, tiêu đề và nội dung");
+      return;
+    }
+
+    if (
+      !formData.phuongThucThanhToan ||
+      !formData.gia ||
+      !formData.dienTich ||
+      !formData.phongNgu ||
+      !formData.huongCanHo ||
+      !address.phuong ||
+      !fullAddress
+    ) {
+      message.error("Vui lòng nhập đầy đủ thông tin căn hộ");
+      return;
+    }
+
+    const gia = Number(formData.gia);
+    const dienTich = Number(formData.dienTich);
+    const phongNgu = Number(formData.phongNgu);
+
+    if (Number.isNaN(gia) || Number.isNaN(dienTich) || Number.isNaN(phongNgu)) {
+      message.error("Giá, diện tích và phòng ngủ phải là số hợp lệ");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+
+      const post = await createPost({
+        maNguoiDung,
+        maDanhMuc: formData.maDanhMuc,
+        tieuDe: formData.tieuDe,
+        noiDung: formData.noiDung,
+        lienHe: phone,
+        phuongThucThanhToan: formData.phuongThucThanhToan,
+      });
+
+      if (!post.maBaiDang) {
+        throw new Error("Backend không trả về mã bài đăng");
+      }
+
+      await createApartmentDetail({
+        maBaiDang: post.maBaiDang,
+        gia,
+        dienTich,
+        phongNgu,
+        diaChiCuThe: fullAddress,
+        huongCanHo: formData.huongCanHo,
+        phuong: address.phuong,
+        lat: position[0],
+        lng: position[1],
+      });
+
+      if (images.length > 0) {
+        await uploadPostImages(
+          post.maBaiDang,
+          images.map((imageItem) => imageItem.file)
+        );
+      }
+
+      message.success("Đăng tin thành công");
+      navigate("/list-post");
+
+      setFormData({
+        maDanhMuc: "",
+        tieuDe: "",
+        noiDung: "",
+        phuongThucThanhToan: "",
+        gia: "",
+        dienTich: "",
+        phongNgu: "",
+        huongCanHo: "",
+      });
+      setImages([]);
+    } catch (error) {
+      console.error(error);
+      message.error("Đăng tin thất bại");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="container-listing">
+      <div className="category-listing">
+        <div className="title-listing">Loại chuyên mục</div>
+        <div className="form-group-listing">
+          <label className="label" htmlFor="category">
+            Loại chuyên mục <span className="required">(*)</span>
+          </label>
+          <Select
+            className="select-listing"
+            placeholder="-- Chọn loại chuyên mục --"
+            style={{ width: "50%" }}
+            size="large"
+            allowClear
+            value={formData.maDanhMuc || undefined}
+            onChange={(value) =>
+              setFormData((prev) => ({ ...prev, maDanhMuc: value || "" }))
+            }
+          >
+            {categories.map((item) => (
+              <Option key={item.maDanhMuc} value={item.maDanhMuc}>
+                {item.tenDanhMuc}
+              </Option>
+            ))}
+          </Select>
         </div>
-    )
-}
+      </div>
 
-export default Listing
+      <div className="area-listing">
+        <div className="title-listing">Khu vực</div>
+
+        <div className="area-select">
+          <div className="area-left">
+            <div className="form-group-listing">
+              <label className="label">
+                Thành phố <span className="required">(*)</span>
+              </label>
+              <Select
+                className="select-listing"
+                placeholder="-- Chọn tỉnh/thành phố --"
+                size="large"
+                value={address.thanhPho || undefined}
+                onChange={(value) =>
+                  setAddress((prev) => ({ ...prev, thanhPho: value }))
+                }
+              >
+                <Option value="Đà Nẵng">Đà Nẵng</Option>
+              </Select>
+            </div>
+
+            <div className="form-group-listing">
+              <label className="label">Phường</label>
+              <Select
+                className="select-listing"
+                placeholder="-- Chọn phường/xã --"
+                size="large"
+                value={address.phuong || undefined}
+                onChange={(value) =>
+                  setAddress((prev) => ({ ...prev, phuong: value }))
+                }
+              >
+                <Option value="An Hải">An Hải</Option>
+                <Option value="Hải Châu">Hải Châu</Option>
+                <Option value="Hòa Xuân">Hòa Xuân</Option>
+              </Select>
+            </div>
+          </div>
+
+          <div className="area-right">
+            <div className="form-group-listing">
+              <label className="label">Địa chỉ</label>
+              <Input
+                className="input-height"
+                placeholder="Nhập địa chỉ"
+                value={address.diaChi}
+                onChange={(event) =>
+                  setAddress((prev) => ({ ...prev, diaChi: event.target.value }))
+                }
+              />
+            </div>
+
+            <div className="form-group-listing">
+              <label className="label">Địa chỉ cụ thể</label>
+              <Input
+                className="input-height"
+                value={address.diaChiCuThe}
+                readOnly
+                style={{ backgroundColor: "#f5f5f5" }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="map-listing">
+        <div className="map-listing__header">
+          <div>
+            <div className="title-listing">Bản đồ</div>
+            <p className="map-listing__subtitle">
+              Click trên bản đồ hoặc kéo ghim để chọn vị trí chính xác
+            </p>
+          </div>
+
+          <button
+            type="button"
+            className="map-listing__locate-btn"
+            onClick={handleLocateByAddress}
+            disabled={isLocatingByAddress}
+          >
+            {isLocatingByAddress ? "Đang định vị..." : "Định vị theo địa chỉ"}
+          </button>
+        </div>
+
+        <div className="map-listing__address-preview">
+          <span>Địa chỉ hiện tại:</span>
+          <strong>{fullAddress || "Chưa có địa chỉ"}</strong>
+        </div>
+
+        <div ref={mapRef} id="map" className="map-listing__map" />
+
+        <div className="map-listing__footer">
+          <div className="map-listing__coords">
+            <span>Latitude:</span>
+            <strong>{position[0].toFixed(6)}</strong>
+          </div>
+
+          <div className="map-listing__coords">
+            <span>Longitude:</span>
+            <strong>{position[1].toFixed(6)}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div className="detail-listing">
+        <div className="title-listing">Thông tin mô tả</div>
+
+        <div className="form-group-listing">
+          <label className="label">
+            Tiêu đề <span className="required">(*)</span>
+          </label>
+          <TextArea
+            rows={2}
+            value={formData.tieuDe}
+            onChange={(event) =>
+              setFormData((prev) => ({ ...prev, tieuDe: event.target.value }))
+            }
+          />
+        </div>
+
+        <div className="form-group-listing gap">
+          <label className="label">
+            Nội dung mô tả <span className="required">(*)</span>
+          </label>
+          <TextArea
+            rows={10}
+            value={formData.noiDung}
+            onChange={(event) =>
+              setFormData((prev) => ({ ...prev, noiDung: event.target.value }))
+            }
+          />
+        </div>
+
+        <div className="form-group-listing gap width">
+          <label className="label">
+            Phương thức thanh toán <span className="required">(*)</span>
+          </label>
+          <Select
+            className="select-listing"
+            placeholder="-- Chọn phương thức thanh toán --"
+            size="large"
+            value={formData.phuongThucThanhToan || undefined}
+            onChange={(value) =>
+              setFormData((prev) => ({ ...prev, phuongThucThanhToan: value }))
+            }
+          >
+            <Option value="Cash">Tiền mặt</Option>
+            <Option value="Transfer">Chuyển khoản</Option>
+          </Select>
+        </div>
+
+        <div className="form-group-listing gap">
+          <label className="label">
+            Giá cho thuê <span className="required">(*)</span>
+          </label>
+          <Input
+            className="input-height input-width"
+            placeholder="Nhập giá thuê"
+            value={formData.gia}
+            onChange={(event) =>
+              setFormData((prev) => ({ ...prev, gia: event.target.value }))
+            }
+          />
+          <span className="listing-span">
+            Nhập đầy đủ số, ví dụ 1 triệu thì nhập là 1000000
+          </span>
+        </div>
+
+        <div className="form-group-listing gap">
+          <label className="label">
+            Diện tích <span className="required">(*)</span>
+          </label>
+          <Input
+            className="input-height input-width"
+            placeholder="Nhập diện tích"
+            value={formData.dienTich}
+            onChange={(event) =>
+              setFormData((prev) => ({ ...prev, dienTich: event.target.value }))
+            }
+          />
+          <span className="listing-span">
+            Đơn vị tính: m<sup>2</sup>
+          </span>
+        </div>
+
+        <div className="form-group-listing gap width">
+          <label className="label">
+            Phòng ngủ <span className="required">(*)</span>
+          </label>
+          <Select
+            className="select-listing"
+            placeholder="-- Chọn phòng ngủ --"
+            size="large"
+            value={formData.phongNgu || undefined}
+            onChange={(value) =>
+              setFormData((prev) => ({ ...prev, phongNgu: value }))
+            }
+          >
+            <Option value="1">1 phòng ngủ</Option>
+            <Option value="2">2 phòng ngủ</Option>
+            <Option value="3">3 phòng ngủ</Option>
+          </Select>
+        </div>
+
+        <div className="form-group-listing gap width">
+          <label className="label">
+            Hướng căn hộ <span className="required">(*)</span>
+          </label>
+          <Select
+            className="select-listing"
+            placeholder="-- Chọn hướng căn hộ --"
+            size="large"
+            value={formData.huongCanHo || undefined}
+            onChange={(value) =>
+              setFormData((prev) => ({ ...prev, huongCanHo: value }))
+            }
+          >
+            <Option value="Đông">Đông</Option>
+            <Option value="Tây">Tây</Option>
+            <Option value="Nam">Nam</Option>
+            <Option value="Bắc">Bắc</Option>
+            <Option value="Đông Bắc">Đông Bắc</Option>
+            <Option value="Đông Nam">Đông Nam</Option>
+            <Option value="Tây Bắc">Tây Bắc</Option>
+            <Option value="Tây Nam">Tây Nam</Option>
+          </Select>
+        </div>
+      </div>
+
+      <div className="features-listing">
+        <div className="title-listing">Điểm nổi bật</div>
+        <Checkbox.Group style={{ width: "100%" }}>
+          <Row>
+            <Col span={8}>
+              <Checkbox value="noi-that">Đầy đủ nội thất</Checkbox>
+            </Col>
+            <Col span={8}>
+              <Checkbox value="may-lanh">Có máy lạnh</Checkbox>
+            </Col>
+            <Col span={8}>
+              <Checkbox value="thang-may">Có thang máy</Checkbox>
+            </Col>
+            <Col span={8}>
+              <Checkbox value="bao-ve">Có bảo vệ 24/24</Checkbox>
+            </Col>
+            <Col span={8}>
+              <Checkbox value="may-giat">Có máy giặt</Checkbox>
+            </Col>
+            <Col span={8}>
+              <Checkbox value="khong-chung-chu">Không chung chủ</Checkbox>
+            </Col>
+            <Col span={8}>
+              <Checkbox value="ham-xe">Có hầm để xe</Checkbox>
+            </Col>
+            <Col span={8}>
+              <Checkbox value="ke-bep">Có kệ bếp</Checkbox>
+            </Col>
+            <Col span={8}>
+              <Checkbox value="tu-lanh">Có tủ lạnh</Checkbox>
+            </Col>
+            <Col span={8}>
+              <Checkbox value="gio-tu-do">Giờ giấc tự do</Checkbox>
+            </Col>
+            <Col span={8}>
+              <Checkbox value="ban-cong">Có ban công</Checkbox>
+            </Col>
+          </Row>
+        </Checkbox.Group>
+      </div>
+
+      <div className="img-listing">
+        <div className="title-listing">Hình ảnh</div>
+
+        <div className="browse_photos" onClick={() => fileInputRef.current?.click()}>
+          <div className="upload-image">
+            <img className="icon-upload-image" src={Image} alt="upload icon" />
+            <span className="upload-text">
+              {isUploading ? "Đang đăng hình..." : "Tải ảnh từ thiết bị"}
+            </span>
+          </div>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleSelectImages}
+            multiple
+            accept="image/*"
+            style={{ display: "none" }}
+          />
+        </div>
+
+        <div className="note-span">
+          <span className="listing-span">• Tải lên tối đa 20 ảnh trong một bài đăng</span>
+          <span className="listing-span">• Dung lượng ảnh tối đa 10MB</span>
+          <span className="listing-span">
+            • Hình ảnh phải liên quan đến phòng trọ, nhà cho thuê
+          </span>
+          <span className="listing-span">
+            • Không chèn văn bản, số điện thoại lên ảnh
+          </span>
+        </div>
+
+        <div className="image-grid">
+          {images.map((img) => (
+            <div key={img.id} className="image-card">
+              <img src={img.url} alt="preview" />
+              <button
+                type="button"
+                onClick={() => handleRemove(img.id)}
+                className="delete-btn"
+              >
+                Xóa
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="video-listing">
+        <div className="title-listing">Video</div>
+
+        <div className="browse_photos" onClick={() => videoInputRef.current?.click()}>
+            <div className="upload-image">
+            <img className="icon-upload-image" src={VideoIcon} alt="upload video icon" />
+            <span className="upload-text">
+                {isUploadingVideo
+                ? "Đang đăng video..."
+                : video
+                    ? "Thay đổi video"
+                    : "Tải video từ thiết bị"}
+            </span>
+            </div>
+
+            <input
+            type="file"
+            ref={videoInputRef}
+            onChange={handleSelectVideo}
+            accept="video/*"
+            style={{ display: "none" }}
+            />
+        </div>
+
+        <div className="note-span">
+            <span className="listing-span">• Video hiện chỉ lưu preview trên UI</span>
+            <span className="listing-span">• Khi BE có API upload video, có thể dùng lại state video.file</span>
+            <span className="listing-span">• Dung lượng video tối đa 50MB</span>
+        </div>
+
+        {video && (
+            <div className="video-preview">
+            <video controls width="100%" src={video.url} />
+            <button type="button" onClick={handleRemoveVideo} className="delete-btn">
+                Xóa video
+            </button>
+            </div>
+        )}
+        </div>
+
+      <div className="contact-listing">
+        <div className="title-listing">Thông tin liên hệ</div>
+        <div className="contact-flex">
+          <div className="form-group-listing">
+            <label className="label">Họ Tên</label>
+            <Input
+              className="input-height"
+              value={storedUser?.hoVaTen || localStorage.getItem("hoVaTen") || ""}
+              readOnly
+            />
+          </div>
+          <div className="form-group-listing">
+            <label className="label">Số điện thoại</label>
+            <Input className="input-height" value={storedUser?.soDienThoai || ""} readOnly />
+          </div>
+        </div>
+      </div>
+
+      <div className="button-listing">
+        <Button
+          type="primary"
+          className="continue-btn"
+          icon={<ArrowRightOutlined />}
+          iconPosition="end"
+          block
+          loading={isSubmitting}
+          onClick={handleSubmit}
+        >
+          Đăng tin
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+export default Listing;

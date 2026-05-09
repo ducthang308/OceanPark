@@ -1,14 +1,27 @@
-import axios, { isAxiosError } from 'axios';
-import type { LoginResponse } from '../types/auth.types';
+import axios from 'axios';
+import type { LoginResponse, IRegisterRequest, ILoginRequest } from '../types/auth.types';
 import axiosClient from './AxiosClient';
-import type { IRegisterRequest } from '../types/auth.types';
 
-export const login = async (phone_number: string, password: string): Promise<LoginResponse> => {
+export const login = async (soDienThoai: string, matKhau: string): Promise<LoginResponse> => {
     try {
-        const response = await axiosClient.post<LoginResponse>('/api/v1/user/login', {
-            phone_number,
-            password
+        const response = await axiosClient.post<LoginResponse>('/api/v1/nguoi-dung/login', {
+            soDienThoai,
+            matKhau,
         });
+
+        const { token, ...userInfo } = response.data;
+
+        // Lưu token riêng để gắn vào Authorization header
+        localStorage.setItem('token', token);
+
+        // Lưu từng field riêng lẻ (giữ lại cũ)
+        localStorage.setItem('userId', userInfo.maNguoiDung);
+        localStorage.setItem('hoVaTen', userInfo.hoVaTen);
+        localStorage.setItem('vaiTro', userInfo.vaiTro);
+
+        // Lưu toàn bộ thông tin user (trừ token) dưới dạng JSON
+        localStorage.setItem('user', JSON.stringify(userInfo));
+
         return response.data;
     } catch (error: any) {
         if (axios.isAxiosError(error) && error.response) {
@@ -18,9 +31,9 @@ export const login = async (phone_number: string, password: string): Promise<Log
     }
 };
 
-export const register = async (userData: IRegisterRequest): Promise<IRegisterRequest> => {
+export const register = async (userData: IRegisterRequest): Promise<any> => {
     try {
-        const response = await axiosClient.post<IRegisterRequest>('/api/v1/user/register', userData);
+        const response = await axiosClient.post('/api/v1/nguoi-dung/register', userData);
         return response.data;
     } catch (error: any) {
         if (axios.isAxiosError(error) && error.response) {

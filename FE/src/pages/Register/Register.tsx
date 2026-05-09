@@ -4,30 +4,35 @@ import { register } from '../../services/api/UserService.ts';
 
 const RegisterForm = () => {
     const [formData, setFormData] = useState({
-        full_name: '',
-        phone_number: '',
-        password: '',
-        retype_pass: '',
-        roles_id: 0,
+        hoVaTen: '',
+        email: '',
+        soDienThoai: '',
+        matKhau: '',
+        retypeMatKhau: '',
+        maVaiTro: '',
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: name === 'roles_id' ? Number(value) : value
-        }));
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
 
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (formData.password !== formData.retype_pass) {
+        if (formData.matKhau !== formData.retypeMatKhau) {
             alert('Mật khẩu nhập lại không khớp!');
             return;
         }
         try {
-            const res = await register(formData);
+            const payload = {
+                hoVaTen: formData.hoVaTen,
+                email: formData.email,
+                soDienThoai: formData.soDienThoai,
+                matKhau: formData.matKhau,
+                maVaiTro: formData.maVaiTro,
+            };
+            const res = await register(payload);
             alert('Đăng ký thành công!');
             console.log('User mới:', res);
         } catch (err: any) {
@@ -40,33 +45,41 @@ const RegisterForm = () => {
         <form onSubmit={handleSubmit}>
             <input
                 type="text"
-                name="full_name"
+                name="hoVaTen"
                 placeholder="Họ và tên"
-                value={formData.full_name}
+                value={formData.hoVaTen}
+                onChange={handleChange}
+                required
+            />
+            <input
+                type="email"
+                name="email"
+                placeholder="Email"
+                value={formData.email}
                 onChange={handleChange}
                 required
             />
             <input
                 type="text"
-                name="phone_number"
+                name="soDienThoai"
                 placeholder="Số điện thoại"
-                value={formData.phone_number}
+                value={formData.soDienThoai}
                 onChange={handleChange}
                 required
             />
             <input
                 type="password"
-                name="password"
+                name="matKhau"
                 placeholder="Mật khẩu"
-                value={formData.password}
+                value={formData.matKhau}
                 onChange={handleChange}
                 required
             />
             <input
                 type="password"
-                name="retype_pass"
+                name="retypeMatKhau"
                 placeholder="Nhập lại mật khẩu"
-                value={formData.retype_pass}
+                value={formData.retypeMatKhau}
                 onChange={handleChange}
                 required
             />
@@ -77,9 +90,9 @@ const RegisterForm = () => {
                     <label className="radio-option">
                         <input
                             type="radio"
-                            name="roles_id"
+                            name="maVaiTro"
                             value="1"
-                            checked={formData.roles_id === 1}
+                            checked={formData.maVaiTro === '1'}
                             onChange={handleChange}
                         />
                         Môi giới
@@ -87,9 +100,9 @@ const RegisterForm = () => {
                     <label className="radio-option">
                         <input
                             type="radio"
-                            name="roles_id"
+                            name="maVaiTro"
                             value="2"
-                            checked={formData.roles_id === 2}
+                            checked={formData.maVaiTro === '2'}
                             onChange={handleChange}
                         />
                         Chính chủ

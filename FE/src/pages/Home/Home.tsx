@@ -11,9 +11,15 @@ const Home: React.FC = () => {
   const [activeDistrict, setActiveDistrict] = useState('all');
   const [favoriteIds, setFavoriteIds] = useState<number[]>([102, 104]);
 
-  const userId = Number(localStorage.getItem("1"));
+  const maNguoiDung = localStorage.getItem("userId");
 
-  const { open, close, loading } = useUserNeedDialog(1);
+  const {
+    open,
+    close,
+    loading,
+    initialValues,
+    submit,
+  } = useUserNeedDialog(maNguoiDung);
 
   const visibleFeaturedPosts = useMemo(() => {
     if (activeTab === 'video') {
@@ -316,13 +322,10 @@ const Home: React.FC = () => {
       <UserNeedDialog
         open={open}
         loading={loading}
+        initialValues={initialValues}
         onClose={close}
-        onSubmit={(values) => {
-          console.log("Submit:", values);
-          close();
-        }}
+        onSubmit={submit}
       />
-      <Footer />
     </>
   );
 };

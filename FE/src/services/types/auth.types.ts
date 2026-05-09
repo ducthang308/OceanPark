@@ -1,22 +1,21 @@
 export interface LoginResponse {
   token: string;
-  id: number;
-  phone_number: string;
-  roles_id: number;
-  address: string;
-  full_name: string;
-  status: boolean;
+  maNguoiDung: string;
+  hoVaTen: string;
+  soDienThoai: string;
+  email: string;
+  vaiTro: string;
 }
 
 export interface ILoginRequest {
-  phone_number: string;
-  password: string;
+  soDienThoai: string;
+  matKhau: string;
 }
 
 export interface IRegisterRequest {
-  full_name: string;
-  phone_number: string;
-  password: string;
-  retype_pass: string;
-  roles_id: number;
+  hoVaTen: string;
+  email: string;
+  soDienThoai: string;
+  matKhau: string;
+  maVaiTro: string;
 }

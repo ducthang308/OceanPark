@@ -84,4 +84,44 @@ public class JwtToken {
         String username = extractUsername(token);
         return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
     }
+
+
+    @Value("${jwt.resetExpiration:900}")
+    private int resetExpiration;
+
+    private static final String RESET_TOKEN_TYPE = "PASSWORD_RESET";
+
+    public String generateResetPasswordToken(NguoiDung nguoiDung) throws Exception {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("type", RESET_TOKEN_TYPE);
+        claims.put("maNguoiDung", nguoiDung.getMaNguoiDung());
+        claims.put("email", nguoiDung.getEmail());
+
+        try {
+            return Jwts.builder()
+                    .setClaims(claims)
+                    .setSubject(nguoiDung.getEmail())
+                    .setIssuedAt(new Date())
+                    .setExpiration(new Date(System.currentTimeMillis() + resetExpiration * 1000L))
+                    .signWith(getSignInKey(), SignatureAlgorithm.HS256)
+                    .compact();
+        } catch (Exception e) {
+            throw new InvalidParamException("Cannot create reset token: " + e.getMessage());
+        }
+    }
+
+    public Claims validateResetPasswordToken(String token) throws InvalidParamException {
+        try {
+            Claims claims = extractAllClaims(token);
+            if (!RESET_TOKEN_TYPE.equals(claims.get("type", String.class))) {
+                throw new InvalidParamException("Token không phải reset token");
+            }
+            return claims;
+        } catch (InvalidParamException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new InvalidParamException("Reset token không hợp lệ hoặc đã hết hạn");
+        }
+    }
+
 }

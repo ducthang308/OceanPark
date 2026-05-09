@@ -291,6 +291,16 @@
   font-size: 15px;
 }
 
+.edit-post-form {
+  margin-top: 12px;
+}
+
+.edit-post-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 16px;
+}
+
 @media (max-width: 992px) {
   :root {
     --header-height: 80px;
@@ -339,6 +349,10 @@
   .post-actions {
     width: 100%;
     min-width: unset;
+  }
+
+  .edit-post-grid {
+    grid-template-columns: 1fr;
   }
 
   .post-title {

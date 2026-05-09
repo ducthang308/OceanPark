@@ -17,10 +17,20 @@ type UserMenuItem = {
 };
 
 type CurrentUser = {
-  id: number;
-  fullName: string;
-  avatar?: string;
+  maNguoiDung: string;
+  hoVaTen: string;
+  vaiTro: string;
 } | null;
+
+// Đọc thông tin user từ localStorage
+const getUserFromStorage = (): CurrentUser => {
+  const token = localStorage.getItem('token');
+  const maNguoiDung = localStorage.getItem('userId');
+  const hoVaTen = localStorage.getItem('hoVaTen');
+  const vaiTro = localStorage.getItem('vaiTro');
+  if (!token || !maNguoiDung || !hoVaTen) return null;
+  return { maNguoiDung, hoVaTen, vaiTro: vaiTro ?? '' };
+};
 
 const Header: React.FC = () => {
   const navigate = useNavigate();
@@ -32,57 +42,52 @@ const Header: React.FC = () => {
 
   const userMenuRef = useRef<HTMLDivElement | null>(null);
 
-  // TODO:
-  // Sau này thay bằng auth thật từ localStorage / context / redux / zustand
-  const [currentUser, setCurrentUser] = useState<CurrentUser>({
-    id: 1,
-    fullName: 'Nguyễn Văn A',
-  });
-  // Muốn test trạng thái chưa đăng nhập thì đổi thành null
+  // Lấy thông tin user thật từ localStorage
+  const [currentUser, setCurrentUser] = useState<CurrentUser>(getUserFromStorage);
 
   const navItems: NavItem[] = useMemo(
     () => [
-            
-    {
+
+      {
         key: '1',
         label: 'Trang Chủ',
         to: '/',
-    },
-    {
+      },
+      {
         key: '2',
         label: 'Phòng trọ',
         to: '/danh-muc/phong-tro',
-    },
-    {
+      },
+      {
         key: '3',
         label: 'Căn hộ cao cấp',
         to: '/postsadmin',
-    },
-    {
+      },
+      {
         key: '4',
         label: 'Nhà nguyên căn',
         to: '/danh-muc/nha-nguyen-can',
-    },
-    // {
-    //     key: '5',
-    //     label: 'Căn hộ ở ghép',
-    //     to: '/danh-muc/can-ho-o-ghep',
-    // },
-    {
+      },
+      // {
+      //     key: '5',
+      //     label: 'Căn hộ ở ghép',
+      //     to: '/danh-muc/can-ho-o-ghep',
+      // },
+      {
         key: '6',
         label: 'Căn hộ mini',
         to: '/danh-muc/can-ho-mini',
-    },
-    {
+      },
+      {
         key: '7',
         label: 'Mặt bằng cho thuê',
         to: '/danh-muc/mat-bang-cho-thue',
-    },
-    {
+      },
+      {
         key: '8',
         label: 'Blog về chúng tôi',
         to: '/blog',
-    },
+      },
     ],
     [],
   );
@@ -107,6 +112,18 @@ const Header: React.FC = () => {
   );
 
   const userMenuItems = currentUser ? authenticatedMenuItems : guestMenuItems;
+
+  // Lắng nghe thay đổi localStorage khi login/logout ở tab khác
+  useEffect(() => {
+    const syncUser = () => setCurrentUser(getUserFromStorage());
+    window.addEventListener('storage', syncUser);
+    return () => window.removeEventListener('storage', syncUser);
+  }, []);
+
+  // Cập nhật lại user mỗi khi chuyển trang (sau khi login navigate về /)
+  useEffect(() => {
+    setCurrentUser(getUserFromStorage());
+  }, [location.pathname]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -149,13 +166,13 @@ const Header: React.FC = () => {
   }, []);
 
   const handleLogout = () => {
-    // TODO:
-    // Thay bằng logout thật:
-    // localStorage.removeItem('token');
-    // localStorage.removeItem('user');
-    // navigate('/login');
+    localStorage.removeItem('token');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('hoVaTen');
+    localStorage.removeItem('vaiTro');
     setCurrentUser(null);
     setIsUserMenuOpen(false);
+    navigate('/login');
   };
 
   const headerClassName = [
@@ -224,9 +241,8 @@ const Header: React.FC = () => {
           <div className="rental-header__user-menu" ref={userMenuRef}>
             <button
               type="button"
-              className={`rental-header__icon-button rental-header__icon-button--user ${
-                isUserMenuOpen ? 'is-open' : ''
-              }`}
+              className={`rental-header__icon-button rental-header__icon-button--user ${isUserMenuOpen ? 'is-open' : ''
+                }`}
               aria-label="Tài khoản"
               aria-expanded={isUserMenuOpen}
               onClick={() => setIsUserMenuOpen((prev) => !prev)}
@@ -247,11 +263,11 @@ const Header: React.FC = () => {
               {currentUser && (
                 <div className="rental-user-dropdown__profile">
                   <div className="rental-user-dropdown__avatar">
-                    {currentUser.fullName.charAt(0).toUpperCase()}
+                    {currentUser.hoVaTen.charAt(0).toUpperCase()}
                   </div>
                   <div className="rental-user-dropdown__meta">
-                    <p className="rental-user-dropdown__name">{currentUser.fullName}</p>
-                    <span className="rental-user-dropdown__subtext">Tài khoản của bạn</span>
+                    <p className="rental-user-dropdown__name">{currentUser.hoVaTen}</p>
+                    <span className="rental-user-dropdown__subtext">{currentUser.vaiTro || 'Tài khoản của bạn'}</span>
                   </div>
                 </div>
               )}
