@@ -18,6 +18,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
+import org.springframework.http.HttpMethod;
 
 @Configuration
 @RequiredArgsConstructor
@@ -26,6 +27,7 @@ public class WebSecurityConfig {
 
     private final JwtFilter jwtTokenFilter;
     private final CustomOAuth2UserService oauth2UserService;
+    private final OAuth2LoginSuccessHandler oauth2LoginSuccessHandler;
 
     @Value("${api.prefix}")
     private String apiPrefix;
@@ -42,12 +44,16 @@ public class WebSecurityConfig {
                         .requestMatchers(
                                 String.format("%s/nguoi-dung/register", apiPrefix),
                                 String.format("%s/nguoi-dung/login", apiPrefix),
+                                String.format("%s/sepay/webhook", apiPrefix)
                                 String.format("%s/nguoi-dung/forgot-password", apiPrefix),
                                 String.format("%s/nguoi-dung/reset-password", apiPrefix)
                         ).permitAll()
                         .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated()
+                )
+                .oauth2Login(oauth2 -> oauth2
+                        .successHandler(oauth2LoginSuccessHandler)
                 )
                 .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class);
 

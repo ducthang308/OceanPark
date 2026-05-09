@@ -55,7 +55,7 @@ public class BaiDangService {
                 .ngayDang(LocalDateTime.now())
                 .trangThai("ACTIVE")
                 .lienHe(dto.getLienHe())
-                .phuongThucThanhToan(dto.getPhuongThucThanhToan())
+                .hinhThucThanhToan(dto.getHinhThucThanhToan())
                 .build();
 
         return toDto(repo.save(entity));
@@ -71,8 +71,8 @@ public class BaiDangService {
         if (dto.getNoiDung() != null) existing.setNoiDung(dto.getNoiDung());
         if (dto.getTrangThai() != null) existing.setTrangThai(dto.getTrangThai());
         if (dto.getLienHe() != null) existing.setLienHe(dto.getLienHe());
-        if (dto.getPhuongThucThanhToan() != null)
-            existing.setPhuongThucThanhToan(dto.getPhuongThucThanhToan());
+        if (dto.getHinhThucThanhToan() != null)
+            existing.setHinhThucThanhToan(dto.getHinhThucThanhToan());
 
         return toDto(repo.save(existing));
     }
@@ -93,7 +93,7 @@ public class BaiDangService {
                 .ngayDang(e.getNgayDang())
                 .trangThai(e.getTrangThai())
                 .lienHe(e.getLienHe())
-                .phuongThucThanhToan(e.getPhuongThucThanhToan())
+                .hinhThucThanhToan(e.getHinhThucThanhToan())
                 .build();
     }
 

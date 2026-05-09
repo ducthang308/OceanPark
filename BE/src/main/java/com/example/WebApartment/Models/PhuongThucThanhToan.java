@@ -18,4 +18,7 @@ public class PhuongThucThanhToan {
 
     private String tenPhuongThucThanhToan;
     private String moTa;
+
+    @Column(name = "provider")
+    private String provider;
 }

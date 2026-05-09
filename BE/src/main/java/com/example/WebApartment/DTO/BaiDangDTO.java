@@ -20,5 +20,5 @@ public class BaiDangDTO {
     private LocalDateTime ngayDang;
     private String trangThai;
     private String lienHe;
-    private String phuongThucThanhToan;
+    private String hinhThucThanhToan;
 }

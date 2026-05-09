@@ -35,7 +35,14 @@ public class JwtFilter extends OncePerRequestFilter {
                                     @NotNull HttpServletResponse response,
                                     @NotNull FilterChain filterChain)
             throws ServletException, IOException {
+        String path = request.getServletPath();
 
+        if (path.startsWith("/oauth2/")
+                || path.startsWith("/login/oauth2/")
+                || path.equals("/login")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
         try {
             if (isByPassToken(request)) {
                 filterChain.doFilter(request, response);
@@ -97,6 +104,8 @@ public class JwtFilter extends OncePerRequestFilter {
         final List<Pair<String, String>> byPassTokens = Arrays.asList(
                 Pair.of(String.format("%s/nguoi-dung/login", apiPrefix), "POST"),
                 Pair.of(String.format("%s/nguoi-dung/register", apiPrefix), "POST"),
+
+                Pair.of(String.format("%s/sepay/webhook", apiPrefix), "POST")
                 Pair.of(String.format("%s/nguoi-dung/forgot-password", apiPrefix), "POST"),
                 Pair.of(String.format("%s/nguoi-dung/reset-password", apiPrefix), "POST")
         );
