@@ -44,7 +44,7 @@ public class WebSecurityConfig {
                         .requestMatchers(
                                 String.format("%s/nguoi-dung/register", apiPrefix),
                                 String.format("%s/nguoi-dung/login", apiPrefix),
-                                String.format("%s/sepay/webhook", apiPrefix)
+                                String.format("%s/sepay/webhook", apiPrefix),
                                 String.format("%s/nguoi-dung/forgot-password", apiPrefix),
                                 String.format("%s/nguoi-dung/reset-password", apiPrefix)
                         ).permitAll()

@@ -13,9 +13,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.UUID;
+import java.util.Optional;
 import java.util.stream.Collectors;
-import org.springframework.data.domain.PageRequest;
 
 @Service
 @RequiredArgsConstructor
@@ -265,21 +264,21 @@ public class NguoiDungService {
             throw new RuntimeException("Email không được để trống");
         }
 
-        NguoiDung nguoiDung = nguoiDungRepository.findByEmail(email.trim());
+        Optional<NguoiDung> nguoiDung = nguoiDungRepository.findByEmail(email.trim());
 
         // Không báo email tồn tại hay không để tránh lộ tài khoản
-        if (nguoiDung == null || Boolean.FALSE.equals(nguoiDung.getTrangThai())) {
+        if (nguoiDung.isEmpty() || Boolean.FALSE.equals(nguoiDung.get().getTrangThai())) {
             return;
         }
 
         try {
-            String token = jwtToken.generateResetPasswordToken(nguoiDung);
+            String token = jwtToken.generateResetPasswordToken(nguoiDung.orElse(null));
             String resetLink = frontendResetPasswordUrl + "?token=" +
                     java.net.URLEncoder.encode(token, java.nio.charset.StandardCharsets.UTF_8);
 
             emailService.sendPasswordResetEmail(
-                    nguoiDung.getEmail(),
-                    nguoiDung.getHoVaTen(),
+                    nguoiDung.get().getEmail(),
+                    nguoiDung.get().getHoVaTen(),
                     resetLink
             );
         } catch (Exception e) {

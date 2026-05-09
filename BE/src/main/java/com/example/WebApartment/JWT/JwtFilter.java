@@ -105,7 +105,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 Pair.of(String.format("%s/nguoi-dung/login", apiPrefix), "POST"),
                 Pair.of(String.format("%s/nguoi-dung/register", apiPrefix), "POST"),
 
-                Pair.of(String.format("%s/sepay/webhook", apiPrefix), "POST")
+                Pair.of(String.format("%s/sepay/webhook", apiPrefix), "POST"),
                 Pair.of(String.format("%s/nguoi-dung/forgot-password", apiPrefix), "POST"),
                 Pair.of(String.format("%s/nguoi-dung/reset-password", apiPrefix), "POST")
         );
