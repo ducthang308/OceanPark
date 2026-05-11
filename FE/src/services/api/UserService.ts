@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { LoginResponse, IRegisterRequest } from '../types/auth.types';
+import type { AuthUserResponse, LoginResponse, IRegisterRequest } from '../types/auth.types';
 import { saveAuthSession } from '../../utils/storage';
 import axiosClient from './AxiosClient';
 
@@ -34,4 +34,9 @@ export const register = async (userData: IRegisterRequest): Promise<any> => {
         }
         throw new Error('Đăng ký thất bại');
     }
+};
+
+export const getCurrentUser = async (): Promise<AuthUserResponse> => {
+    const response = await axiosClient.get<AuthUserResponse>('/api/v1/nguoi-dung/me');
+    return response.data;
 };

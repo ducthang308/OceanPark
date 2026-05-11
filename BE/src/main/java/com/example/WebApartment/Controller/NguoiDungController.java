@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -61,6 +62,23 @@ public class NguoiDungController {
     @GetMapping
     public ResponseEntity<List<NguoiDungDTO>> getAll() {
         return ResponseEntity.ok(nguoiDungService.getAll());
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<AuthUserDTO> me(Authentication authentication) {
+        NguoiDung nguoiDung = (NguoiDung) authentication.getPrincipal();
+
+        return ResponseEntity.ok(
+                AuthUserDTO.builder()
+                        .maNguoiDung(nguoiDung.getMaNguoiDung())
+                        .hoVaTen(nguoiDung.getHoVaTen())
+                        .soDienThoai(nguoiDung.getSoDienThoai())
+                        .email(nguoiDung.getEmail())
+                        .maVaiTro(nguoiDung.getVaiTro() != null ? nguoiDung.getVaiTro().getMaVaiTro() : null)
+                        .vaiTro(nguoiDung.getVaiTro() != null ? nguoiDung.getVaiTro().getTenVaiTro() : null)
+                        .anhDaiDien(nguoiDung.getAnhDaiDien())
+                        .build()
+        );
     }
 
     @GetMapping("/{maNguoiDung}")

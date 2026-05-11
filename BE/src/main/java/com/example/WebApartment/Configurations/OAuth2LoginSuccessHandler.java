@@ -50,7 +50,13 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         }
 
         NguoiDung nguoiDung = nguoiDungRepository.findByEmail(email)
+                .map(existingUser -> syncGoogleUser(existingUser, name, picture, googleId))
                 .orElseGet(() -> createGoogleUser(email, name, picture, googleId));
+
+        if (Boolean.FALSE.equals(nguoiDung.getTrangThai())) {
+            response.sendRedirect(redirectUrl + "?error=account_locked");
+            return;
+        }
 
         String token;
         try {
@@ -81,6 +87,30 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
                 .build();
 
         return nguoiDungRepository.save(newUser);
+    }
+
+    private NguoiDung syncGoogleUser(NguoiDung nguoiDung, String name, String picture, String googleId) {
+        boolean changed = false;
+
+        if ((nguoiDung.getGoogleAccount() == null || nguoiDung.getGoogleAccount().isBlank())
+                && googleId != null && !googleId.isBlank()) {
+            nguoiDung.setGoogleAccount(googleId);
+            changed = true;
+        }
+
+        if ((nguoiDung.getAnhDaiDien() == null || nguoiDung.getAnhDaiDien().isBlank())
+                && picture != null && !picture.isBlank()) {
+            nguoiDung.setAnhDaiDien(picture);
+            changed = true;
+        }
+
+        if ((nguoiDung.getHoVaTen() == null || nguoiDung.getHoVaTen().isBlank())
+                && name != null && !name.isBlank()) {
+            nguoiDung.setHoVaTen(name);
+            changed = true;
+        }
+
+        return changed ? nguoiDungRepository.save(nguoiDung) : nguoiDung;
     }
 
     private String generateMaNguoiDung() {

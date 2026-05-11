@@ -29,6 +29,8 @@ import PaymentDetail from './pages/PayDetailRent/PaymentDetail.tsx';
 import ForgotPasswordPage from './pages/ForgotPassword/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ForgotPassword/ResetPasswordPage';
 
+import OAuth2RedirectPage from './pages/Auth/OAuth2RedirectPage.tsx';
+
 import { AUTHENTICATED_ROLE_IDS, LANDLORD_ROLE_IDS, ROLE_ID } from './constants/roles.ts';
 import './assets/styles/Global.css';
 
@@ -53,6 +55,8 @@ function App() {
         <Route element={<UserLayout />}>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/oauth2/redirect" element={<OAuth2RedirectPage />} />
+          <Route path="/oauth2/success" element={<OAuth2RedirectPage />} />
           <Route path="/blog" element={<BlogAboutUs />} />
           <Route path="/posts/:id" element={<PostDetail />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
