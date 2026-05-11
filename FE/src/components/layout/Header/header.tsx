@@ -2,6 +2,9 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import './header.css';
 import { useNavigate } from 'react-router-dom';
+import { LANDLORD_ROLE_IDS } from '../../../constants/roles';
+import type { RoleId } from '../../../constants/roles';
+import { clearAuthSession, getAuthSession } from '../../../utils/storage';
 
 type NavItem = {
   key: string;
@@ -14,22 +17,28 @@ type UserMenuItem = {
   label: string;
   to?: string;
   action?: 'logout';
+  allowedRoles?: readonly RoleId[];
 };
 
 type CurrentUser = {
   maNguoiDung: string;
   hoVaTen: string;
   vaiTro: string;
+  roleId: RoleId | null;
 } | null;
 
 // Đọc thông tin user từ localStorage
 const getUserFromStorage = (): CurrentUser => {
-  const token = localStorage.getItem('token');
-  const maNguoiDung = localStorage.getItem('userId');
-  const hoVaTen = localStorage.getItem('hoVaTen');
-  const vaiTro = localStorage.getItem('vaiTro');
-  if (!token || !maNguoiDung || !hoVaTen) return null;
-  return { maNguoiDung, hoVaTen, vaiTro: vaiTro ?? '' };
+  const session = getAuthSession();
+
+  if (!session) return null;
+
+  return {
+    maNguoiDung: session.user.maNguoiDung,
+    hoVaTen: session.user.hoVaTen,
+    vaiTro: session.user.vaiTro,
+    roleId: session.roleId,
+  };
 };
 
 const Header: React.FC = () => {
@@ -103,15 +112,35 @@ const Header: React.FC = () => {
   const authenticatedMenuItems: UserMenuItem[] = useMemo(
     () => [
       { key: 'profile', label: 'Thông tin tài khoản', to: '/AccountManagement' },
-      { key: 'my-posts', label: 'Bài đăng của tôi', to: '/list-post' },
-      { key: 'transactions', label: 'Quản lý giao dịch', to: '/history?tab=paymentHistory' },
-      { key: 'topup', label: 'Nạp tiền', to: '/topup' },
+      {
+        key: 'my-posts',
+        label: 'Bài đăng của tôi',
+        to: '/list-post',
+        allowedRoles: LANDLORD_ROLE_IDS,
+      },
+      {
+        key: 'transactions',
+        label: 'Quản lý giao dịch',
+        to: '/history?tab=paymentHistory',
+        allowedRoles: LANDLORD_ROLE_IDS,
+      },
+      {
+        key: 'topup',
+        label: 'Nạp tiền',
+        to: '/recharge/payoo',
+        allowedRoles: LANDLORD_ROLE_IDS,
+      },
       { key: 'logout', label: 'Đăng xuất', action: 'logout' },
     ],
     [],
   );
 
-  const userMenuItems = currentUser ? authenticatedMenuItems : guestMenuItems;
+  const userMenuItems = currentUser
+    ? authenticatedMenuItems.filter((item) => {
+      if (!item.allowedRoles) return true;
+      return Boolean(currentUser.roleId && item.allowedRoles.includes(currentUser.roleId));
+    })
+    : guestMenuItems;
 
   // Lắng nghe thay đổi localStorage khi login/logout ở tab khác
   useEffect(() => {
@@ -166,10 +195,7 @@ const Header: React.FC = () => {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('userId');
-    localStorage.removeItem('hoVaTen');
-    localStorage.removeItem('vaiTro');
+    clearAuthSession();
     setCurrentUser(null);
     setIsUserMenuOpen(false);
     navigate('/login');

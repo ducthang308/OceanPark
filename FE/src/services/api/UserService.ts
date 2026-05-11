@@ -1,5 +1,6 @@
 import axios from 'axios';
-import type { LoginResponse, IRegisterRequest, ILoginRequest } from '../types/auth.types';
+import type { LoginResponse, IRegisterRequest } from '../types/auth.types';
+import { saveAuthSession } from '../../utils/storage';
 import axiosClient from './AxiosClient';
 
 export const login = async (soDienThoai: string, matKhau: string): Promise<LoginResponse> => {
@@ -9,20 +10,12 @@ export const login = async (soDienThoai: string, matKhau: string): Promise<Login
             matKhau,
         });
 
-        const { token, ...userInfo } = response.data;
+        const session = saveAuthSession(response.data);
 
-        // Lưu token riêng để gắn vào Authorization header
-        localStorage.setItem('token', token);
-
-        // Lưu từng field riêng lẻ (giữ lại cũ)
-        localStorage.setItem('userId', userInfo.maNguoiDung);
-        localStorage.setItem('hoVaTen', userInfo.hoVaTen);
-        localStorage.setItem('vaiTro', userInfo.vaiTro);
-
-        // Lưu toàn bộ thông tin user (trừ token) dưới dạng JSON
-        localStorage.setItem('user', JSON.stringify(userInfo));
-
-        return response.data;
+        return {
+            ...response.data,
+            maVaiTro: session.roleId ?? response.data.maVaiTro,
+        };
     } catch (error: any) {
         if (axios.isAxiosError(error) && error.response) {
             throw new Error(error.response.data.message || 'Đăng nhập thất bại');

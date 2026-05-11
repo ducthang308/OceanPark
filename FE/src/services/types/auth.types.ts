@@ -4,6 +4,7 @@ export interface LoginResponse {
   hoVaTen: string;
   soDienThoai: string;
   email: string;
+  maVaiTro?: string;
   vaiTro: string;
 }
 

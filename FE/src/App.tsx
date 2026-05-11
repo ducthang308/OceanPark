@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom';
 
+import ProtectedRoute from './components/auth/ProtectedRoute.tsx';
 import Header from './components/layout/Header/header.tsx';
 import Footer from './components/layout/Footer/footer.tsx';
 // import Navbar from "./components/layout/Navbar/navbar.tsx";
@@ -28,6 +29,7 @@ import PaymentDetail from './pages/PayDetailRent/PaymentDetail.tsx';
 import ForgotPasswordPage from './pages/ForgotPassword/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ForgotPassword/ResetPasswordPage';
 
+import { AUTHENTICATED_ROLE_IDS, LANDLORD_ROLE_IDS, ROLE_ID } from './constants/roles.ts';
 import './assets/styles/Global.css';
 
 function UserLayout() {
@@ -51,29 +53,36 @@ function App() {
         <Route element={<UserLayout />}>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/history" element={<History />} />
-          <Route path="/recharge/:method" element={<TopUpPage />} />
-          <Route path="/AccountManagement" element={<AccountManagement />} />
           <Route path="/blog" element={<BlogAboutUs />} />
           <Route path="/posts/:id" element={<PostDetail />} />
-          <Route path="/listing" element={<Listing />} />
-          <Route path="/list-post" element={<ListPost />} />
-          <Route path="/payment/:id" element={<PaymentPage />} />
-          <Route path="/favorite-posts" element={<FavoritePostsPage />} />
-          <Route path="/payment-history" element={<PaymentHistory />} />
-          <Route path="/payment-history/:maGiaoDich" element={<PaymentDetail />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
 
+          <Route element={<ProtectedRoute allowedRoles={AUTHENTICATED_ROLE_IDS} />}>
+            <Route path="/AccountManagement" element={<AccountManagement />} />
+            <Route path="/payment/:id" element={<PaymentPage />} />
+            <Route path="/favorite-posts" element={<FavoritePostsPage />} />
+            <Route path="/payment-history" element={<PaymentHistory />} />
+            <Route path="/payment-history/:maGiaoDich" element={<PaymentDetail />} />
+          </Route>
+
+          <Route element={<ProtectedRoute allowedRoles={LANDLORD_ROLE_IDS} />}>
+            <Route path="/history" element={<History />} />
+            <Route path="/recharge/:method" element={<TopUpPage />} />
+            <Route path="/listing" element={<Listing />} />
+            <Route path="/list-post" element={<ListPost />} />
+          </Route>
         </Route>
 
         {/* Admin routes */}
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<AdminDashboard />} />
-          <Route path="posts" element={<AdminPostApproval />} />
-          <Route path="post-approval/:id" element={<PostApprovalDetail />} />
-          <Route path="payment-approval/:id" element={<PaymentDetailPanel />} />
-          <Route path="payments" element={<AdminPaymentApproval />} />
+        <Route element={<ProtectedRoute allowedRoles={[ROLE_ID.ADMIN]} />}>
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="posts" element={<AdminPostApproval />} />
+            <Route path="post-approval/:id" element={<PostApprovalDetail />} />
+            <Route path="payment-approval/:id" element={<PaymentDetailPanel />} />
+            <Route path="payments" element={<AdminPaymentApproval />} />
+          </Route>
         </Route>
       </Routes>
     </Router>

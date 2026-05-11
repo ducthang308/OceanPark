@@ -5,6 +5,7 @@ import Register from '../Register/Register.tsx';
 import Footer from '../../components/layout/Footer/footer.tsx';
 import PageBanner from '../../components/sections/PageBanner/PageBanner.tsx';
 import { login } from '../../services/api/UserService.ts';
+import { getDefaultPathByRole } from '../../constants/roles.ts';
 
 const LoginPage = () => {
     const [phone, setPhone] = useState('');
@@ -20,8 +21,8 @@ const LoginPage = () => {
         setLoading(true);
 
         try {
-            await login(phone, password);
-            navigate('/');
+            const response = await login(phone, password);
+            navigate(getDefaultPathByRole(response.maVaiTro), { replace: true });
         } catch (err: any) {
             setError(err.message || 'Đăng nhập thất bại');
         } finally {

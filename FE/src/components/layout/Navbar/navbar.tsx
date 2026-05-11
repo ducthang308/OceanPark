@@ -1,13 +1,11 @@
-import React from 'react'
 import AVT from "../../../assets/img/default-user.svg"
-import { Button, Flex } from 'antd';
+import { Button } from 'antd';
 import "./navbar.css";
 
 import {
     EditOutlined,
     FolderOpenOutlined,
     CreditCardOutlined,
-    ClockCircleOutlined,
     FileTextOutlined,
     DollarOutlined,
     UserOutlined,
@@ -16,28 +14,40 @@ import {
 import { Menu } from 'antd';
 import type { MenuProps } from 'antd';
 import { useNavigate } from 'react-router-dom';
+import { LANDLORD_ROLE_IDS } from '../../../constants/roles';
+import type { RoleId } from '../../../constants/roles';
+import { useAuth } from '../../../hooks/useAuth';
+import { clearAuthSession } from '../../../utils/storage';
 
-const items: MenuProps['items'] = [
+type SidebarItem = NonNullable<MenuProps['items']>[number] & {
+    allowedRoles?: readonly RoleId[];
+};
+
+const items: SidebarItem[] = [
     {
         key: '1',
         icon: <EditOutlined />,
         label: 'Đăng tin mới',
+        allowedRoles: LANDLORD_ROLE_IDS,
     },
     {
         key: '2',
         icon: <FolderOpenOutlined />,
         label: 'Danh sách tin đăng',
+        allowedRoles: LANDLORD_ROLE_IDS,
     },
     {
         key: '3',
         icon: <CreditCardOutlined />,
         label: 'Nạp tiền vào tài khoản',
+        allowedRoles: LANDLORD_ROLE_IDS,
     },
 
     {
         key: '5',
         icon: <FileTextOutlined />,
         label: 'Quản lý giao dịch',
+        allowedRoles: LANDLORD_ROLE_IDS,
     },
     {
         key: '6',
@@ -48,6 +58,7 @@ const items: MenuProps['items'] = [
         key: '7',
         icon: <DollarOutlined />,
         label: 'Bảng giá dịch vụ',
+        allowedRoles: LANDLORD_ROLE_IDS,
     },
     {
         key: '8',
@@ -63,12 +74,15 @@ const items: MenuProps['items'] = [
 
 const navbar = () => {
     const navigate = useNavigate();
+    const { user, roleId } = useAuth();
+    const isLandlordRole = Boolean(roleId && LANDLORD_ROLE_IDS.includes(roleId));
+    const visibleItems = items.filter((item) => {
+        if (!item.allowedRoles) return true;
+        return Boolean(roleId && item.allowedRoles.includes(roleId));
+    });
 
     const handleMenuClick: MenuProps['onClick'] = (e) => {
         switch (e.key) {
-            case '7':
-                navigate('/AccountManagement');
-                break;
             case '1':
                 navigate('/listing');
                 break;
@@ -84,7 +98,13 @@ const navbar = () => {
             case '6':
                 navigate('/payment-history');
                 break;
-            case '8': //    Đăng xuất
+            case '7':
+            case '8':
+                navigate('/AccountManagement');
+                break;
+            case '9':
+                clearAuthSession();
+                navigate('/login');
                 break;
             default:
                 break;
@@ -97,12 +117,12 @@ const navbar = () => {
                     <img src={AVT} alt="" className="avatar" />
                 </div>
                 <div className="info-nav">
-                    <div className="fullname">Nguyễn Đức Thắng</div>
-                    <div className="phone">0325043590</div>
+                    <div className="fullname">{user?.hoVaTen || 'Tài khoản'}</div>
+                    <div className="phone">{user?.soDienThoai || user?.vaiTro || ''}</div>
                 </div>
             </div>
 
-            <div className="nav-payment">
+            {isLandlordRole && <div className="nav-payment">
                 <div className="balance">
                     <div className="balance-title">Số dư của bạn</div>
                     <div className="balance-number">0</div>
@@ -110,13 +130,13 @@ const navbar = () => {
                 <div className="btn-payment">
                     <Button type="primary"><i className="fa-regular fa-credit-card"></i> Nạp tiền</Button>
                 </div>
-            </div>
+            </div>}
 
             <div className="nav-tabs">
                 <Menu
                     mode="vertical"
                     className="custom-ant-menu"
-                    items={items}
+                    items={visibleItems}
                     onClick={handleMenuClick}
                     style={{ width: 250, fontSize: 16, border: 'none' }}
                 />
