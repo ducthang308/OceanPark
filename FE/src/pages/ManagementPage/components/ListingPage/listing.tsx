@@ -61,7 +61,7 @@ const Listing = () => {
     maDanhMuc: "",
     tieuDe: "",
     noiDung: "",
-    phuongThucThanhToan: "",
+    hinhThucThanhToan: "",
     gia: "",
     dienTich: "",
     phongNgu: "",
@@ -319,7 +319,7 @@ const Listing = () => {
     }
 
     if (
-      !formData.phuongThucThanhToan ||
+      !formData.hinhThucThanhToan ||
       !formData.gia ||
       !formData.dienTich ||
       !formData.phongNgu ||
@@ -349,7 +349,7 @@ const Listing = () => {
         tieuDe: formData.tieuDe,
         noiDung: formData.noiDung,
         lienHe: phone,
-        phuongThucThanhToan: formData.phuongThucThanhToan,
+        hinhThucThanhToan: formData.hinhThucThanhToan,
       });
 
       if (!post.maBaiDang) {
@@ -382,7 +382,7 @@ const Listing = () => {
         maDanhMuc: "",
         tieuDe: "",
         noiDung: "",
-        phuongThucThanhToan: "",
+        hinhThucThanhToan: "",
         gia: "",
         dienTich: "",
         phongNgu: "",
@@ -561,15 +561,15 @@ const Listing = () => {
 
         <div className="form-group-listing gap width">
           <label className="label">
-            Phương thức thanh toán <span className="required">(*)</span>
+            Hình thức thanh toán <span className="required">(*)</span>
           </label>
           <Select
             className="select-listing"
-            placeholder="-- Chọn phương thức thanh toán --"
+            placeholder="-- Chọn hình thức thanh toán --"
             size="large"
-            value={formData.phuongThucThanhToan || undefined}
+            value={formData.hinhThucThanhToan || undefined}
             onChange={(value) =>
-              setFormData((prev) => ({ ...prev, phuongThucThanhToan: value }))
+              setFormData((prev) => ({ ...prev, hinhThucThanhToan: value }))
             }
           >
             <Option value="Cash">Tiền mặt</Option>

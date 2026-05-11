@@ -114,7 +114,6 @@ const LoginPage = () => {
                 </div>
             </div>
 
-            <Footer />
         </>
     );
 };
