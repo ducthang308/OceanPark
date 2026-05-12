@@ -35,13 +35,13 @@ const mockPaymentDetails: PaymentDetailData[] = [
         nguoiNhan: "Nguyễn Minh Quân",
         soTien: 1000000,
         phuongThucThanhToan: "Chuyển khoản ngân hàng",
-        mucDichThanhToan: "Đặt cọc thuê căn hộ",
+        mucDichThanhToan: "Thanh toán thuê căn hộ",
         ngayBatDau: "2026-04-22",
         ngayKetThuc: "2026-05-22",
         ngayTao: "2026-04-22 21:15",
         trangThai: "THANH_CONG",
-        noiDung: "Đặt cọc giữ chỗ căn hộ BD001",
-        ghiChu: "Người thuê đã thanh toán tiền cọc. Chủ căn hộ cần xác nhận giữ chỗ.",
+        noiDung: "Thanh toán thuê căn hộ BD001",
+        ghiChu: "Người thuê đã thanh toán. Chủ căn hộ cần xác nhận trạng thái giao dịch.",
     },
     {
         maGiaoDich: "GD002",
@@ -54,12 +54,12 @@ const mockPaymentDetails: PaymentDetailData[] = [
         nguoiNhan: "Lê Văn C",
         soTien: 500000,
         phuongThucThanhToan: "Ví điện tử",
-        mucDichThanhToan: "Giữ chỗ",
+        mucDichThanhToan: "Thanh toán thuê căn hộ",
         ngayBatDau: "2026-04-20",
         ngayKetThuc: "2026-05-20",
         ngayTao: "2026-04-20 10:30",
         trangThai: "CHO_XAC_NHAN",
-        noiDung: "Thanh toán giữ chỗ bài đăng BD002",
+        noiDung: "Thanh toán thuê căn hộ BD002",
         ghiChu: "Giao dịch đang chờ xác nhận.",
     },
 ];
@@ -124,7 +124,7 @@ const PaymentDetail = () => {
                         <div className="payment-detail-invoice-header">
                             <div>
                                 <h2>DThang Home</h2>
-                                <p>Hóa đơn thanh toán đặt cọc thuê căn hộ</p>
+                                <p>Hóa đơn thanh toán thuê căn hộ</p>
                             </div>
 
                             <div className="payment-detail-invoice-code">

@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import './AccountManagement.css';
 import Navbar from '../../components/layout/Navbar/navbar';
-import Footer from '../../components/layout/Footer/footer';
 
 const AccountManagement = () => {
   const [activeTab, setActiveTab] = useState('profile');

@@ -14,6 +14,7 @@ import {
   createApartmentDetail,
   createPost,
   getCategories,
+  updatePost,
   uploadPostImages,
   type DanhMucDTO,
 } from "../../../../services/api/PostManagementService";
@@ -375,8 +376,10 @@ const Listing = () => {
         );
       }
 
-      message.success("Đăng tin thành công");
-      navigate("/list-post");
+      await updatePost(post.maBaiDang, { trangThai: "PENDING" });
+
+      message.success("Tạo bài đăng thành công, vui lòng chọn gói kích hoạt");
+      navigate(`/payment/${post.maBaiDang}`);
 
       setFormData({
         maDanhMuc: "",

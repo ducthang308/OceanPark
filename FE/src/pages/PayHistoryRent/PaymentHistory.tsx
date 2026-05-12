@@ -29,7 +29,7 @@ const mockPayments: PaymentHistoryItem[] = [
             "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=800&q=80",
         soTien: 1000000,
         phuongThucThanhToan: "Chuyển khoản ngân hàng",
-        mucDichThanhToan: "Đặt cọc thuê căn hộ",
+        mucDichThanhToan: "Thanh toán thuê căn hộ",
         ngayTao: "2026-04-22 21:15",
         trangThai: "THANH_CONG",
     },
@@ -43,7 +43,7 @@ const mockPayments: PaymentHistoryItem[] = [
             "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80",
         soTien: 500000,
         phuongThucThanhToan: "Ví điện tử",
-        mucDichThanhToan: "Giữ chỗ",
+        mucDichThanhToan: "Thanh toán thuê căn hộ",
         ngayTao: "2026-04-20 10:30",
         trangThai: "CHO_XAC_NHAN",
     },
@@ -91,7 +91,7 @@ const PaymentHistory = () => {
                 <div className="payment-history-header">
                     <div>
                         <h1>Lịch sử thanh toán</h1>
-                        <p>Theo dõi các giao dịch đặt cọc, giữ chỗ và thuê căn hộ của bạn</p>
+                        <p>Theo dõi các giao dịch thuê căn hộ của bạn</p>
                     </div>
 
                     <div className="payment-history-search">

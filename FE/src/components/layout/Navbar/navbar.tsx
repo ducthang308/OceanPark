@@ -7,7 +7,6 @@ import {
     FolderOpenOutlined,
     CreditCardOutlined,
     FileTextOutlined,
-    DollarOutlined,
     UserOutlined,
     LogoutOutlined,
 } from '@ant-design/icons';
@@ -39,7 +38,7 @@ const items: SidebarItem[] = [
     {
         key: '3',
         icon: <CreditCardOutlined />,
-        label: 'Nạp tiền vào tài khoản',
+        label: 'Quản lý gói nạp',
         allowedRoles: LANDLORD_ROLE_IDS,
     },
 
@@ -47,17 +46,6 @@ const items: SidebarItem[] = [
         key: '5',
         icon: <FileTextOutlined />,
         label: 'Quản lý giao dịch',
-        allowedRoles: LANDLORD_ROLE_IDS,
-    },
-    {
-        key: '6',
-        icon: <FileTextOutlined />,
-        label: 'Quản lý thanh toán thuê căn hộ',
-    },
-    {
-        key: '7',
-        icon: <DollarOutlined />,
-        label: 'Bảng giá dịch vụ',
         allowedRoles: LANDLORD_ROLE_IDS,
     },
     {
@@ -90,15 +78,11 @@ const navbar = () => {
                 navigate('/list-post');
                 break;
             case '3':
-                navigate('/recharge/:recharge');
+                navigate('/recharge/packages');
                 break;
             case '5':
                 navigate('/history');
                 break;
-            case '6':
-                navigate('/payment-history');
-                break;
-            case '7':
             case '8':
                 navigate('/AccountManagement');
                 break;
@@ -124,11 +108,13 @@ const navbar = () => {
 
             {isLandlordRole && <div className="nav-payment">
                 <div className="balance">
-                    <div className="balance-title">Số dư của bạn</div>
-                    <div className="balance-number">0</div>
+                    <div className="balance-title">Gói đăng tin</div>
+                    <div className="balance-number">DANG_BAI</div>
                 </div>
                 <div className="btn-payment">
-                    <Button type="primary"><i className="fa-regular fa-credit-card"></i> Nạp tiền</Button>
+                    <Button type="primary" onClick={() => navigate('/recharge/packages')}>
+                        <i className="fa-regular fa-credit-card"></i> Mua gói
+                    </Button>
                 </div>
             </div>}
 
