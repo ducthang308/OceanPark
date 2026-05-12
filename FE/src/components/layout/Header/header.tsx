@@ -121,7 +121,7 @@ const Header: React.FC = () => {
       {
         key: 'transactions',
         label: 'Quản lý giao dịch',
-        to: '/history?tab=paymentHistory',
+        to: '/history?tab=recharge',
         allowedRoles: LANDLORD_ROLE_IDS,
       },
       {
