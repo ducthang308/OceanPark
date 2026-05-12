@@ -1,269 +1,159 @@
-import { useEffect, useMemo, useState } from "react";
-import { Button, Input, Select, Spin, Tag, message } from "antd";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
 import "./HistoryPay.css";
+import { Link, useSearchParams } from "react-router-dom";
+import { Tag, Table, Button, Card } from "antd";
 import Navbar from "../../components/layout/Navbar/navbar";
-import { useAuth } from "../../hooks/useAuth";
-import {
-  formatPaymentMoney,
-  getInvoicesByUser,
-  type HoaDonDTO,
-} from "../../services/api/PaymentService";
-
-const getPaymentStatusText = (status?: string | null) => {
-  switch (status) {
-    case "SUCCESS":
-      return "Thành công";
-    case "PENDING":
-      return "Chờ thanh toán";
-    case "FAILED":
-      return "Thất bại";
-    default:
-      return status || "Chưa xác định";
-  }
-};
-
-const getEffectStatusText = (status?: string | null) => {
-  switch (status) {
-    case "DANG_HIEU_LUC":
-      return "Đang hiệu lực";
-    case "CHUA_HIEU_LUC":
-      return "Chưa hiệu lực";
-    case "HET_HIEU_LUC":
-      return "Hết hiệu lực";
-    default:
-      return status || "Chưa xác định";
-  }
-};
-
-const getInvoiceTypeText = (type?: string | null) => {
-  switch (type) {
-    case "DANG_BAI":
-      return "Kích hoạt bài đăng";
-    case "THUE_CAN_HO":
-      return "Thanh toán thuê căn hộ";
-    default:
-      return type || "Giao dịch";
-  }
-};
-
-const formatDateTime = (value?: string | null) => {
-  if (!value) return "Chưa có";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString("vi-VN");
-};
 
 const History = () => {
-  const navigate = useNavigate();
-  const { user } = useAuth();
-
-  const [invoices, setInvoices] = useState<HoaDonDTO[]>([]);
-  const [keyword, setKeyword] = useState("");
-  const [status, setStatus] = useState("ALL");
-  const [loading, setLoading] = useState(true);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') || 'recharge';
+  const [activeTab, setActiveTab] = useState(initialTab);
+  const [depositHistoryData, setDepositHistoryData] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const loadInvoices = async () => {
-      if (!user?.maNguoiDung) {
-        setInvoices([]);
-        setLoading(false);
-        return;
-      }
+    setActiveTab(searchParams.get('tab') || 'recharge');
+  }, [searchParams]);
 
-      try {
-        setLoading(true);
-        const data = await getInvoicesByUser(user.maNguoiDung);
-        setInvoices(
-          data
-            .slice()
-            .sort(
-              (a, b) =>
-                new Date(b.ngayTao || "").getTime() -
-                new Date(a.ngayTao || "").getTime()
-            )
-        );
-      } catch (error) {
-        console.error(error);
-        message.error("Không tải được danh sách giao dịch");
-      } finally {
-        setLoading(false);
-      }
-    };
+  const handleTabChange = (tab: string) => {
+    setSearchParams({ tab });
+  };
 
-    loadInvoices();
-  }, [user?.maNguoiDung]);
+  const packageColumns = [
+    { title: "Tên gói", dataIndex: "name", key: "name" },
+    { title: "Ngày kích hoạt", dataIndex: "startDate", key: "startDate" },
+    { title: "Ngày hết hạn", dataIndex: "endDate", key: "endDate" },
+    { 
+      title: "Trạng thái", 
+      dataIndex: "status", 
+      key: "status",
+      render: (status: string) => (
+        <Tag color={status === "Đang hoạt động" ? "green" : "red"}>{status}</Tag>
+      )
+    },
+    {
+      title: "Hành động",
+      key: "action",
+      render: () => <Button type="link">Gia hạn</Button>
+    }
+  ];
 
-  const filteredInvoices = useMemo(() => {
-    const searchText = keyword.trim().toLowerCase();
+  const packagesData = [
+    { id: 1, name: "Tin VIP Nổi Bật (30 ngày)", startDate: "10/05/2026", endDate: "10/06/2026", status: "Đang hoạt động" },
+    { id: 2, name: "Tin VIP 1 (15 ngày)", startDate: "01/05/2026", endDate: "16/05/2026", status: "Đang hoạt động" },
+  ];
 
-    return invoices.filter((invoice) => {
-      const matchStatus =
-        status === "ALL" ? true : invoice.trangThaiThanhToan === status;
+  const transactionColumns = [
+    { title: "Thời gian", dataIndex: "time", key: "time" },
+    { title: "Loại giao dịch", dataIndex: "type", key: "type" },
+    { 
+      title: "Số tiền", 
+      dataIndex: "amount", 
+      key: "amount",
+      render: (v: number) => <span style={{ color: v > 0 ? "#52c41a" : "#ff4d4f" }}>{v.toLocaleString()} đ</span>
+    },
+    { title: "Nội dung", dataIndex: "note", key: "note" },
+    { 
+      title: "Trạng thái", 
+      dataIndex: "status", 
+      key: "status",
+      render: (status: string) => (
+        <Tag color={status === "Thành công" ? "green" : "orange"}>{status}</Tag>
+      )
+    },
+  ];
 
-      const matchKeyword = [
-        invoice.maHoaDon,
-        invoice.maBaiDang,
-        invoice.loaiHoaDon,
-        invoice.noiDungChuyenKhoan,
-        invoice.ghiChu,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase()
-        .includes(searchText);
-
-      return matchStatus && matchKeyword;
-    });
-  }, [invoices, keyword, status]);
-
-  const totalSuccess = invoices
-    .filter((invoice) => invoice.trangThaiThanhToan === "SUCCESS")
-    .reduce((sum, invoice) => sum + (invoice.soTien || 0), 0);
-
-  const pendingCount = invoices.filter(
-    (invoice) => invoice.trangThaiThanhToan === "PENDING"
-  ).length;
+  const transactionData = [
+    { id: 1, time: "12/05/2026 09:30", type: "Nạp tiền", amount: 500000, note: "Nạp qua MoMo", status: "Thành công" },
+    { id: 2, time: "12/05/2026 10:00", type: "Mua gói", amount: -351000, note: "Mua gói VIP Nổi Bật", status: "Thành công" },
+    { id: 3, time: "11/05/2026 15:20", type: "Nạp tiền", amount: 100000, note: "Nạp qua Chuyển khoản", status: "Thành công" },
+  ];
 
   return (
-    <div className="main-layout">
-      <Navbar />
-
-      <main className="history-content">
-        <section className="history-page-header">
-          <div>
-            <p>Thanh toán bài đăng</p>
-            <h1>Quản lý giao dịch</h1>
-          </div>
-
-          <Button type="primary" onClick={() => navigate("/recharge/packages")}>
-            Quản lý gói nạp
-          </Button>
-        </section>
-
-        <section className="history-stats-grid">
-          <div className="history-stat-card">
-            <span>Tổng giao dịch</span>
-            <strong>{invoices.length}</strong>
-          </div>
-          <div className="history-stat-card">
-            <span>Chờ thanh toán</span>
-            <strong>{pendingCount}</strong>
-          </div>
-          <div className="history-stat-card">
-            <span>Đã thanh toán</span>
-            <strong>{formatPaymentMoney(totalSuccess)}</strong>
-          </div>
-        </section>
-
-        <section className="history-toolbar">
-          <Input
-            value={keyword}
-            placeholder="Tìm theo mã hóa đơn, bài đăng, nội dung chuyển khoản"
-            onChange={(event) => setKeyword(event.target.value)}
-          />
-
-          <Select
-            value={status}
-            onChange={setStatus}
-            options={[
-              { value: "ALL", label: "Tất cả trạng thái" },
-              { value: "PENDING", label: "Chờ thanh toán" },
-              { value: "SUCCESS", label: "Thành công" },
-              { value: "FAILED", label: "Thất bại" },
-            ]}
-          />
-        </section>
-
-        <section className="history-table-card">
-          <div className="history-table-card__head">
-            <div>
-              <h2>Danh sách giao dịch</h2>
-              <p>Giao dịch được lấy từ hóa đơn thanh toán của tài khoản hiện tại.</p>
+    <>
+      <div className="main-layout">
+        <Navbar />
+        <div className="content-area">
+          <main className="history-content">
+            <div className="history-header">
+              <h1>Quản lý tài chính</h1>
+              <Link to="/payment/all">
+                <Button type="primary" size="large">Mua gói tin ngay</Button>
+              </Link>
             </div>
-            <Tag color="blue">{filteredInvoices.length} giao dịch</Tag>
-          </div>
 
-          {loading ? (
-            <div className="history-loading">
-              <Spin /> Đang tải giao dịch
-            </div>
-          ) : (
-            <div className="history-table-wrap">
-              <table className="history-table">
-                <thead>
-                  <tr>
-                    <th>Mã hóa đơn</th>
-                    <th>Mã bài đăng</th>
-                    <th>Loại giao dịch</th>
-                    <th>Số tiền</th>
-                    <th>Thanh toán</th>
-                    <th>Hiệu lực</th>
-                    <th>Ngày tạo</th>
-                    <th>Ngày thanh toán</th>
-                    <th>Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredInvoices.map((invoice) => (
-                    <tr key={invoice.maHoaDon}>
-                      <td>
-                        <strong>{invoice.maHoaDon}</strong>
-                        <span>{invoice.noiDungChuyenKhoan || "Chưa có nội dung CK"}</span>
-                      </td>
-                      <td>{invoice.maBaiDang || "Không có"}</td>
-                      <td>{getInvoiceTypeText(invoice.loaiHoaDon)}</td>
-                      <td className="history-money">
-                        {formatPaymentMoney(invoice.soTien)}
-                      </td>
-                      <td>
-                        <Tag
-                          color={
-                            invoice.trangThaiThanhToan === "SUCCESS"
-                              ? "green"
-                              : invoice.trangThaiThanhToan === "FAILED"
-                              ? "red"
-                              : "gold"
-                          }
-                        >
-                          {getPaymentStatusText(invoice.trangThaiThanhToan)}
-                        </Tag>
-                      </td>
-                      <td>{getEffectStatusText(invoice.trangThaiHieuLuc)}</td>
-                      <td>{formatDateTime(invoice.ngayTao)}</td>
-                      <td>{formatDateTime(invoice.ngayThanhToan)}</td>
-                      <td>
-                        {invoice.trangThaiThanhToan === "PENDING" &&
-                        invoice.maBaiDang ? (
-                          <Button
-                            size="small"
-                            onClick={() => navigate(`/payment/${invoice.maBaiDang}`)}
-                          >
-                            Thanh toán tiếp
-                          </Button>
-                        ) : (
-                          <Button size="small" onClick={() => navigate("/list-post")}>
-                            Xem bài đăng
-                          </Button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+            <nav className="history-tabs">
+              <button
+                className={`tab-btn ${activeTab === "recharge" ? "active" : ""}`}
+                onClick={() => handleTabChange("recharge")}
+              >
+                Mua gói mới
+              </button>
+              <button
+                className={`tab-btn ${activeTab === "package" ? "active" : ""}`}
+                onClick={() => handleTabChange("package")}
+              >
+                Quản lý gói nạp
+              </button>
+              <button
+                className={`tab-btn ${activeTab === "transaction" ? "active" : ""}`}
+                onClick={() => handleTabChange("transaction")}
+              >
+                Lịch sử giao dịch
+              </button>
+            </nav>
 
-                  {filteredInvoices.length === 0 && (
-                    <tr>
-                      <td colSpan={9} className="history-empty-cell">
-                        Không có giao dịch phù hợp.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+            <div className="container">
+              <div className="history-wrapper">
+                {activeTab === "recharge" && (
+                  <div className="recharge-section" style={{ textAlign: 'center', padding: '40px 0' }}>
+                    <div className="history-note" style={{ maxWidth: 600, margin: '0 auto 30px' }}>
+                      <strong>Mua gói dịch vụ mới</strong>
+                      <p>Vui lòng chọn gói tin phù hợp từ bảng giá dịch vụ để thực hiện thanh toán và kích hoạt tin đăng.</p>
+                    </div>
+                    <Link to="/payment/all">
+                      <Button type="primary" size="large" style={{ height: 50, padding: '0 40px', fontSize: 18 }}>
+                        Xem bảng giá & Mua gói ngay
+                      </Button>
+                    </Link>
+                  </div>
+                )}
+
+                {activeTab === "package" && (
+                  <div className="package-section">
+                    <h2>Gói tin đang hoạt động</h2>
+                    <Table 
+                      columns={packageColumns} 
+                      dataSource={packagesData} 
+                      rowKey="id" 
+                      pagination={false}
+                    />
+                    <div style={{ marginTop: 24 }}>
+                      <Card title="Hướng dẫn sử dụng gói tin">
+                        <p>1. Chọn gói tin phù hợp với nhu cầu hiển thị của bạn.</p>
+                        <p>2. Sau khi mua, gói tin sẽ được cộng vào tài khoản và có thể áp dụng khi đăng tin mới.</p>
+                        <p>3. Bạn có thể gia hạn gói tin bất cứ lúc nào để duy trì vị trí hiển thị.</p>
+                      </Card>
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === "transaction" && (
+                  <div className="transaction-section">
+                    <h2>Lịch sử giao dịch</h2>
+                    <Table 
+                      columns={transactionColumns} 
+                      dataSource={transactionData} 
+                      rowKey="id"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
-          )}
-        </section>
-      </main>
-    </div>
+          </main>
+        </div>
+      </div>
+    </>
   );
 };
 

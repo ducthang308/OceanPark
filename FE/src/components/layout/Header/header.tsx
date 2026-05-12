@@ -121,13 +121,13 @@ const Header: React.FC = () => {
       {
         key: 'transactions',
         label: 'Quản lý giao dịch',
-        to: '/history',
+        to: '/history?tab=paymentHistory',
         allowedRoles: LANDLORD_ROLE_IDS,
       },
       {
         key: 'topup',
-        label: 'Quản lý gói nạp',
-        to: '/recharge/packages',
+        label: 'Nạp tiền',
+        to: '/recharge/payoo',
         allowedRoles: LANDLORD_ROLE_IDS,
       },
       { key: 'logout', label: 'Đăng xuất', action: 'logout' },

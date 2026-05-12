@@ -7,6 +7,7 @@ import {
     FolderOpenOutlined,
     CreditCardOutlined,
     FileTextOutlined,
+    DollarOutlined,
     UserOutlined,
     LogoutOutlined,
 } from '@ant-design/icons';
@@ -35,12 +36,12 @@ const items: SidebarItem[] = [
         label: 'Danh sách tin đăng',
         allowedRoles: LANDLORD_ROLE_IDS,
     },
-    {
-        key: '3',
-        icon: <CreditCardOutlined />,
-        label: 'Quản lý gói nạp',
-        allowedRoles: LANDLORD_ROLE_IDS,
-    },
+    // {
+    //     key: '3',
+    //     icon: <CreditCardOutlined />,
+    //     label: 'Mua gói dịch vụ',
+    //     allowedRoles: LANDLORD_ROLE_IDS,
+    // },
 
     {
         key: '5',
@@ -48,6 +49,18 @@ const items: SidebarItem[] = [
         label: 'Quản lý giao dịch',
         allowedRoles: LANDLORD_ROLE_IDS,
     },
+    {
+        key: '6',
+        icon: <FolderOpenOutlined />,
+        label: 'Quản lý gói nạp',
+        allowedRoles: LANDLORD_ROLE_IDS,
+    },
+    // {
+    //     key: '7',
+    //     icon: <DollarOutlined />,
+    //     label: 'Bảng giá dịch vụ',
+    //     allowedRoles: LANDLORD_ROLE_IDS,
+    // },
     {
         key: '8',
         icon: <UserOutlined />,
@@ -78,10 +91,16 @@ const navbar = () => {
                 navigate('/list-post');
                 break;
             case '3':
-                navigate('/recharge/packages');
+                navigate('/payment/all');
                 break;
             case '5':
-                navigate('/history');
+                navigate('/history?tab=package');
+                break;
+            case '6':
+                navigate('/payment/all'); // Quản lý gói nạp
+                break;
+            case '7':
+                navigate('/payment/all');
                 break;
             case '8':
                 navigate('/AccountManagement');
@@ -108,13 +127,11 @@ const navbar = () => {
 
             {isLandlordRole && <div className="nav-payment">
                 <div className="balance">
-                    <div className="balance-title">Gói đăng tin</div>
-                    <div className="balance-number">DANG_BAI</div>
+                    <div className="balance-title">Số dư của bạn</div>
+                    <div className="balance-number">0</div>
                 </div>
                 <div className="btn-payment">
-                    <Button type="primary" onClick={() => navigate('/recharge/packages')}>
-                        <i className="fa-regular fa-credit-card"></i> Mua gói
-                    </Button>
+                    <Button type="primary"><i className="fa-regular fa-credit-card"></i> Nạp tiền</Button>
                 </div>
             </div>}
 

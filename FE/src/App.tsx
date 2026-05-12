@@ -23,8 +23,7 @@ import AdminPostApproval from './pages/AdminStaff/PostApproval/AdminPostApproval
 import AdminPaymentApproval from './pages/AdminStaff/PaymentApproval/AdminPaymentApproval.tsx';
 import PostApprovalDetail from './pages/AdminStaff/PostApproval/PostApprovalDetail.tsx';
 import PaymentDetailPanel from './pages/AdminStaff/PaymentApproval/PaymentDetailPanel.tsx';
-import PaymentHistory from './pages/PayHistoryRent/PaymentHistory.tsx';
-import PaymentDetail from './pages/PayDetailRent/PaymentDetail.tsx';
+// Redundant imports removed
 
 import ForgotPasswordPage from './pages/ForgotPassword/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ForgotPassword/ResetPasswordPage';
@@ -64,15 +63,13 @@ function App() {
 
           <Route element={<ProtectedRoute allowedRoles={AUTHENTICATED_ROLE_IDS} />}>
             <Route path="/AccountManagement" element={<AccountManagement />} />
+            <Route path="/payment/:type" element={<PaymentPage />} />
             <Route path="/favorite-posts" element={<FavoritePostsPage />} />
-            <Route path="/payment-history" element={<PaymentHistory />} />
-            <Route path="/payment-history/:maGiaoDich" element={<PaymentDetail />} />
           </Route>
 
           <Route element={<ProtectedRoute allowedRoles={LANDLORD_ROLE_IDS} />}>
             <Route path="/history" element={<History />} />
             <Route path="/recharge/:method" element={<TopUpPage />} />
-            <Route path="/payment/:id" element={<PaymentPage />} />
             <Route path="/listing" element={<Listing />} />
             <Route path="/list-post" element={<ListPost />} />
           </Route>

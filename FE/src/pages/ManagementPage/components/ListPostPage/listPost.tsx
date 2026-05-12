@@ -16,7 +16,6 @@ import {
   HomeOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
 import "./listPost.css";
 import cloverImg from "../../../../assets/img/co4la.png";
 import {
@@ -44,7 +43,7 @@ interface PostItem {
   maDanhMuc?: string;
   noiDung?: string;
   lienHe?: string;
-  hinhThucThanhToan?: string;
+  phuongThucThanhToan?: string;
   rawStatus?: string;
   apartmentDetailId?: string;
   rawGia?: number;
@@ -86,7 +85,7 @@ const mapStatusText = (status?: string) => {
     case "HIDDEN":
       return "ẨN TIN";
     case "PENDING":
-      return "CHỜ THANH TOÁN";
+      return "CHỜ DUYỆT";
     case "EXPIRED":
       return "HẾT HẠN";
     default:
@@ -112,7 +111,6 @@ const getStatusColor = (status: string) => {
 };
 
 const ListPost = () => {
-  const navigate = useNavigate();
   const [form] = Form.useForm<EditPostFormValues>();
   const [searchValue, setSearchValue] = useState("");
   const [postList, setPostList] = useState<PostItem[]>([]);
@@ -170,7 +168,7 @@ const ListPost = () => {
             maDanhMuc: post.maDanhMuc,
             noiDung: post.noiDung,
             lienHe: post.lienHe,
-            hinhThucThanhToan: post.hinhThucThanhToan,
+            phuongThucThanhToan: post.phuongThucThanhToan,
             rawStatus: post.trangThai,
             apartmentDetailId: detail?.maChiTietCanHo,
             rawGia: detail?.gia,
@@ -231,7 +229,7 @@ const ListPost = () => {
       tieuDe: post.title,
       noiDung: post.noiDung,
       lienHe: post.lienHe,
-      phuongThucThanhToan: post.hinhThucThanhToan,
+      phuongThucThanhToan: post.phuongThucThanhToan,
       gia: post.rawGia,
       dienTich: post.rawDienTich,
       phongNgu: post.rawPhongNgu,
@@ -261,7 +259,7 @@ const ListPost = () => {
         tieuDe: values.tieuDe,
         noiDung: values.noiDung,
         lienHe: values.lienHe,
-        hinhThucThanhToan: values.phuongThucThanhToan,
+        phuongThucThanhToan: values.phuongThucThanhToan,
       });
 
       if (editingPost.apartmentDetailId) {
@@ -384,13 +382,9 @@ const ListPost = () => {
                   }`}
                   icon={<HomeOutlined />}
                   loading={updatingId === post.id}
-                  onClick={() =>
-                    post.status === "ĐANG HIỂN THỊ"
-                      ? toggleVisibility(post)
-                      : navigate(`/payment/${post.id}`)
-                  }
+                  onClick={() => toggleVisibility(post)}
                 >
-                  {post.status === "ĐANG HIỂN THỊ" ? "Ẩn tin" : "Mua gói đăng tin"}
+                  {post.status === "ĐANG HIỂN THỊ" ? "Ẩn tin" : "Hiện tin"}
                 </Button>
               </div>
             </div>
