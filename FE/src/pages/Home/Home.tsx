@@ -1,12 +1,11 @@
 import './Home.css';
-import React, { useMemo, useState } from 'react';
-import Footer from '../../components/layout/Footer/footer';
+import { useMemo, useState } from 'react';
 import { homeMockData } from '../../services/mock/home.mock';
 
 import { useUserNeedDialog } from '../../hooks/useUserNeedDialog';
 import UserNeedDialog from '../../components/common/UserNeedDialog/UserNeedDialog';
 
-const Home: React.FC = () => {
+const Home = () => {
   const [activeTab, setActiveTab] = useState<'proposal' | 'new' | 'video'>('proposal');
   const [activeDistrict, setActiveDistrict] = useState('all');
   const [favoriteIds, setFavoriteIds] = useState<number[]>([102, 104]);

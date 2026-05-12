@@ -1,6 +1,5 @@
-import React from 'react'
 import AVT from "../../../../assets/img/default-user.svg";
-import { Button, Flex } from 'antd';
+import { Button } from 'antd';
 import "./navbar.css";
 
 import {
@@ -8,8 +7,6 @@ import {
     FolderOpenOutlined,
     CreditCardOutlined,
     ClockCircleOutlined,
-    FileTextOutlined,
-    DollarOutlined,
     UserOutlined,
     LogoutOutlined,
 } from '@ant-design/icons';
@@ -30,27 +27,12 @@ const items: MenuProps['items'] = [
     {
         key: '3',
         icon: <CreditCardOutlined />,
-        label: 'Nạp tiền vào tài khoản',
+        label: 'Quản lý gói nạp',
     },
     {
         key: '4',
         icon: <ClockCircleOutlined />,
-        label: 'Lịch sử nạp tiền',
-    },
-    {
-        key: '5',
-        icon: <FileTextOutlined />,
-        label: 'Lịch sử thanh toán',
-    },
-    {
-        key: '6',
-        icon: <FileTextOutlined />,
-        label: 'Lịch sử thanh toán thuê căn hộ',
-    },
-    {
-        key: '7',
-        icon: <DollarOutlined />,
-        label: 'Bảng giá dịch vụ',
+        label: 'Quản lý giao dịch',
     },
     {
         key: '8',
@@ -79,11 +61,11 @@ const navbar = () => {
 
             <div className="nav-payment">
                 <div className="balance">
-                    <div className="balance-title">Số dư của bạn</div>
-                    <div className="balance-number">0</div>
+                    <div className="balance-title">Gói đăng tin</div>
+                    <div className="balance-number">DANG_BAI</div>
                 </div>
                 <div className="btn-payment">
-                    <Button type="primary"><i className="fa-regular fa-credit-card"></i> Nạp tiền</Button>
+                    <Button type="primary"><i className="fa-regular fa-credit-card"></i> Mua gói</Button>
                 </div>
             </div>
 

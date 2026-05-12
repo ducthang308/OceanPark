@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Table, Tag, Select, DatePicker, Input, Row, Col, Button } from 'antd';
-import dayjs from 'dayjs';
 import './Index.css';
 
 const { RangePicker } = DatePicker;
@@ -15,12 +14,12 @@ interface Transaction {
   note?: string;
 }
 
-const transactionTypes = ["Nạp tiền", "Trừ tiền", "Chi phí đăng bài", "Hoàn tiền"];
+const transactionTypes = ["Mua gói đăng tin", "Kích hoạt bài đăng", "Chi phí đăng bài", "Hoàn tiền"];
 const statuses = ["Thành công", "Chờ xử lý", "Thất bại"];
 
 const Transactions: React.FC = () => {
   const [transactions] = useState<Transaction[]>([
-    { id: "GD001", user: "Nguyễn Văn A - 0909123456", type: "Nạp tiền", amount: 500000, status: "Thành công", date: "2025-07-20", note: "Nạp qua MoMo" },
+    { id: "GD001", user: "Nguyễn Văn A - 0909123456", type: "Mua gói đăng tin", amount: 500000, status: "Thành công", date: "2025-07-20", note: "Thanh toán SePay" },
     { id: "GD002", user: "Trần Thị B - 0912345678", type: "Chi phí đăng bài", amount: -20000, status: "Thành công", date: "2025-07-22", note: "Đăng tin VIP" },
     { id: "GD003", user: "Lê Văn C - 0987654321", type: "Hoàn tiền", amount: 50000, status: "Chờ xử lý", date: "2025-07-23" },
   ]);

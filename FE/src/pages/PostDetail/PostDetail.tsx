@@ -194,14 +194,16 @@ const PostDetail: React.FC = () => {
                 <button
                   type="button"
                   className="post-detail-btn post-detail-btn--primary"
-                  onClick={() => navigate(`/payment/${post.id}`)}
+                  onClick={() => {
+                    window.location.href = `tel:${post.phone}`;
+                  }}
                 >
-                  Thanh toán / Đặt cọc
+                  Liên hệ thuê ngay
                 </button>
               </div>
 
               <div className="post-detail-owner-note">
-                Ưu tiên người thuê thiện chí, có thể giữ chỗ nhanh sau khi thanh toán.
+                Trao đổi trực tiếp với chủ tin để xác nhận tình trạng phòng và lịch xem.
               </div>
             </div>
 
@@ -210,7 +212,7 @@ const PostDetail: React.FC = () => {
               <ul className="post-detail-side-list">
                 <li>Thông tin rõ ràng, dễ theo dõi</li>
                 <li>Ảnh hiển thị lớn, dễ xem trên mobile</li>
-                <li>Nút liên hệ và thanh toán nổi bật</li>
+                <li>Nút liên hệ với chủ tin luôn nổi bật</li>
               </ul>
             </div>
           </aside>
