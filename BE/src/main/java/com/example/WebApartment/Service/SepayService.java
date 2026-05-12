@@ -26,6 +26,7 @@ public class SepayService {
     private final NguoiDungRepository nguoiDungRepository;
     private final BaiDangRepository baiDangRepository;
     private final PhuongThucThanhToanRepository phuongThucThanhToanRepository;
+    private final GoiDangBaiRepository goiDangBaiRepository;
     private final ObjectMapper objectMapper;
 
     @Value("${sepay.bank-code}")
@@ -37,6 +38,8 @@ public class SepayService {
     @Value("${sepay.account-name}")
     private String accountName;
 
+    private static final double GIA_GOI_DANG_BAI_TEST = 50000D;
+
     @Transactional
     public SepayCreatePaymentResponse createPayment(SepayCreatePaymentRequest request) {
         validateCreatePayment(request);
@@ -45,7 +48,26 @@ public class SepayService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
 
         BaiDang baiDang = null;
-        if (request.getMaBaiDang() != null && !request.getMaBaiDang().isBlank()) {
+        GoiDangBai goiDangBai = null;
+
+        double soTienThanhToan = request.getSoTien();
+
+        if ("DANG_BAI".equalsIgnoreCase(request.getLoaiHoaDon())) {
+            soTienThanhToan = GIA_GOI_DANG_BAI_TEST;
+
+            goiDangBai = GoiDangBai.builder()
+                    .maGoiDangBai(generateMaGoiDangBai())
+                    .nguoiDung(nguoiDung)
+                    .tenGoi("Gói đăng bài 1 tháng")
+                    .giaTien(GIA_GOI_DANG_BAI_TEST)
+                    .trangThai("PENDING")
+                    .ngayTao(LocalDateTime.now())
+                    .build();
+
+            goiDangBaiRepository.save(goiDangBai);
+        }
+
+        if ("THUE_CAN_HO".equalsIgnoreCase(request.getLoaiHoaDon())) {
             baiDang = baiDangRepository.findById(request.getMaBaiDang())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy bài đăng"));
         }
@@ -57,8 +79,9 @@ public class SepayService {
                 .maHoaDon(maHoaDon)
                 .nguoiDung(nguoiDung)
                 .baiDang(baiDang)
-                .loaiHoaDon(request.getLoaiHoaDon())
-                .soTien(request.getSoTien())
+                .goiDangBai(goiDangBai)
+                .loaiHoaDon(request.getLoaiHoaDon().toUpperCase())
+                .soTien(soTienThanhToan)
                 .trangThaiThanhToan("PENDING")
                 .trangThaiHieuLuc("CHUA_HIEU_LUC")
                 .noiDungChuyenKhoan(noiDungChuyenKhoan)
@@ -76,7 +99,7 @@ public class SepayService {
                 .hoaDon(hoaDon)
                 .nguoiDung(nguoiDung)
                 .phuongThucThanhToan(phuongThuc)
-                .soTien(request.getSoTien())
+                .soTien(soTienThanhToan)
                 .trangThai("PENDING")
                 .provider("SEPAY")
                 .providerTxnRef(noiDungChuyenKhoan)
@@ -87,12 +110,12 @@ public class SepayService {
 
         giaoDichRepository.save(giaoDich);
 
-        String qrUrl = buildVietQrUrl(request.getSoTien(), noiDungChuyenKhoan);
+        String qrUrl = buildVietQrUrl(soTienThanhToan, noiDungChuyenKhoan);
 
         return SepayCreatePaymentResponse.builder()
                 .maHoaDon(maHoaDon)
                 .noiDungChuyenKhoan(noiDungChuyenKhoan)
-                .soTien(request.getSoTien())
+                .soTien(soTienThanhToan)
                 .bankCode(bankCode)
                 .bankAccount(bankAccount)
                 .accountName(accountName)
@@ -119,7 +142,6 @@ public class SepayService {
         }
 
         String content = firstNotBlank(request.getContent(), request.getDescription(), request.getCode());
-
         HoaDon hoaDon = findHoaDonFromContent(content);
 
         if (hoaDon == null) {
@@ -140,28 +162,24 @@ public class SepayService {
         hoaDon.setTrangThaiThanhToan("SUCCESS");
         hoaDon.setTrangThaiHieuLuc("DANG_HIEU_LUC");
         hoaDon.setNgayThanhToan(now);
-
-        if (hoaDon.getNgayBatDau() == null) {
-            hoaDon.setNgayBatDau(now);
-        }
-
-        if (hoaDon.getNgayKetThuc() == null) {
-            hoaDon.setNgayKetThuc(now.plusMonths(1));
-        }
-
+        hoaDon.setNgayBatDau(now);
+        hoaDon.setNgayKetThuc(now.plusMonths(1));
         hoaDonRepository.save(hoaDon);
 
-        if (hoaDon.getBaiDang() != null) {
+        if ("DANG_BAI".equalsIgnoreCase(hoaDon.getLoaiHoaDon())) {
+            GoiDangBai goi = hoaDon.getGoiDangBai();
+
+            if (goi != null) {
+                goi.setTrangThai("ACTIVE");
+                goi.setNgayBatDau(now);
+                goi.setNgayKetThuc(now.plusMonths(1));
+                goiDangBaiRepository.save(goi);
+            }
+        }
+
+        if ("THUE_CAN_HO".equalsIgnoreCase(hoaDon.getLoaiHoaDon()) && hoaDon.getBaiDang() != null) {
             BaiDang baiDang = hoaDon.getBaiDang();
-
-            if ("DANG_BAI".equalsIgnoreCase(hoaDon.getLoaiHoaDon())) {
-                baiDang.setTrangThai("ACTIVE");
-            }
-
-            if ("THUE_CAN_HO".equalsIgnoreCase(hoaDon.getLoaiHoaDon())) {
-                baiDang.setTrangThai("DA_THUE");
-            }
-
+            baiDang.setTrangThai("DA_THUE");
             baiDangRepository.save(baiDang);
         }
 
@@ -209,8 +227,7 @@ public class SepayService {
     }
 
     private void saveFailedGiaoDich(HoaDon hoaDon, SepayWebhookRequest request, String reason) {
-        PhuongThucThanhToan phuongThuc = phuongThucThanhToanRepository.findByProvider("SEPAY")
-                .orElse(null);
+        PhuongThucThanhToan phuongThuc = phuongThucThanhToanRepository.findByProvider("SEPAY").orElse(null);
 
         GiaoDich giaoDich = GiaoDich.builder()
                 .maGiaoDich(generateMaGiaoDich())
@@ -235,23 +252,8 @@ public class SepayService {
         giaoDichRepository.save(giaoDich);
     }
 
-    private String buildVietQrUrl(Double amount, String content) {
-        String encodedContent = URLEncoder.encode(content, StandardCharsets.UTF_8);
-        String encodedName = URLEncoder.encode(accountName, StandardCharsets.UTF_8);
-
-        return "https://img.vietqr.io/image/"
-                + bankCode + "-"
-                + bankAccount
-                + "-compact2.png"
-                + "?amount=" + amount.longValue()
-                + "&addInfo=" + encodedContent
-                + "&accountName=" + encodedName;
-    }
-
     private void validateCreatePayment(SepayCreatePaymentRequest request) {
-        if (request == null) {
-            throw new RuntimeException("Dữ liệu thanh toán không hợp lệ");
-        }
+        if (request == null) throw new RuntimeException("Dữ liệu thanh toán không hợp lệ");
 
         if (request.getMaNguoiDung() == null || request.getMaNguoiDung().isBlank()) {
             throw new RuntimeException("Mã người dùng không được để trống");
@@ -266,13 +268,28 @@ public class SepayService {
             throw new RuntimeException("Loại hóa đơn không hợp lệ");
         }
 
-        if (request.getSoTien() == null || request.getSoTien() <= 0) {
-            throw new RuntimeException("Số tiền không hợp lệ");
-        }
+        if ("THUE_CAN_HO".equalsIgnoreCase(request.getLoaiHoaDon())) {
+            if (request.getMaBaiDang() == null || request.getMaBaiDang().isBlank()) {
+                throw new RuntimeException("Mã bài đăng không được để trống khi thanh toán thuê căn hộ");
+            }
 
-        if (request.getMaBaiDang() == null || request.getMaBaiDang().isBlank()) {
-            throw new RuntimeException("Mã bài đăng không được để trống");
+            if (request.getSoTien() == null || request.getSoTien() <= 0) {
+                throw new RuntimeException("Số tiền thuê căn hộ không hợp lệ");
+            }
         }
+    }
+
+    private String buildVietQrUrl(Double amount, String content) {
+        String encodedContent = URLEncoder.encode(content, StandardCharsets.UTF_8);
+        String encodedName = URLEncoder.encode(accountName, StandardCharsets.UTF_8);
+
+        return "https://img.vietqr.io/image/"
+                + bankCode + "-"
+                + bankAccount
+                + "-compact2.png"
+                + "?amount=" + amount.longValue()
+                + "&addInfo=" + encodedContent
+                + "&accountName=" + encodedName;
     }
 
     private String generateMaHoaDon() {
@@ -281,6 +298,10 @@ public class SepayService {
 
     private String generateMaGiaoDich() {
         return "GD" + UUID.randomUUID().toString().replace("-", "").substring(0, 10).toUpperCase();
+    }
+
+    private String generateMaGoiDangBai() {
+        return "GDB" + UUID.randomUUID().toString().replace("-", "").substring(0, 10).toUpperCase();
     }
 
     private String toJson(Object data) {
@@ -293,9 +314,7 @@ public class SepayService {
 
     private String firstNotBlank(String... values) {
         for (String value : values) {
-            if (value != null && !value.isBlank()) {
-                return value;
-            }
+            if (value != null && !value.isBlank()) return value;
         }
         return "";
     }

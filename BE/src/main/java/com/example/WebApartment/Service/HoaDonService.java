@@ -2,9 +2,11 @@ package com.example.WebApartment.Service;
 
 import com.example.WebApartment.DTO.HoaDonDTO;
 import com.example.WebApartment.Models.BaiDang;
+import com.example.WebApartment.Models.GoiDangBai;
 import com.example.WebApartment.Models.HoaDon;
 import com.example.WebApartment.Models.NguoiDung;
 import com.example.WebApartment.Repository.BaiDangRepository;
+import com.example.WebApartment.Repository.GoiDangBaiRepository;
 import com.example.WebApartment.Repository.HoaDonRepository;
 import com.example.WebApartment.Repository.NguoiDungRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,18 +24,15 @@ public class HoaDonService {
     private final HoaDonRepository hoaDonRepository;
     private final NguoiDungRepository nguoiDungRepository;
     private final BaiDangRepository baiDangRepository;
+    private final GoiDangBaiRepository goiDangBaiRepository;
 
     public List<HoaDonDTO> getAll() {
-        return hoaDonRepository.findAll()
-                .stream()
-                .map(this::toDto)
-                .collect(Collectors.toList());
+        return hoaDonRepository.findAll().stream().map(this::toDto).collect(Collectors.toList());
     }
 
     public HoaDonDTO getById(String maHoaDon) {
         HoaDon hoaDon = hoaDonRepository.findById(maHoaDon)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn"));
-
         return toDto(hoaDon);
     }
 
@@ -52,21 +51,7 @@ public class HoaDonService {
     }
 
     public HoaDonDTO create(HoaDonDTO dto) {
-        if (dto == null) {
-            throw new RuntimeException("Dữ liệu hóa đơn không hợp lệ");
-        }
-
-        if (dto.getMaNguoiDung() == null || dto.getMaNguoiDung().isBlank()) {
-            throw new RuntimeException("Mã người dùng không được để trống");
-        }
-
-        if (dto.getLoaiHoaDon() == null || dto.getLoaiHoaDon().isBlank()) {
-            throw new RuntimeException("Loại hóa đơn không được để trống");
-        }
-
-        if (dto.getSoTien() == null || dto.getSoTien() <= 0) {
-            throw new RuntimeException("Số tiền không hợp lệ");
-        }
+        if (dto == null) throw new RuntimeException("Dữ liệu hóa đơn không hợp lệ");
 
         NguoiDung nguoiDung = nguoiDungRepository.findById(dto.getMaNguoiDung())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
@@ -77,6 +62,12 @@ public class HoaDonService {
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy bài đăng"));
         }
 
+        GoiDangBai goiDangBai = null;
+        if (dto.getMaGoiDangBai() != null && !dto.getMaGoiDangBai().isBlank()) {
+            goiDangBai = goiDangBaiRepository.findById(dto.getMaGoiDangBai())
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy gói đăng bài"));
+        }
+
         String maHoaDon = dto.getMaHoaDon() != null && !dto.getMaHoaDon().isBlank()
                 ? dto.getMaHoaDon()
                 : generateMaHoaDon();
@@ -85,25 +76,14 @@ public class HoaDonService {
                 .maHoaDon(maHoaDon)
                 .nguoiDung(nguoiDung)
                 .baiDang(baiDang)
+                .goiDangBai(goiDangBai)
                 .loaiHoaDon(dto.getLoaiHoaDon())
                 .soTien(dto.getSoTien())
-                .trangThaiThanhToan(
-                        dto.getTrangThaiThanhToan() != null
-                                ? dto.getTrangThaiThanhToan()
-                                : "PENDING"
-                )
-                .trangThaiHieuLuc(
-                        dto.getTrangThaiHieuLuc() != null
-                                ? dto.getTrangThaiHieuLuc()
-                                : "CHUA_HIEU_LUC"
-                )
+                .trangThaiThanhToan(dto.getTrangThaiThanhToan() != null ? dto.getTrangThaiThanhToan() : "PENDING")
+                .trangThaiHieuLuc(dto.getTrangThaiHieuLuc() != null ? dto.getTrangThaiHieuLuc() : "CHUA_HIEU_LUC")
                 .ngayBatDau(dto.getNgayBatDau())
                 .ngayKetThuc(dto.getNgayKetThuc())
-                .noiDungChuyenKhoan(
-                        dto.getNoiDungChuyenKhoan() != null
-                                ? dto.getNoiDungChuyenKhoan()
-                                : maHoaDon
-                )
+                .noiDungChuyenKhoan(dto.getNoiDungChuyenKhoan() != null ? dto.getNoiDungChuyenKhoan() : maHoaDon)
                 .ghiChu(dto.getGhiChu())
                 .ngayTao(LocalDateTime.now())
                 .ngayThanhToan(dto.getNgayThanhToan())
@@ -132,39 +112,7 @@ public class HoaDonService {
     public void delete(String maHoaDon) {
         HoaDon existing = hoaDonRepository.findById(maHoaDon)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn"));
-
         hoaDonRepository.delete(existing);
-    }
-
-    public HoaDonDTO markSuccess(String maHoaDon) {
-        HoaDon existing = hoaDonRepository.findById(maHoaDon)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn"));
-
-        LocalDateTime now = LocalDateTime.now();
-
-        existing.setTrangThaiThanhToan("SUCCESS");
-        existing.setTrangThaiHieuLuc("DANG_HIEU_LUC");
-        existing.setNgayThanhToan(now);
-
-        if (existing.getNgayBatDau() == null) {
-            existing.setNgayBatDau(now);
-        }
-
-        if ("DANG_BAI".equals(existing.getLoaiHoaDon()) && existing.getNgayKetThuc() == null) {
-            existing.setNgayKetThuc(now.plusMonths(1));
-        }
-
-        return toDto(hoaDonRepository.save(existing));
-    }
-
-    public HoaDonDTO markFailed(String maHoaDon) {
-        HoaDon existing = hoaDonRepository.findById(maHoaDon)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn"));
-
-        existing.setTrangThaiThanhToan("FAILED");
-        existing.setTrangThaiHieuLuc("CHUA_HIEU_LUC");
-
-        return toDto(hoaDonRepository.save(existing));
     }
 
     private String generateMaHoaDon() {
@@ -178,6 +126,7 @@ public class HoaDonService {
                 .maHoaDon(entity.getMaHoaDon())
                 .maNguoiDung(entity.getNguoiDung() != null ? entity.getNguoiDung().getMaNguoiDung() : null)
                 .maBaiDang(entity.getBaiDang() != null ? entity.getBaiDang().getMaBaiDang() : null)
+                .maGoiDangBai(entity.getGoiDangBai() != null ? entity.getGoiDangBai().getMaGoiDangBai() : null)
                 .loaiHoaDon(entity.getLoaiHoaDon())
                 .soTien(entity.getSoTien())
                 .trangThaiThanhToan(entity.getTrangThaiThanhToan())

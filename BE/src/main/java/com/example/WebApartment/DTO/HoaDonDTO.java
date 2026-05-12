@@ -14,6 +14,7 @@ public class HoaDonDTO {
     private String maHoaDon;
     private String maNguoiDung;
     private String maBaiDang;
+    private String maGoiDangBai;
 
     private String loaiHoaDon;
 

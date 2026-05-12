@@ -55,4 +55,8 @@ public class HoaDon {
 
     @Column(name = "ngayThanhToan")
     private LocalDateTime ngayThanhToan;
+
+    @ManyToOne
+    @JoinColumn(name = "maGoiDangBai")
+    private GoiDangBai goiDangBai;
 }
