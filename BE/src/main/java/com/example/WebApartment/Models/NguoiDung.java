@@ -68,10 +68,10 @@ public class NguoiDung implements UserDetails, OAuth2User {
             case "Admin":
                 role = "ROLE_ADMIN";
                 break;
-            case "Người thuê":
+            case "Người Thuê":
                 role = "ROLE_NGUOI_THUE";
                 break;
-            case "Người cho thuê":
+            case "Người Cho Thuê":
                 role = "ROLE_NGUOI_CHO_THUE";
                 break;
             default:

@@ -1,19 +1,39 @@
 import { useState } from 'react';
 import './Register.css';
 import { register } from '../../services/api/UserService.ts';
+import { ROLE_ID } from '../../constants/roles.ts';
+import type { RoleId } from '../../constants/roles.ts';
+import { useNavigate } from 'react-router-dom';
+
+type RegisterFormData = {
+    hoVaTen: string;
+    email: string;
+    soDienThoai: string;
+    matKhau: string;
+    retypeMatKhau: string;
+    maVaiTro: RoleId;
+};
 
 const RegisterForm = () => {
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<RegisterFormData>({
         hoVaTen: '',
         email: '',
         soDienThoai: '',
         matKhau: '',
         retypeMatKhau: '',
-        maVaiTro: '',
+        maVaiTro: ROLE_ID.NGUOI_THUE,
     });
+
+    const navigate = useNavigate();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
+
+        if (name === 'maVaiTro') {
+            setFormData(prev => ({ ...prev, maVaiTro: value as RoleId }));
+            return;
+        }
+
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
@@ -34,7 +54,10 @@ const RegisterForm = () => {
             };
             const res = await register(payload);
             alert('Đăng ký thành công!');
+
             console.log('User mới:', res);
+
+            navigate('/login');
         } catch (err: any) {
             alert(err.message || 'Đăng ký thất bại');
             console.error(err);
@@ -91,21 +114,21 @@ const RegisterForm = () => {
                         <input
                             type="radio"
                             name="maVaiTro"
-                            value="1"
-                            checked={formData.maVaiTro === '1'}
+                            value={ROLE_ID.NGUOI_THUE}
+                            checked={formData.maVaiTro === ROLE_ID.NGUOI_THUE}
                             onChange={handleChange}
                         />
-                        Môi giới
+                        Người Thuê
                     </label>
                     <label className="radio-option">
                         <input
                             type="radio"
                             name="maVaiTro"
-                            value="2"
-                            checked={formData.maVaiTro === '2'}
+                            value={ROLE_ID.NGUOI_CHO_THUE}
+                            checked={formData.maVaiTro === ROLE_ID.NGUOI_CHO_THUE}
                             onChange={handleChange}
                         />
-                        Chính chủ
+                        Người Cho Thuê
                     </label>
                 </div>
             </div>

@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Link, useNavigate } from "react-router-dom";
 import './LoginPage.css';
 import Register from '../Register/Register.tsx';
-import Footer from '../../components/layout/Footer/footer.tsx';
+
 import PageBanner from '../../components/sections/PageBanner/PageBanner.tsx';
 import { login } from '../../services/api/UserService.ts';
+import { getDefaultPathByRole } from '../../constants/roles.ts';
 
 const LoginPage = () => {
     const [phone, setPhone] = useState('');
@@ -14,14 +15,18 @@ const LoginPage = () => {
     const [error, setError] = useState('');
     const navigate = useNavigate();
 
+    const handleGoogleLogin = () => {
+        window.location.href = 'http://localhost:8082/oauth2/authorization/google';
+    };
+
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         setLoading(true);
 
         try {
-            await login(phone, password);
-            navigate('/');
+            const response = await login(phone, password);
+            navigate(getDefaultPathByRole(response.maVaiTro), { replace: true });
         } catch (err: any) {
             setError(err.message || 'Đăng nhập thất bại');
         } finally {
@@ -91,7 +96,10 @@ const LoginPage = () => {
                             </div>
 
                             <div className="social-login-button">
-                                <button className="google-btn">
+                                <button className="google-btn"
+                                    type = "button"
+                                    onClick = {handleGoogleLogin}
+                                    disabled = {loading}>
                                     <img
                                         src="https://img.icons8.com/color/24/000000/google-logo.png"
                                         alt="Google"
@@ -113,7 +121,6 @@ const LoginPage = () => {
                 </div>
             </div>
 
-            <Footer />
         </>
     );
 };

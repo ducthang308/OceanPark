@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { DownOutlined, LogoutOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import './admin-topbar.css';
+import { clearAuthSession } from '../../../utils/storage';
 
 interface Props {
   title: string;
@@ -13,7 +14,7 @@ const AdminTopbar: React.FC<Props> = ({ title, subtitle }) => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
+    clearAuthSession();
     navigate('/login');
   };
 

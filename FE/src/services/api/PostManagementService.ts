@@ -9,7 +9,7 @@ export interface BaiDangDTO {
   ngayDang?: string;
   trangThai?: string;
   lienHe?: string;
-  phuongThucThanhToan?: string;
+  hinhThucThanhToan?: string;
 }
 
 export interface ChiTietCanHoDTO {
