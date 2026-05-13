@@ -31,17 +31,17 @@ public class SepayController {
     @PostMapping("/webhook")
     public ResponseEntity<?> webhook(
             @RequestHeader(value = "Authorization", required = false) String authorization,
-            @RequestBody SepayWebhookRequest request
+            @RequestBody Map<String, Object> payload
     ) {
         String expected = "Apikey " + sepayApiKey;
 
-        if (authorization == null || !authorization.equals(expected)) {
+        if (authorization == null || !authorization.trim().equals(expected.trim())) {
             return ResponseEntity.status(401).body(Map.of(
                     "success", false,
                     "message", "Sai API key SePay"
             ));
         }
 
-        return ResponseEntity.ok(sepayService.handleWebhook(request));
+        return ResponseEntity.ok(sepayService.handleWebhook(payload));
     }
 }

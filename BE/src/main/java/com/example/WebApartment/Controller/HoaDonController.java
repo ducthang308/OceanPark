@@ -48,8 +48,10 @@ public class HoaDonController {
 
     @PreAuthorize("hasAnyRole('ADMIN','NGUOI_THUE','NGUOI_CHO_THUE')")
     @PutMapping("/{maHoaDon}")
-    public ResponseEntity<HoaDonDTO> update(@PathVariable String maHoaDon,
-                                            @RequestBody HoaDonDTO dto) {
+    public ResponseEntity<HoaDonDTO> update(
+            @PathVariable String maHoaDon,
+            @RequestBody HoaDonDTO dto
+    ) {
         return ResponseEntity.ok(hoaDonService.update(maHoaDon, dto));
     }
 
@@ -58,17 +60,5 @@ public class HoaDonController {
     public ResponseEntity<Void> delete(@PathVariable String maHoaDon) {
         hoaDonService.delete(maHoaDon);
         return ResponseEntity.noContent().build();
-    }
-
-    @PreAuthorize("hasRole('ADMIN')")
-    @PatchMapping("/{maHoaDon}/success")
-    public ResponseEntity<HoaDonDTO> markSuccess(@PathVariable String maHoaDon) {
-        return ResponseEntity.ok(hoaDonService.markSuccess(maHoaDon));
-    }
-
-    @PreAuthorize("hasRole('ADMIN')")
-    @PatchMapping("/{maHoaDon}/failed")
-    public ResponseEntity<HoaDonDTO> markFailed(@PathVariable String maHoaDon) {
-        return ResponseEntity.ok(hoaDonService.markFailed(maHoaDon));
     }
 }

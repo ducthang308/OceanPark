@@ -124,36 +124,53 @@ public class SepayService {
     }
 
     @Transactional
-    public Map<String, Object> handleWebhook(SepayWebhookRequest request) {
-        if (request == null) {
-            throw new RuntimeException("Webhook không hợp lệ");
+    public Map<String, Object> handleWebhook(Map<String, Object> payload) {
+        if (payload == null || payload.isEmpty()) {
+            return Map.of("success", false, "message", "Webhook rỗng");
         }
 
-        if (request.getTransferAmount() == null || request.getTransferAmount() <= 0) {
+        String content = firstNotBlank(
+                getString(payload, "content"),
+                getString(payload, "description"),
+                getString(payload, "code"),
+                getString(payload, "transaction_content")
+        );
+
+        Double transferAmount = getDouble(payload, "transferAmount");
+        if (transferAmount == null) transferAmount = getDouble(payload, "transfer_amount");
+        if (transferAmount == null) transferAmount = getDouble(payload, "amount");
+
+        String transactionNo = firstNotBlank(
+                getString(payload, "referenceCode"),
+                getString(payload, "reference_code"),
+                getString(payload, "id")
+        );
+
+        if (transferAmount == null || transferAmount <= 0) {
             return Map.of("success", false, "message", "Không phải giao dịch tiền vào hợp lệ");
         }
 
-        String transactionNo = request.getReferenceCode() != null
-                ? request.getReferenceCode()
-                : String.valueOf(request.getId());
-
-        if (transactionNo != null && giaoDichRepository.existsByProviderTransactionNo(transactionNo)) {
+        if (transactionNo != null && !transactionNo.isBlank()
+                && giaoDichRepository.existsByProviderTransactionNo(transactionNo)) {
             return Map.of("success", true, "message", "Webhook đã được xử lý trước đó");
         }
 
-        String content = firstNotBlank(request.getContent(), request.getDescription(), request.getCode());
         HoaDon hoaDon = findHoaDonFromContent(content);
 
         if (hoaDon == null) {
-            return Map.of("success", false, "message", "Không tìm thấy hóa đơn trong nội dung chuyển khoản");
+            return Map.of(
+                    "success", false,
+                    "message", "Không tìm thấy hóa đơn trong nội dung chuyển khoản",
+                    "content", content
+            );
         }
 
         if ("SUCCESS".equalsIgnoreCase(hoaDon.getTrangThaiThanhToan())) {
             return Map.of("success", true, "message", "Hóa đơn đã thanh toán trước đó");
         }
 
-        if (request.getTransferAmount() < hoaDon.getSoTien()) {
-            saveFailedGiaoDich(hoaDon, request, "Số tiền chuyển khoản không đủ");
+        if (transferAmount < hoaDon.getSoTien()) {
+            saveFailedGiaoDichFromMap(hoaDon, payload, transferAmount, transactionNo, "Số tiền chuyển khoản không đủ");
             return Map.of("success", false, "message", "Số tiền chuyển khoản không đủ");
         }
 
@@ -191,17 +208,23 @@ public class SepayService {
                 .hoaDon(hoaDon)
                 .nguoiDung(hoaDon.getNguoiDung())
                 .phuongThucThanhToan(phuongThuc)
-                .soTien(request.getTransferAmount())
+                .soTien(transferAmount)
                 .trangThai("SUCCESS")
                 .provider("SEPAY")
                 .providerTxnRef(hoaDon.getNoiDungChuyenKhoan())
                 .providerTransactionNo(transactionNo)
                 .providerTransactionStatus("SUCCESS")
-                .bankCode(request.getGateway())
-                .bankAccount(request.getAccountNumber())
-                .payDate(request.getTransactionDate())
+                .bankCode(getString(payload, "gateway"))
+                .bankAccount(firstNotBlank(
+                        getString(payload, "accountNumber"),
+                        getString(payload, "account_number")
+                ))
+                .payDate(firstNotBlank(
+                        getString(payload, "transactionDate"),
+                        getString(payload, "transaction_date")
+                ))
                 .orderInfo(content)
-                .rawData(toJson(request))
+                .rawData(toJson(payload))
                 .noiDung("Thanh toán SePay thành công")
                 .ngayTao(now)
                 .build();
@@ -317,5 +340,75 @@ public class SepayService {
             if (value != null && !value.isBlank()) return value;
         }
         return "";
+    }
+
+    private String getString(Map<String, Object> payload, String key) {
+        Object value = payload.get(key);
+        return value == null ? "" : String.valueOf(value);
+    }
+
+    private Double getDouble(Map<String, Object> payload, String key) {
+        Object value = payload.get(key);
+        if (value == null) return null;
+
+        try {
+            if (value instanceof Number number) {
+                return number.doubleValue();
+            }
+
+            String str = String.valueOf(value)
+                    .replace(",", "")
+                    .replace("đ", "")
+                    .trim();
+
+            return Double.parseDouble(str);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private void saveFailedGiaoDichFromMap(
+            HoaDon hoaDon,
+            Map<String, Object> payload,
+            Double transferAmount,
+            String transactionNo,
+            String reason
+    ) {
+        PhuongThucThanhToan phuongThuc = phuongThucThanhToanRepository.findByProvider("SEPAY").orElse(null);
+
+        String content = firstNotBlank(
+                getString(payload, "content"),
+                getString(payload, "description"),
+                getString(payload, "code"),
+                getString(payload, "transaction_content")
+        );
+
+        GiaoDich giaoDich = GiaoDich.builder()
+                .maGiaoDich(generateMaGiaoDich())
+                .hoaDon(hoaDon)
+                .nguoiDung(hoaDon.getNguoiDung())
+                .phuongThucThanhToan(phuongThuc)
+                .soTien(transferAmount)
+                .trangThai("FAILED")
+                .provider("SEPAY")
+                .providerTxnRef(hoaDon.getNoiDungChuyenKhoan())
+                .providerTransactionNo(transactionNo)
+                .providerTransactionStatus("FAILED")
+                .bankCode(getString(payload, "gateway"))
+                .bankAccount(firstNotBlank(
+                        getString(payload, "accountNumber"),
+                        getString(payload, "account_number")
+                ))
+                .payDate(firstNotBlank(
+                        getString(payload, "transactionDate"),
+                        getString(payload, "transaction_date")
+                ))
+                .orderInfo(content)
+                .rawData(toJson(payload))
+                .noiDung(reason)
+                .ngayTao(LocalDateTime.now())
+                .build();
+
+        giaoDichRepository.save(giaoDich);
     }
 }

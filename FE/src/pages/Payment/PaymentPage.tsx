@@ -1,11 +1,42 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './PaymentPage.css';
 import PricingTable from './components/PricingTable';
 import Navbar from '../../components/layout/Navbar/navbar';
+import { createSepayPayment } from '../../services/api/PostManagementService';
 
 const PaymentPage: React.FC = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+
+  const handlePaymentTinThuong = async () => {
+    try {
+      setLoading(true);
+
+      const maNguoiDung = localStorage.getItem('userId');
+
+      if (!maNguoiDung) {
+        alert('Vui lòng đăng nhập trước khi thanh toán');
+        navigate('/login');
+        return;
+      }
+
+      const paymentData = await createSepayPayment({
+        maNguoiDung,
+        loaiHoaDon: 'DANG_BAI',
+        soTien: 50000,
+        ghiChu: 'Thanh toán gói tin thường 1 tháng',
+      });
+
+      navigate('/payment/sepay', {
+        state: paymentData,
+      });
+    } catch (error: any) {
+      alert(error?.response?.data?.message || 'Tạo thanh toán thất bại');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="main-layout">
@@ -25,16 +56,18 @@ const PaymentPage: React.FC = () => {
             </div>
 
             <div className="pricing-wrapper">
-              <PricingTable />
+              <PricingTable
+                onPayment={handlePaymentTinThuong}
+                loading={loading}
+              />
             </div>
 
             <div className="pricing-notes">
               <h3>Lưu ý:</h3>
               <ul>
-                <li>Tất cả các gói tin đều có hiệu lực ngay sau khi thanh toán thành công.</li>
-                <li>Tin VIP Nổi Bật sẽ được hiển thị ở vị trí đầu tiên trên trang chủ và các trang danh mục.</li>
-                <li>(*) Tự động duyệt: Tin của bạn sẽ được hệ thống tự động kiểm duyệt và hiển thị ngay lập tức (vẫn tuân thủ điều khoản sử dụng).</li>
-                <li>Mọi thắc mắc vui lòng liên hệ bộ phận CSKH để được hỗ trợ 24/7.</li>
+                <li>Gói tin thường có hiệu lực 1 tháng sau khi thanh toán thành công.</li>
+                <li>Trong thời hạn gói, người cho thuê có thể đăng nhiều bài.</li>
+                <li>Sau khi hết hạn, bạn cần thanh toán lại để tiếp tục đăng bài.</li>
               </ul>
             </div>
           </div>

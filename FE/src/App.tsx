@@ -32,6 +32,7 @@ import OAuth2RedirectPage from './pages/Auth/OAuth2RedirectPage.tsx';
 
 import { AUTHENTICATED_ROLE_IDS, LANDLORD_ROLE_IDS, ROLE_ID } from './constants/roles.ts';
 import './assets/styles/Global.css';
+import SepayPaymentPage from './pages/Payment/SepayPaymentPage.tsx';
 
 function UserLayout() {
   return (
@@ -64,6 +65,7 @@ function App() {
           <Route element={<ProtectedRoute allowedRoles={AUTHENTICATED_ROLE_IDS} />}>
             <Route path="/AccountManagement" element={<AccountManagement />} />
             <Route path="/payment/:type" element={<PaymentPage />} />
+            <Route path="/payment/sepay" element={<SepayPaymentPage />} />
             <Route path="/favorite-posts" element={<FavoritePostsPage />} />
           </Route>
 

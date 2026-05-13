@@ -100,3 +100,42 @@ export const uploadPostImages = async (maBaiDang: string, files: File[]) => {
 
   return res.data;
 };
+
+
+export interface SepayCreatePaymentRequest {
+  maNguoiDung: string;
+  loaiHoaDon: 'DANG_BAI' | 'THUE_CAN_HO';
+  soTien: number;
+  maBaiDang?: string;
+  ghiChu?: string;
+}
+
+export interface SepayCreatePaymentResponse {
+  maHoaDon: string;
+  noiDungChuyenKhoan: string;
+  soTien: number;
+  bankCode: string;
+  bankAccount: string;
+  accountName: string;
+  qrUrl: string;
+}
+
+export interface HoaDonDTO {
+  maHoaDon: string;
+  trangThaiThanhToan: string;
+  trangThaiHieuLuc: string;
+  loaiHoaDon: string;
+}
+
+export const createSepayPayment = async (payload: SepayCreatePaymentRequest) => {
+  const res = await axiosClient.post<SepayCreatePaymentResponse>(
+    "/api/v1/sepay/create-payment",
+    payload
+  );
+  return res.data;
+};
+
+export const getHoaDonById = async (maHoaDon: string) => {
+  const res = await axiosClient.get<HoaDonDTO>(`/api/v1/hoa-don/${maHoaDon}`);
+  return res.data;
+};
