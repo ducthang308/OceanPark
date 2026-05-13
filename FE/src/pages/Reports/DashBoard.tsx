@@ -14,7 +14,7 @@ const monthlyPosts = [
 ];
 
 const transactionTypes = [
-  { name: "Mua gói đăng tin", value: 320 },
+  { name: "Nạp tiền", value: 320 },
   { name: "Chi phí đăng bài", value: 150 },
   { name: "Khác", value: 50 },
 ];

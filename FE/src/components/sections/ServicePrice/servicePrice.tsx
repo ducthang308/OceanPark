@@ -1,3 +1,4 @@
+import React from 'react'
 import { Table } from 'antd';
 import "./index.css"
 
@@ -12,31 +13,31 @@ const columns = [
         title: 'Tin VIP Nổi Bật',
         dataIndex: 'vip1',
         key: 'vip1',
-        render: (text: string) => <div dangerouslySetInnerHTML={{ __html: text }} />,
+        render: (text) => <div dangerouslySetInnerHTML={{ __html: text }} />,
     },
     {
         title: 'Tin VIP 1',
         dataIndex: 'vip2',
         key: 'vip2',
-        render: (text: string) => <div dangerouslySetInnerHTML={{ __html: text }} />,
+        render: (text) => <div dangerouslySetInnerHTML={{ __html: text }} />,
     },
     {
         title: 'Tin VIP 2',
         dataIndex: 'vip3',
         key: 'vip3',
-        render: (text: string) => <div dangerouslySetInnerHTML={{ __html: text }} />,
+        render: (text) => <div dangerouslySetInnerHTML={{ __html: text }} />,
     },
     {
         title: 'Tin VIP 3',
         dataIndex: 'vip4',
         key: 'vip4',
-        render: (text: string) => <div dangerouslySetInnerHTML={{ __html: text }} />,
+        render: (text) => <div dangerouslySetInnerHTML={{ __html: text }} />,
     },
     {
         title: 'Tin Thường',
         dataIndex: 'normal',
         key: 'normal',
-        render: (text: string) => <div dangerouslySetInnerHTML={{ __html: text }} />,
+        render: (text) => <div dangerouslySetInnerHTML={{ __html: text }} />,
     },
 ];
 

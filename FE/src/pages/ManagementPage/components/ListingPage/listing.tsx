@@ -10,11 +10,12 @@ import Image from "../../../../assets/img/co4la.png";
 import VideoIcon from "../../../../assets/img/upload-video.png";
 
 import { useNavigate } from "react-router-dom";
+import { useSubscription } from "../../../../hooks/useSubscription";
+import { Spin } from "antd";
 import {
   createApartmentDetail,
   createPost,
   getCategories,
-  updatePost,
   uploadPostImages,
   type DanhMucDTO,
 } from "../../../../services/api/PostManagementService";
@@ -54,6 +55,14 @@ const getStoredUser = (): StoredUser | null => {
 const Listing = () => {
   const storedUser = getStoredUser();
   const navigate = useNavigate();
+  const { hasActivePackage, loading: subLoading } = useSubscription();
+
+  useEffect(() => {
+    if (!subLoading && hasActivePackage === false) {
+      message.warning("Bạn cần có gói đăng bài còn hiệu lực để thực hiện chức năng này.");
+      navigate("/payment/all");
+    }
+  }, [hasActivePackage, subLoading, navigate]);
 
   const [categories, setCategories] = useState<DanhMucDTO[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -376,10 +385,8 @@ const Listing = () => {
         );
       }
 
-      await updatePost(post.maBaiDang, { trangThai: "PENDING" });
-
-      message.success("Tạo bài đăng thành công, vui lòng chọn gói kích hoạt");
-      navigate(`/payment/${post.maBaiDang}`);
+      message.success("Đăng tin thành công");
+      navigate("/list-post");
 
       setFormData({
         maDanhMuc: "",
@@ -399,6 +406,14 @@ const Listing = () => {
       setIsSubmitting(false);
     }
   };
+
+  if (subLoading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', width: '100%' }}>
+        <Spin size="large" tip="Đang kiểm tra gói dịch vụ..." />
+      </div>
+    );
+  }
 
   return (
     <div className="container-listing">
