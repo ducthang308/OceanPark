@@ -1,14 +1,15 @@
 .navbar-management {
     width: 265px;
-    height: 15%;
+    height: calc(100vh - 100px);
     background-color: #fff;
     padding: 30px 12px;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: flex-start;
     border: 1px solid #f0f0f0;
     box-shadow: 2px 0 5px rgba(0, 0, 0, 0.03);
-
+    position: sticky;
+    top: 100px;
 }
 
 .nav-header {
@@ -111,11 +112,13 @@
 
 /* Sticky hỗ trợ bên dưới */
 .sticky-bottom {
+    margin-top: auto;
     font-size: 13px;
     color: #000;
-    padding-top: 16px;
+    padding: 16px 0;
     border-top: 1px solid #eee;
     text-align: left;
+    background-color: #fff;
 }
 
 .sticky-bottom::before {

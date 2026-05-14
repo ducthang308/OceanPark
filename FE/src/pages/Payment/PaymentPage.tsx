@@ -50,10 +50,10 @@ const PaymentPage: React.FC = () => {
               <strong>Bảng giá dịch vụ</strong>
             </div>
 
-            <div className="payment-header-section">
+            {/* <div className="payment-header-section">
               <h1>Bảng giá dịch vụ đăng tin</h1>
               <p>Lựa chọn gói tin phù hợp để tối ưu hiệu quả cho thuê phòng của bạn</p>
-            </div>
+            </div> */}
 
             <div className="pricing-wrapper">
               <PricingTable

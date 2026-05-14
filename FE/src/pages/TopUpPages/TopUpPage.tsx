@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useParams, useLocation, Link} from 'react-router-dom';
-import { Button, Card, InputNumber, Radio, Typography, Image } from 'antd';
+import { Button, Card, InputNumber, Radio, Typography, Image, Tag } from 'antd';
 import './TopUpPage.css';
-import Footer from '../../components/layout/Footer/footer';
+
 import Navbar from '../../components/layout/Navbar/navbar';
 
 import QR from "../../assets/img/QR.jpg";
