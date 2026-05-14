@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import "./listing.css";
 import { Button, Checkbox, Col, Input, message, Row, Select } from "antd";
-import { ArrowRightOutlined } from "@ant-design/icons";
+import { ArrowRightOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 import TextArea from "antd/es/input/TextArea";
+import axios from "axios";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -10,8 +11,6 @@ import Image from "../../../../assets/img/co4la.png";
 import VideoIcon from "../../../../assets/img/upload-video.png";
 
 import { useNavigate } from "react-router-dom";
-import { useSubscription } from "../../../../hooks/useSubscription";
-import { Spin } from "antd";
 import {
   createApartmentDetail,
   createPost,
@@ -41,6 +40,22 @@ interface StoredUser {
 
 const { Option } = Select;
 
+const getApiErrorMessage = (error: unknown, fallback: string) => {
+  if (axios.isAxiosError(error)) {
+    const data = error.response?.data;
+
+    if (typeof data === "string" && data.trim()) return data;
+    if (data && typeof data === "object" && "message" in data) {
+      const messageValue = (data as { message?: unknown }).message;
+      if (typeof messageValue === "string" && messageValue.trim()) return messageValue;
+    }
+  }
+
+  if (error instanceof Error && error.message.trim()) return error.message;
+
+  return fallback;
+};
+
 const getStoredUser = (): StoredUser | null => {
   const rawUser = localStorage.getItem("user");
   if (!rawUser) return null;
@@ -55,14 +70,6 @@ const getStoredUser = (): StoredUser | null => {
 const Listing = () => {
   const storedUser = getStoredUser();
   const navigate = useNavigate();
-  const { hasActivePackage, loading: subLoading } = useSubscription();
-
-  useEffect(() => {
-    if (!subLoading && hasActivePackage === false) {
-      message.warning("Bạn cần có gói đăng bài còn hiệu lực để thực hiện chức năng này.");
-      navigate("/payment/all");
-    }
-  }, [hasActivePackage, subLoading, navigate]);
 
   const [categories, setCategories] = useState<DanhMucDTO[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -84,6 +91,7 @@ const Listing = () => {
     diaChi: "",
     diaChiCuThe: "",
   });
+  const { thanhPho, phuong, diaChi } = address;
 
   const fullAddress =
     address.diaChiCuThe ||
@@ -188,15 +196,13 @@ const Listing = () => {
   }, []);
 
   useEffect(() => {
-    const { thanhPho, phuong, diaChi } = address;
-
     if (thanhPho && phuong && diaChi) {
       setAddress((prev) => ({
         ...prev,
         diaChiCuThe: `${diaChi}, ${phuong}, ${thanhPho}`,
       }));
     }
-  }, [address.thanhPho, address.phuong, address.diaChi]);
+  }, [thanhPho, phuong, diaChi]);
 
   const handleSelectImages = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
@@ -401,22 +407,29 @@ const Listing = () => {
       setImages([]);
     } catch (error) {
       console.error(error);
-      message.error("Đăng tin thất bại");
+      message.error(getApiErrorMessage(error, "Đăng tin thất bại"));
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (subLoading) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', width: '100%' }}>
-        <Spin size="large" tip="Đang kiểm tra gói dịch vụ..." />
-      </div>
-    );
-  }
-
   return (
     <div className="container-listing">
+      <div className="listing-main-header">
+        <div className="listing-header-top">
+          <Button 
+            type="text" 
+            icon={<ArrowLeftOutlined />} 
+            onClick={() => navigate(-1)}
+            className="listing-back-btn"
+          >
+            Quay lại
+          </Button>
+        </div>
+        <h1 className="listing-main-title">Đăng tin mới</h1>
+        <p className="listing-main-subtitle">Vui lòng điền thông tin chính xác để tin đăng đạt hiệu quả tốt nhất</p>
+      </div>
+
       <div className="category-listing">
         <div className="title-listing">Loại chuyên mục</div>
         <div className="form-group-listing">
@@ -426,7 +439,7 @@ const Listing = () => {
           <Select
             className="select-listing"
             placeholder="-- Chọn loại chuyên mục --"
-            style={{ width: "50%" }}
+
             size="large"
             allowClear
             value={formData.maDanhMuc || undefined}
@@ -577,9 +590,10 @@ const Listing = () => {
           />
         </div>
 
-        <div className="form-group-listing gap width">
-          <label className="label">
-            Hình thức thanh toán <span className="required">(*)</span>
+        <div className="detail-listing-grid">
+          <div className="form-group-listing gap">
+            <label className="label">
+              Hình thức thanh toán <span className="required">(*)</span>
           </label>
           <Select
             className="select-listing"
@@ -600,7 +614,7 @@ const Listing = () => {
             Giá cho thuê <span className="required">(*)</span>
           </label>
           <Input
-            className="input-height input-width"
+            className="input-height"
             placeholder="Nhập giá thuê"
             value={formData.gia}
             onChange={(event) =>
@@ -617,7 +631,7 @@ const Listing = () => {
             Diện tích <span className="required">(*)</span>
           </label>
           <Input
-            className="input-height input-width"
+            className="input-height"
             placeholder="Nhập diện tích"
             value={formData.dienTich}
             onChange={(event) =>
@@ -629,7 +643,7 @@ const Listing = () => {
           </span>
         </div>
 
-        <div className="form-group-listing gap width">
+        <div className="form-group-listing gap">
           <label className="label">
             Phòng ngủ <span className="required">(*)</span>
           </label>
@@ -648,7 +662,7 @@ const Listing = () => {
           </Select>
         </div>
 
-        <div className="form-group-listing gap width">
+        <div className="form-group-listing gap">
           <label className="label">
             Hướng căn hộ <span className="required">(*)</span>
           </label>
@@ -670,6 +684,7 @@ const Listing = () => {
             <Option value="Tây Bắc">Tây Bắc</Option>
             <Option value="Tây Nam">Tây Nam</Option>
           </Select>
+        </div>
         </div>
       </div>
 

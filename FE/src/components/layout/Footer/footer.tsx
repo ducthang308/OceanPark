@@ -9,12 +9,12 @@ type FooterLink = {
 
 const Footer: React.FC = () => {
   const propertyLinks: FooterLink[] = [
-    { label: 'Phòng trọ', to: '/posts?category=phong-tro' },
-    { label: 'Căn hộ cao cấp', to: '/posts?category=can-ho-cao-cap' },
-    { label: 'Căn hộ chung cư', to: '/posts?category=can-ho-chung-cu' },
-    { label: 'Nhà nguyên căn', to: '/posts?category=nha-nguyen-can' },
-    { label: 'Căn hộ mini', to: '/posts?category=can-ho-mini' },
-    { label: 'Mặt bằng cho thuê', to: '/posts?category=mat-bang-cho-thue' },
+    { label: 'Phòng trọ', to: '/danh-muc/phong-tro' },
+    { label: 'Căn hộ cao cấp', to: '/danh-muc/can-ho-cao-cap' },
+    { label: 'Căn hộ chung cư', to: '/danh-muc/can-ho-chung-cu' },
+    { label: 'Nhà nguyên căn', to: '/danh-muc/nha-nguyen-can' },
+    { label: 'Căn hộ mini', to: '/danh-muc/can-ho-mini' },
+    { label: 'Mặt bằng cho thuê', to: '/danh-muc/mat-bang-cho-thue' },
   ];
 
   const supportLinks: FooterLink[] = [

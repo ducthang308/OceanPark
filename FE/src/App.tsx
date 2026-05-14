@@ -1,4 +1,5 @@
-import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom';
+import { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Outlet, useLocation } from 'react-router-dom';
 
 import ProtectedRoute from './components/auth/ProtectedRoute.tsx';
 import Header from './components/layout/Header/header.tsx';
@@ -8,6 +9,7 @@ import Footer from './components/layout/Footer/footer.tsx';
 import LoginPage from './pages/Login/LoginPage.tsx';
 import History from './pages/PayManagement/HistoryPay.tsx';
 import Home from './pages/Home/Home.tsx';
+import RoomList from './pages/RoomList/RoomList.tsx';
 import TopUpPage from './pages/TopUpPages/TopUpPage.tsx';
 import AccountManagement from './pages/AccountManagement/AccountManagement.tsx';
 import BlogAboutUs from './pages/Blog/AboutUsBlog.tsx';
@@ -47,13 +49,26 @@ function UserLayout() {
   );
 }
 
+function ScrollToTop() {
+  const { pathname, search } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [pathname, search]);
+
+  return null;
+}
+
 function App() {
   return (
     <Router>
+      <ScrollToTop />
       <Routes>
         {/* User routes */}
         <Route element={<UserLayout />}>
           <Route path="/" element={<Home />} />
+          <Route path="/posts" element={<RoomList />} />
+          <Route path="/danh-muc/:slug" element={<RoomList />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/oauth2/redirect" element={<OAuth2RedirectPage />} />
           <Route path="/oauth2/success" element={<OAuth2RedirectPage />} />
