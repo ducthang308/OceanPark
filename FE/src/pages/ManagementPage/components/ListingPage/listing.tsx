@@ -3,6 +3,7 @@ import "./listing.css";
 import { Button, Checkbox, Col, Input, message, Row, Select } from "antd";
 import { ArrowRightOutlined } from "@ant-design/icons";
 import TextArea from "antd/es/input/TextArea";
+import axios from "axios";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -10,8 +11,6 @@ import Image from "../../../../assets/img/co4la.png";
 import VideoIcon from "../../../../assets/img/upload-video.png";
 
 import { useNavigate } from "react-router-dom";
-import { useSubscription } from "../../../../hooks/useSubscription";
-import { Spin } from "antd";
 import {
   createApartmentDetail,
   createPost,
@@ -41,6 +40,22 @@ interface StoredUser {
 
 const { Option } = Select;
 
+const getApiErrorMessage = (error: unknown, fallback: string) => {
+  if (axios.isAxiosError(error)) {
+    const data = error.response?.data;
+
+    if (typeof data === "string" && data.trim()) return data;
+    if (data && typeof data === "object" && "message" in data) {
+      const messageValue = (data as { message?: unknown }).message;
+      if (typeof messageValue === "string" && messageValue.trim()) return messageValue;
+    }
+  }
+
+  if (error instanceof Error && error.message.trim()) return error.message;
+
+  return fallback;
+};
+
 const getStoredUser = (): StoredUser | null => {
   const rawUser = localStorage.getItem("user");
   if (!rawUser) return null;
@@ -55,14 +70,6 @@ const getStoredUser = (): StoredUser | null => {
 const Listing = () => {
   const storedUser = getStoredUser();
   const navigate = useNavigate();
-  const { hasActivePackage, loading: subLoading } = useSubscription();
-
-  useEffect(() => {
-    if (!subLoading && hasActivePackage === false) {
-      message.warning("Bạn cần có gói đăng bài còn hiệu lực để thực hiện chức năng này.");
-      navigate("/payment/all");
-    }
-  }, [hasActivePackage, subLoading, navigate]);
 
   const [categories, setCategories] = useState<DanhMucDTO[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -401,19 +408,11 @@ const Listing = () => {
       setImages([]);
     } catch (error) {
       console.error(error);
-      message.error("Đăng tin thất bại");
+      message.error(getApiErrorMessage(error, "Đăng tin thất bại"));
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  if (subLoading) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', width: '100%' }}>
-        <Spin size="large" tip="Đang kiểm tra gói dịch vụ..." />
-      </div>
-    );
-  }
 
   return (
     <div className="container-listing">

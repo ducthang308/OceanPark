@@ -17,7 +17,6 @@ import { useNavigate } from 'react-router-dom';
 import { LANDLORD_ROLE_IDS } from '../../../constants/roles';
 import type { RoleId } from '../../../constants/roles';
 import { useAuth } from '../../../hooks/useAuth';
-import { useSubscription } from '../../../hooks/useSubscription';
 import { clearAuthSession } from '../../../utils/storage';
 
 type SidebarItem = NonNullable<MenuProps['items']>[number] & {
@@ -83,18 +82,10 @@ const navbar = () => {
         return Boolean(roleId && item.allowedRoles.includes(roleId));
     });
 
-    const { hasActivePackage, loading: subLoading } = useSubscription();
-
     const handleMenuClick: MenuProps['onClick'] = (e) => {
         switch (e.key) {
             case '1':
-                if (subLoading) return;
-                if (hasActivePackage) {
-                    navigate('/listing');
-                } else {
-                    // Redirect to pricing if no active package
-                    navigate('/payment/all');
-                }
+                navigate('/listing');
                 break;
             case '2':
                 navigate('/list-post');
