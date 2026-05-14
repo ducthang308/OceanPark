@@ -2,7 +2,8 @@
     width: 265px;
     height: calc(100vh - 100px);
     background-color: #fff;
-    padding: 30px 12px;
+    padding: 30px 12px 12px 12px;
+
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
@@ -10,6 +11,7 @@
     box-shadow: 2px 0 5px rgba(0, 0, 0, 0.03);
     position: sticky;
     top: 100px;
+
 }
 
 .nav-header {

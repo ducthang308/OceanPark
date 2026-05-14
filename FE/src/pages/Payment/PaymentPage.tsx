@@ -1,9 +1,24 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import './PaymentPage.css';
 import PricingTable from './components/PricingTable';
 import Navbar from '../../components/layout/Navbar/navbar';
 import { createSepayPayment } from '../../services/api/PostManagementService';
+
+const getPaymentErrorMessage = (error: unknown) => {
+  if (axios.isAxiosError(error)) {
+    const data = error.response?.data;
+
+    if (typeof data === 'string' && data.trim()) return data;
+    if (data && typeof data === 'object' && 'message' in data) {
+      const messageValue = (data as { message?: unknown }).message;
+      if (typeof messageValue === 'string' && messageValue.trim()) return messageValue;
+    }
+  }
+
+  return 'Tạo thanh toán thất bại';
+};
 
 const PaymentPage: React.FC = () => {
   const navigate = useNavigate();
@@ -31,17 +46,17 @@ const PaymentPage: React.FC = () => {
       navigate('/payment/sepay', {
         state: paymentData,
       });
-    } catch (error: any) {
-      alert(error?.response?.data?.message || 'Tạo thanh toán thất bại');
+    } catch (error) {
+      alert(getPaymentErrorMessage(error));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="main-layout">
+    <div className="payment-layout">
       <Navbar />
-      <div className="content-area">
+      <div className="payment-content-area">
         <div className="payment-page">
           <div className="payment-shell">
             <div className="payment-breadcrumb">

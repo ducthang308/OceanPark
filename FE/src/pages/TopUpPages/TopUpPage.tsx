@@ -1,28 +1,36 @@
 import React, { useState } from 'react';
-import { useParams, useLocation, Link} from 'react-router-dom';
-import { Button, Card, InputNumber, Radio, Typography, Image, Tag } from 'antd';
+import { useLocation, Link } from 'react-router-dom';
+import { InputNumber, Image, Tag } from 'antd';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { FreeMode } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/free-mode';
 import './TopUpPage.css';
-
 import Navbar from '../../components/layout/Navbar/navbar';
+import QR from '../../assets/img/QR.jpg';
+import Qr_CaNhan from '../../assets/img/Qr_CaNhan.jpg';
 
-import QR from "../../assets/img/QR.jpg";
-import Qr_CaNhan from "../../assets/img/Qr_CaNhan.jpg";
-
-const { Title, Text } = Typography;
 const moneyOptions = [50000, 100000, 200000, 500000, 1000000, 2000000, 5000000];
- const tabList = [
-    { label: 'QRCode', path: '/recharge/payoo' },
-    { label: 'Ví MoMo', path: '/recharge/momo' },
-    { label: 'Thẻ ATM nội địa', path: '/recharge/atm' },
-    { label: 'Thẻ quốc tế', path: '/recharge/card' },
-    { label: 'Chuyển khoản', path: '/recharge/bank' },
-    { label: 'Điểm giao dịch', path: '/recharge/store' },
-  ];
+
+const tabList = [
+  { label: 'QRCode', path: '/recharge/payoo', icon: '⚡' },
+  { label: 'Ví MoMo', path: '/recharge/momo', icon: '💜' },
+  { label: 'Thẻ ATM nội địa', path: '/recharge/atm', icon: '🏦' },
+  { label: 'Thẻ quốc tế', path: '/recharge/card', icon: '💳' },
+  { label: 'Chuyển khoản', path: '/recharge/bank', icon: '🔄' },
+  { label: 'Điểm giao dịch', path: '/recharge/store', icon: '📍' },
+];
+
+const bonusRules = [
+  { min: 2000000, pct: 25, label: 'Từ 2 triệu' },
+  { min: 1000000, pct: 20, label: 'Từ 1 triệu' },
+  { min: 100000, pct: 10, label: 'Từ 100K' },
+];
 
 const TopUpPage = () => {
-  const [amount, setAmount] = useState<number>(50000);
+  const [amount, setAmount] = useState<number>(500000);
   const [showQRCode, setShowQRCode] = useState<boolean>(false);
-  const { method } = useParams();
+  const location = useLocation();
 
   const VAT_RATE = 0.1;
   const getBonus = (val: number) => {
@@ -34,98 +42,195 @@ const TopUpPage = () => {
 
   const vat = +(amount * VAT_RATE).toFixed(0);
   const afterTax = amount - vat;
-  const bonus = +(amount * getBonus(amount)).toFixed(0);
+  const bonusPct = getBonus(amount);
+  const bonus = +(amount * bonusPct).toFixed(0);
   const totalReceive = afterTax + bonus;
 
+  const formatMoney = (val: number) =>
+    val >= 1000000
+      ? (val / 1000000).toFixed(val % 1000000 === 0 ? 0 : 1) + 'M'
+      : val >= 1000
+      ? (val / 1000).toFixed(0) + 'K'
+      : val.toString();
+
   return (
-    <div className="main-layout">
+    <div className="tu-layout">
       <Navbar />
-      <div className="content-area">
-        <main className="topup-main">
-          <h2 className="Title">Nạp tiền vào tài khoản</h2>
-          <div className="topup-tabs">
+      <div className="tu-content">
+        {/* Header */}
+        <div className="tu-header">
+          <div className="tu-header__inner">
+            <div className="tu-header__icon">💰</div>
+            <div>
+              <h1 className="tu-header__title">Nạp tiền vào tài khoản</h1>
+              <p className="tu-header__sub">Chọn phương thức thanh toán phù hợp với bạn</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Tab Swiper */}
+        <div className="tu-tabs-wrap">
+          <Swiper
+            modules={[FreeMode]}
+            freeMode
+            slidesPerView="auto"
+            spaceBetween={8}
+            className="tu-tabs-swiper"
+          >
             {tabList.map((tab) => (
-              <Link
-                key={tab.path}
-                to={tab.path}
-                className={location.pathname === tab.path ? 'active' : ''}
-              >
-                {tab.label}
-              </Link>
+              <SwiperSlide key={tab.path} style={{ width: 'auto' }}>
+                <Link
+                  to={tab.path}
+                  className={`tu-tab${location.pathname === tab.path ? ' is-active' : ''}`}
+                >
+                  <span className="tu-tab__icon">{tab.icon}</span>
+                  {tab.label}
+                </Link>
+              </SwiperSlide>
             ))}
-          </div>
-          <div className="topup-container-wrapper">
-            {!showQRCode ? (
-              <div className="topup-form-grid">
-                <Card className="topup-card" title="Chọn số tiền cần nạp">
-                  <Radio.Group
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    className="topup-radio-group"
+          </Swiper>
+        </div>
+
+        {/* Bonus Banner */}
+        <div className="tu-bonus-banner">
+          {bonusRules.map((rule) => (
+            <div
+              key={rule.min}
+              className={`tu-bonus-pill${amount >= rule.min ? ' is-active' : ''}`}
+            >
+              🎁 {rule.label} +{rule.pct}%
+            </div>
+          ))}
+        </div>
+
+        {/* Main area */}
+        {!showQRCode ? (
+          <div className="tu-grid">
+            {/* Left: Amount picker */}
+            <div className="tu-card">
+              <div className="tu-card__header">
+                <span className="tu-card__icon">💵</span>
+                <h2>Chọn số tiền nạp</h2>
+              </div>
+
+              <div className="tu-money-grid">
+                {moneyOptions.map((money) => (
+                  <button
+                    key={money}
+                    type="button"
+                    className={`tu-money-btn${amount === money ? ' is-selected' : ''}`}
+                    onClick={() => setAmount(money)}
                   >
-                    {moneyOptions.map((money) => (
-                      <Radio.Button key={money} value={money}>
-                        {money.toLocaleString()}đ
-                      </Radio.Button>
-                    ))}
-                  </Radio.Group>
-
-                  <div className="topup-input">
-                    <Text>Hoặc nhập số tiền cần nạp:</Text>
-                    <InputNumber
-                      min={10000}
-                      step={1000}
-                      value={amount}
-                      onChange={(val) => setAmount(val || 0)}
-                      addonAfter="đ"
-                      className="topup-input-number"
-                    />
-                  </div>
-                </Card>
-
-                <Card className="topup-card" title="Thông tin nạp tiền">
-                  <div className="topup-info">
-                    <div><Text>Số tiền nạp:</Text> <Text>{amount.toLocaleString()}đ</Text></div>
-                    <div><Text>Thuế VAT (10%):</Text> <Text type="danger">-{vat.toLocaleString()}đ</Text></div>
-                    <div><Text>Sau thuế:</Text> <Text>{afterTax.toLocaleString()}đ</Text></div>
-                    <div><Text>Khuyến mãi:</Text> <Text type="success">+{bonus.toLocaleString()}đ</Text></div>
-                    <div className="total-receive"><strong>Thực nhận:</strong> <strong>{totalReceive.toLocaleString()}đ</strong></div>
-                  </div>
-                  <Button type="primary" block size="large" className="topup-submit-btn" onClick={() => setShowQRCode(true)}>
-                    Tiếp tục →
-                  </Button>
-                </Card>
+                    <span className="tu-money-btn__val">{formatMoney(money)}</span>
+                    {getBonus(money) > 0 && (
+                      <span className="tu-money-btn__badge">+{getBonus(money) * 100}%</span>
+                    )}
+                  </button>
+                ))}
               </div>
-            ) : (
-              <div className="qr-section">
-                <Card className="topup-card" title="Bước 2: Thanh toán bằng cách scan mã QR bên dưới">
-                  <div style={{ textAlign: 'center' }}>
-                    <Image
-                      width={250}
-                      src={Qr_CaNhan}
-                      alt="QR Code"
-                    />
-                    <p style={{ marginTop: 16 }}><b>Nội dung chuyển khoản:</b> <Tag color="blue" style={{ fontSize: 16 }}>NAP {amount}</Tag></p>
-                    <Button danger size="small" style={{ marginTop: 10 }} onClick={() => setShowQRCode(false)}>
-                      Quay lại
-                    </Button>
-                  </div>
-                </Card>
 
-                <Card className="topup-card" title="HƯỚNG DẪN THANH TOÁN">
-                  <Image
-                    src={QR}
-                    alt="Hướng dẫn thanh toán"
-                  />
-                </Card>
+              <div className="tu-custom-input">
+                <label>Hoặc nhập số tiền khác:</label>
+                <InputNumber
+                  min={10000}
+                  step={10000}
+                  value={amount}
+                  onChange={(val) => setAmount(val || 0)}
+                  formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                  parser={(val) => Number(val!.replace(/,/g, ''))}
+                  addonAfter="đ"
+                  className="tu-input-number"
+                />
               </div>
-            )}
+            </div>
+
+            {/* Right: Summary */}
+            <div className="tu-card tu-card--summary">
+              <div className="tu-card__header">
+                <span className="tu-card__icon">📊</span>
+                <h2>Chi tiết giao dịch</h2>
+              </div>
+
+              <div className="tu-summary-rows">
+                <div className="tu-summary-row">
+                  <span>Số tiền nạp</span>
+                  <span className="tu-summary-row__val">{amount.toLocaleString()}đ</span>
+                </div>
+                <div className="tu-summary-row tu-summary-row--deduct">
+                  <span>Thuế VAT (10%)</span>
+                  <span>−{vat.toLocaleString()}đ</span>
+                </div>
+                <div className="tu-summary-row">
+                  <span>Sau thuế</span>
+                  <span>{afterTax.toLocaleString()}đ</span>
+                </div>
+                {bonus > 0 && (
+                  <div className="tu-summary-row tu-summary-row--bonus">
+                    <span>Khuyến mãi ({bonusPct * 100}%)</span>
+                    <span>+{bonus.toLocaleString()}đ</span>
+                  </div>
+                )}
+                <div className="tu-summary-divider" />
+                <div className="tu-summary-row tu-summary-row--total">
+                  <span>Thực nhận</span>
+                  <strong>{totalReceive.toLocaleString()}đ</strong>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className="tu-submit-btn"
+                onClick={() => setShowQRCode(true)}
+              >
+                Tiếp tục thanh toán →
+              </button>
+            </div>
           </div>
-        </main>
+        ) : (
+          <div className="tu-grid">
+            {/* QR Code card */}
+            <div className="tu-card tu-card--qr">
+              <div className="tu-card__header">
+                <span className="tu-card__icon">📲</span>
+                <h2>Quét mã QR để thanh toán</h2>
+              </div>
+              <div className="tu-qr-box">
+                <div className="tu-qr-amount">
+                  <span>Số tiền:</span>
+                  <strong>{amount.toLocaleString()}đ</strong>
+                </div>
+                <div className="tu-qr-img-wrap">
+                  <Image width={220} src={Qr_CaNhan} alt="QR Code thanh toán" />
+                </div>
+                <p className="tu-qr-note">
+                  Nội dung chuyển khoản:&nbsp;
+                  <Tag color="orange" style={{ fontSize: 15, padding: '2px 10px' }}>
+                    NAP {amount}
+                  </Tag>
+                </p>
+                <button
+                  type="button"
+                  className="tu-back-btn"
+                  onClick={() => setShowQRCode(false)}
+                >
+                  ← Quay lại
+                </button>
+              </div>
+            </div>
+
+            {/* Guide card */}
+            <div className="tu-card">
+              <div className="tu-card__header">
+                <span className="tu-card__icon">📖</span>
+                <h2>Hướng dẫn thanh toán</h2>
+              </div>
+              <Image src={QR} alt="Hướng dẫn thanh toán" style={{ borderRadius: 12 }} />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 };
-
 
 export default TopUpPage;

@@ -113,6 +113,7 @@ const AccountManagement = () => {
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPhone, setSavingPhone] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
+  const [isProfileFormOpen, setIsProfileFormOpen] = useState(false);
 
   const displayName = useMemo(() => user?.hoVaTen?.trim() || 'Tài khoản', [user]);
   const displayEmail = user?.email?.trim() || 'Chưa cập nhật';
@@ -140,6 +141,7 @@ const AccountManagement = () => {
         diaChi: nextUser.diaChi ?? '',
       });
       setNewPhone('');
+      setIsProfileFormOpen(false);
       syncStoredAccount(nextUser);
     } catch (error) {
       const errorMessage = getApiErrorMessage(error, 'Không tải được thông tin tài khoản');
@@ -178,6 +180,14 @@ const AccountManagement = () => {
     }));
   };
 
+  const handleTabChange = (tab: TabKey) => {
+    setActiveTab(tab);
+
+    if (tab !== 'profile') {
+      setIsProfileFormOpen(false);
+    }
+  };
+
   const handleUpdateProfile = async () => {
     if (!user) return;
 
@@ -205,6 +215,7 @@ const AccountManagement = () => {
         diaChi: updatedUser.diaChi ?? diaChi,
       });
       message.success('Cập nhật thông tin tài khoản thành công');
+      setIsProfileFormOpen(false);
     } catch (error) {
       message.error(getApiErrorMessage(error, 'Cập nhật thông tin tài khoản thất bại'));
     } finally {
@@ -233,6 +244,7 @@ const AccountManagement = () => {
       const updatedUser = await changePhoneNumber(user.maNguoiDung, phoneValue);
       applyUpdatedUser(updatedUser);
       setNewPhone('');
+      setIsProfileFormOpen(false);
       setActiveTab('profile');
       message.success('Cập nhật số điện thoại thành công');
     } catch (error) {
@@ -263,6 +275,7 @@ const AccountManagement = () => {
     try {
       await changePassword(user.maNguoiDung, newPassword);
       setPasswordForm(emptyPasswordForm);
+      setIsProfileFormOpen(false);
       setActiveTab('profile');
       message.success('Cập nhật mật khẩu thành công');
     } catch (error) {
@@ -302,6 +315,14 @@ const AccountManagement = () => {
               <i className="fas fa-user-tag"></i> {displayRole}
             </div>
           </div>
+          <button
+            type="button"
+            className="update-btn profile-edit-btn"
+            onClick={() => setIsProfileFormOpen((current) => !current)}
+          >
+            <i className={`fas ${isProfileFormOpen ? 'fa-xmark' : 'fa-pen-to-square'}`}></i>
+            {isProfileFormOpen ? 'Đóng cập nhật' : 'Cập nhật thông tin'}
+          </button>
         </div>
 
         <div className="info-grid">
@@ -310,7 +331,7 @@ const AccountManagement = () => {
               <i className="fas fa-mobile-alt"></i> Số điện thoại
             </div>
             <div className="info-value">{displayPhone}</div>
-            <button type="button" className="change-link link-button" onClick={() => setActiveTab('phone')}>
+            <button type="button" className="change-link link-button" onClick={() => handleTabChange('phone')}>
               <i className="fas fa-exchange-alt"></i> Đổi số điện thoại
             </button>
           </div>
@@ -337,58 +358,69 @@ const AccountManagement = () => {
               <i className="fas fa-lock"></i> Mật khẩu
             </div>
             <div className="info-value">••••••••</div>
-            <button type="button" className="change-link link-button" onClick={() => setActiveTab('password')}>
+            <button type="button" className="change-link link-button" onClick={() => handleTabChange('password')}>
               <i className="fas fa-exchange-alt"></i> Đổi mật khẩu
             </button>
           </div>
         </div>
 
-        <div className="divider"></div>
+        {isProfileFormOpen && (
+          <>
+            <div className="divider"></div>
 
-        <div className="card">
-          <div className="card-header">
-            <div className="card-title">Cập nhật thông tin tài khoản</div>
-          </div>
-          <div className="form-row">
-            <div className="form-col">
-              <label className="form-label">Tên hiển thị</label>
-              <input
-                type="text"
-                className="form-input"
-                value={profileForm.hoVaTen}
-                onChange={(event) => handleProfileInputChange('hoVaTen', event.target.value)}
-              />
+            <div className="card">
+              <div className="card-header">
+                <div className="card-title">Cập nhật thông tin tài khoản</div>
+              </div>
+              <div className="form-row">
+                <div className="form-col">
+                  <label className="form-label">Tên hiển thị</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={profileForm.hoVaTen}
+                    onChange={(event) => handleProfileInputChange('hoVaTen', event.target.value)}
+                  />
+                </div>
+                <div className="form-col">
+                  <label className="form-label">Email</label>
+                  <input
+                    type="email"
+                    className="form-input"
+                    value={profileForm.email}
+                    onChange={(event) => handleProfileInputChange('email', event.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Địa chỉ</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={profileForm.diaChi}
+                  onChange={(event) => handleProfileInputChange('diaChi', event.target.value)}
+                />
+              </div>
+              <div className="action-group action-group-end">
+                <button
+                  type="button"
+                  className="submit-btn secondary-btn"
+                  onClick={() => setIsProfileFormOpen(false)}
+                >
+                  Hủy
+                </button>
+                <button
+                  type="button"
+                  className="submit-btn"
+                  onClick={handleUpdateProfile}
+                  disabled={savingProfile}
+                >
+                  <i className="fas fa-save"></i> {savingProfile ? 'Đang lưu...' : 'Lưu thay đổi'}
+                </button>
+              </div>
             </div>
-            <div className="form-col">
-              <label className="form-label">Email</label>
-              <input
-                type="email"
-                className="form-input"
-                value={profileForm.email}
-                onChange={(event) => handleProfileInputChange('email', event.target.value)}
-              />
-            </div>
-          </div>
-          <div className="form-group">
-            <label className="form-label">Địa chỉ</label>
-            <input
-              type="text"
-              className="form-input"
-              value={profileForm.diaChi}
-              onChange={(event) => handleProfileInputChange('diaChi', event.target.value)}
-            />
-          </div>
-          <div className="action-group action-group-end">
-            <button
-              type="button"
-              className="submit-btn"
-              onClick={handleUpdateProfile}
-              disabled={savingProfile}
-            >
-              <i className="fas fa-save"></i> {savingProfile ? 'Đang lưu...' : 'Lưu thay đổi'}
-            </button>
-          </div>
-        </div>
+          </>
+        )}
       </div>
     );
   };
@@ -414,7 +446,7 @@ const AccountManagement = () => {
           />
         </div>
         <div className="action-group">
-          <button type="button" className="submit-btn secondary-btn" onClick={() => setActiveTab('profile')}>
+          <button type="button" className="submit-btn secondary-btn" onClick={() => handleTabChange('profile')}>
             <i className="fas fa-arrow-left"></i> Quay lại
           </button>
           <button
@@ -457,7 +489,7 @@ const AccountManagement = () => {
           />
         </div>
         <div className="action-group">
-          <button type="button" className="submit-btn secondary-btn" onClick={() => setActiveTab('profile')}>
+          <button type="button" className="submit-btn secondary-btn" onClick={() => handleTabChange('profile')}>
             <i className="fas fa-arrow-left"></i> Quay lại
           </button>
           <button
@@ -503,21 +535,21 @@ const AccountManagement = () => {
           <button
             type="button"
             className={`tab ${activeTab === 'profile' ? 'active' : ''}`}
-            onClick={() => setActiveTab('profile')}
+            onClick={() => handleTabChange('profile')}
           >
             Thông tin cá nhân
           </button>
           <button
             type="button"
             className={`tab ${activeTab === 'phone' ? 'active' : ''}`}
-            onClick={() => setActiveTab('phone')}
+            onClick={() => handleTabChange('phone')}
           >
             Đổi số điện thoại
           </button>
           <button
             type="button"
             className={`tab ${activeTab === 'password' ? 'active' : ''}`}
-            onClick={() => setActiveTab('password')}
+            onClick={() => handleTabChange('password')}
           >
             Đổi mật khẩu
           </button>

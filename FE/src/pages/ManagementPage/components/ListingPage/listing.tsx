@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import "./listing.css";
 import { Button, Checkbox, Col, Input, message, Row, Select } from "antd";
-import { ArrowRightOutlined } from "@ant-design/icons";
+import { ArrowRightOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 import TextArea from "antd/es/input/TextArea";
 import axios from "axios";
 import L from "leaflet";
@@ -91,6 +91,7 @@ const Listing = () => {
     diaChi: "",
     diaChiCuThe: "",
   });
+  const { thanhPho, phuong, diaChi } = address;
 
   const fullAddress =
     address.diaChiCuThe ||
@@ -195,15 +196,13 @@ const Listing = () => {
   }, []);
 
   useEffect(() => {
-    const { thanhPho, phuong, diaChi } = address;
-
     if (thanhPho && phuong && diaChi) {
       setAddress((prev) => ({
         ...prev,
         diaChiCuThe: `${diaChi}, ${phuong}, ${thanhPho}`,
       }));
     }
-  }, [address.thanhPho, address.phuong, address.diaChi]);
+  }, [thanhPho, phuong, diaChi]);
 
   const handleSelectImages = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
@@ -416,6 +415,21 @@ const Listing = () => {
 
   return (
     <div className="container-listing">
+      <div className="listing-main-header">
+        <div className="listing-header-top">
+          <Button 
+            type="text" 
+            icon={<ArrowLeftOutlined />} 
+            onClick={() => navigate(-1)}
+            className="listing-back-btn"
+          >
+            Quay lại
+          </Button>
+        </div>
+        <h1 className="listing-main-title">Đăng tin mới</h1>
+        <p className="listing-main-subtitle">Vui lòng điền thông tin chính xác để tin đăng đạt hiệu quả tốt nhất</p>
+      </div>
+
       <div className="category-listing">
         <div className="title-listing">Loại chuyên mục</div>
         <div className="form-group-listing">
@@ -425,7 +439,7 @@ const Listing = () => {
           <Select
             className="select-listing"
             placeholder="-- Chọn loại chuyên mục --"
-            style={{ width: "50%" }}
+
             size="large"
             allowClear
             value={formData.maDanhMuc || undefined}
@@ -576,9 +590,10 @@ const Listing = () => {
           />
         </div>
 
-        <div className="form-group-listing gap width">
-          <label className="label">
-            Hình thức thanh toán <span className="required">(*)</span>
+        <div className="detail-listing-grid">
+          <div className="form-group-listing gap">
+            <label className="label">
+              Hình thức thanh toán <span className="required">(*)</span>
           </label>
           <Select
             className="select-listing"
@@ -599,7 +614,7 @@ const Listing = () => {
             Giá cho thuê <span className="required">(*)</span>
           </label>
           <Input
-            className="input-height input-width"
+            className="input-height"
             placeholder="Nhập giá thuê"
             value={formData.gia}
             onChange={(event) =>
@@ -616,7 +631,7 @@ const Listing = () => {
             Diện tích <span className="required">(*)</span>
           </label>
           <Input
-            className="input-height input-width"
+            className="input-height"
             placeholder="Nhập diện tích"
             value={formData.dienTich}
             onChange={(event) =>
@@ -628,7 +643,7 @@ const Listing = () => {
           </span>
         </div>
 
-        <div className="form-group-listing gap width">
+        <div className="form-group-listing gap">
           <label className="label">
             Phòng ngủ <span className="required">(*)</span>
           </label>
@@ -647,7 +662,7 @@ const Listing = () => {
           </Select>
         </div>
 
-        <div className="form-group-listing gap width">
+        <div className="form-group-listing gap">
           <label className="label">
             Hướng căn hộ <span className="required">(*)</span>
           </label>
@@ -669,6 +684,7 @@ const Listing = () => {
             <Option value="Tây Bắc">Tây Bắc</Option>
             <Option value="Tây Nam">Tây Nam</Option>
           </Select>
+        </div>
         </div>
       </div>
 

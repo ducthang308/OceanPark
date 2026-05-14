@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { getHoaDonById } from '../../services/api/PostManagementService';
 import type { SepayCreatePaymentResponse } from '../../services/api/PostManagementService';
 import Navbar from '../../components/layout/Navbar/navbar';
+import './SepayPaymentPage.css';
 
 const SepayPaymentPage: React.FC = () => {
     const location = useLocation();
@@ -43,35 +44,60 @@ const SepayPaymentPage: React.FC = () => {
     if (!payment) return null;
 
     return (
-        <div className="main-layout">
+        <div className="sepay-layout">
             <Navbar />
 
-            <div className="content-area">
+            <div className="sepay-content-area">
                 <div className="sepay-page">
                     <div className="sepay-card">
-                        <h2>Thanh toán gói tin thường</h2>
+                        <div className="sepay-card__header">
+                            <h2>Thanh toán gói tin thường</h2>
 
-                        <div className="sepay-price">
-                            {payment.soTien.toLocaleString('vi-VN')}đ
+                            <div className="sepay-price">
+                                {payment.soTien.toLocaleString('vi-VN')}đ
+                            </div>
                         </div>
 
-                        <img
-                            src={payment.qrUrl}
-                            alt="QR thanh toán"
-                            style={{ width: 280, maxWidth: '100%' }}
-                        />
+                        <div className="sepay-body">
+                            <div className="sepay-qr-panel">
+                                <img
+                                    src={payment.qrUrl}
+                                    alt="QR thanh toán"
+                                />
+                            </div>
 
-                        <p>Ngân hàng: <b>{payment.bankCode}</b></p>
-                        <p>Số tài khoản: <b>{payment.bankAccount}</b></p>
-                        <p>Chủ tài khoản: <b>{payment.accountName}</b></p>
+                            <div className="sepay-info">
+                                <div className="sepay-info-item">
+                                    <span className="sepay-info-label">Ngân hàng</span>
+                                    <b className="sepay-info-value">{payment.bankCode}</b>
+                                </div>
 
-                        <p>
-                            Nội dung chuyển khoản:{' '}
-                            <b style={{ color: 'red' }}>{payment.noiDungChuyenKhoan}</b>
-                        </p>
+                                <div className="sepay-info-item">
+                                    <span className="sepay-info-label">Số tài khoản</span>
+                                    <b className="sepay-info-value">{payment.bankAccount}</b>
+                                </div>
 
-                        <p>Trạng thái: <b>{status}</b></p>
-                        <p>Hệ thống sẽ tự động kích hoạt sau khi nhận được tiền.</p>
+                                <div className="sepay-info-item">
+                                    <span className="sepay-info-label">Chủ tài khoản</span>
+                                    <b className="sepay-info-value">{payment.accountName}</b>
+                                </div>
+
+                                <div className="sepay-info-item sepay-info-item--code">
+                                    <span className="sepay-info-label">Nội dung chuyển khoản</span>
+                                    <b className="sepay-info-value sepay-transfer-code">
+                                        {payment.noiDungChuyenKhoan}
+                                    </b>
+                                </div>
+
+                                <div className={`sepay-status ${status.toLowerCase()}`}>
+                                    Trạng thái: <b>{status}</b>
+                                </div>
+
+                                <p className="sepay-note">
+                                    Hệ thống sẽ tự động kích hoạt sau khi nhận được tiền.
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
