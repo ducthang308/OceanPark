@@ -35,12 +35,24 @@ public class SepayController {
     ) {
         String expected = "Apikey " + sepayApiKey;
 
+        // ===== DEBUG LOG =====
+        System.out.println("========== SEPAY WEBHOOK ==========");
+        System.out.println("AUTH RECEIVED = [" + authorization + "]");
+        System.out.println("AUTH EXPECTED = [" + expected + "]");
+        System.out.println("PAYLOAD = " + payload);
+        System.out.println("===================================");
+
         if (authorization == null || !authorization.trim().equals(expected.trim())) {
+
+            System.out.println("❌ API KEY KHÔNG KHỚP");
+
             return ResponseEntity.status(401).body(Map.of(
                     "success", false,
                     "message", "Sai API key SePay"
             ));
         }
+
+        System.out.println("✅ API KEY HỢP LỆ");
 
         return ResponseEntity.ok(sepayService.handleWebhook(payload));
     }
