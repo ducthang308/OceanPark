@@ -122,9 +122,19 @@ export interface SepayCreatePaymentResponse {
 
 export interface HoaDonDTO {
   maHoaDon: string;
+  maNguoiDung?: string;
+  maBaiDang?: string | null;
+  maGoiDangBai?: string | null;
   trangThaiThanhToan: string;
   trangThaiHieuLuc: string;
   loaiHoaDon: string;
+  soTien?: number;
+  ngayBatDau?: string | null;
+  ngayKetThuc?: string | null;
+  noiDungChuyenKhoan?: string | null;
+  ghiChu?: string | null;
+  ngayTao?: string | null;
+  ngayThanhToan?: string | null;
 }
 
 export const createSepayPayment = async (payload: SepayCreatePaymentRequest) => {
@@ -137,5 +147,10 @@ export const createSepayPayment = async (payload: SepayCreatePaymentRequest) => 
 
 export const getHoaDonById = async (maHoaDon: string) => {
   const res = await axiosClient.get<HoaDonDTO>(`/api/v1/hoa-don/${maHoaDon}`);
+  return res.data;
+};
+
+export const getHoaDonByNguoiDung = async (maNguoiDung: string) => {
+  const res = await axiosClient.get<HoaDonDTO[]>(`/api/v1/hoa-don/nguoi-dung/${maNguoiDung}`);
   return res.data;
 };
