@@ -28,9 +28,21 @@ public class RecommendationService {
                 .findTopByNguoiDung_MaNguoiDungOrderByNgayTaoDesc(maNguoiDung)
                 .orElse(null);
 
-        List<BaiDang> baiDangs = baiDangRepo.findAll();
+        System.out.println("RECOMMEND USER = " + maNguoiDung);
+        System.out.println("NHU CAU = " + nhuCau);
 
-        return baiDangs.stream()
+        return baiDangRepo.findAll()
+                .stream()
+                .filter(bd -> "ACTIVE".equalsIgnoreCase(bd.getTrangThai()))
+                .filter(bd -> {
+                    ChiTietCanHo ct = chiTietRepo
+                            .findByBaiDang_MaBaiDang(bd.getMaBaiDang())
+                            .orElse(null);
+
+                    return ct != null
+                            && matchRequiredPrice(ct, nhuCau)
+                            && matchRequiredLocation(ct, nhuCau);
+                })
                 .sorted((a, b) ->
                         Integer.compare(
                                 calculateScore(b, nhuCau),
@@ -42,6 +54,39 @@ public class RecommendationService {
                 .toList();
     }
 
+    private boolean matchRequiredPrice(ChiTietCanHo ct, NhuCauNguoiDung nhuCau) {
+        if (nhuCau == null) return false;
+
+        if (ct == null || ct.getGia() == null) return false;
+
+        if (nhuCau.getMinPrice() != null && ct.getGia() < nhuCau.getMinPrice()) {
+            return false;
+        }
+
+        if (nhuCau.getMaxPrice() != null && ct.getGia() > nhuCau.getMaxPrice()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private boolean matchRequiredLocation(ChiTietCanHo ct, NhuCauNguoiDung nhuCau) {
+        if (nhuCau == null) return false;
+
+        if (nhuCau.getPhuong() == null || nhuCau.getPhuong().isBlank()) {
+            return true;
+        }
+
+        if (ct == null || ct.getPhuong() == null) {
+            return false;
+        }
+
+        String userLocation = nhuCau.getPhuong().trim().toLowerCase();
+        String postLocation = ct.getPhuong().trim().toLowerCase();
+
+        return postLocation.contains(userLocation)
+                || userLocation.contains(postLocation);
+    }
     private int calculateScore(
             BaiDang baiDang,
             NhuCauNguoiDung nhuCau

@@ -206,3 +206,38 @@ export const getHoaDonByNguoiDung = async (maNguoiDung: string) => {
   const res = await axiosClient.get<HoaDonDTO[]>(`/api/v1/hoa-don/nguoi-dung/${maNguoiDung}`);
   return res.data;
 };
+
+
+export const getRecommendedPosts = async (maNguoiDung: string) => {
+  const res = await axiosClient.get<BaiDangDTO[]>(
+    `/api/v1/recommendation/${maNguoiDung}`
+  );
+
+  return res.data;
+};
+
+export interface AiPostContentRequest {
+  loaiCanHo?: string;
+  gia?: number;
+  dienTich?: number;
+  diaChi?: string;
+  phuong?: string;
+  phongNgu?: number;
+  lienHe?: string;
+}
+
+export interface AiPostContentResponse {
+  tieuDe: string;
+  noiDung: string;
+}
+
+export const generatePostContentByAI = async (
+  payload: AiPostContentRequest
+) => {
+  const res = await axiosClient.post<AiPostContentResponse>(
+    '/api/v1/ai/generate-post-content',
+    payload
+  );
+
+  return res.data;
+};

@@ -14,3 +14,19 @@ h2 {
 .ant-modal {
   top: 40px;
 }
+
+.market-ai-box {
+  margin: 18px 0 22px;
+  padding: 16px;
+  border: 1px solid #dbeafe;
+  background: #f8fbff;
+  border-radius: 14px;
+}
+
+.market-ai-btn {
+  margin-top: 14px;
+  width: 100%;
+  height: 42px;
+  font-weight: 700;
+  border-radius: 10px;
+}
