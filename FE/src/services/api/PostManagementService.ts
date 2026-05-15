@@ -40,6 +40,13 @@ export interface DanhMucDTO {
   tenDanhMuc: string;
 }
 
+export interface BaiDangYeuThichDTO {
+  maNguoiDung?: string;
+  maBaiDang?: string;
+  tieuDeBaiDang?: string | null;
+  ngayTao?: string | null;
+}
+
 export const getCategories = async () => {
   const res = await axiosClient.get<DanhMucDTO[]>("/api/v1/danhmuc");
   return res.data;
@@ -104,6 +111,46 @@ export const uploadPostImages = async (maBaiDang: string, files: File[]) => {
   );
 
   return res.data;
+};
+
+export const getFavoritePostsByUser = async (maNguoiDung: string) => {
+  const res = await axiosClient.get<BaiDangYeuThichDTO[]>(
+    `/api/v1/bai-dang-yeu-thich/nguoi-dung/${maNguoiDung}`
+  );
+  return res.data;
+};
+
+export const getFavoriteUsersByPost = async (maBaiDang: string) => {
+  const res = await axiosClient.get<BaiDangYeuThichDTO[]>(
+    `/api/v1/bai-dang-yeu-thich/bai-dang/${maBaiDang}`
+  );
+  return res.data;
+};
+
+export const getFavoriteCountByPost = async (maBaiDang: string) => {
+  const res = await axiosClient.get<number>(
+    `/api/v1/bai-dang-yeu-thich/bai-dang/${maBaiDang}/count`
+  );
+  return res.data;
+};
+
+export const addFavoritePost = async (maNguoiDung: string, maBaiDang: string) => {
+  const res = await axiosClient.post<BaiDangYeuThichDTO>("/api/v1/bai-dang-yeu-thich", {
+    maNguoiDung,
+    maBaiDang,
+  });
+  return res.data;
+};
+
+export const removeFavoritePost = async (maNguoiDung: string, maBaiDang: string) => {
+  await axiosClient.delete(
+    `/api/v1/bai-dang-yeu-thich/nguoi-dung/${maNguoiDung}/bai-dang/${maBaiDang}`
+  );
+};
+
+export const isFavoritePostOfUser = async (maNguoiDung: string, maBaiDang: string) => {
+  const favorites = await getFavoritePostsByUser(maNguoiDung);
+  return favorites.some((favorite) => favorite.maBaiDang === maBaiDang);
 };
 
 

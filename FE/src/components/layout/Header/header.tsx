@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { LANDLORD_ROLE_IDS, ROLE_ID } from '../../../constants/roles';
 import type { RoleId } from '../../../constants/roles';
 import { clearAuthSession, getAuthSession } from '../../../utils/storage';
+import { getFavoritePostsByUser } from '../../../services/api/PostManagementService';
 
 type NavItem = {
   key: string;
@@ -48,6 +49,7 @@ const Header: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [favoriteTotal, setFavoriteTotal] = useState(0);
 
   const userMenuRef = useRef<HTMLDivElement | null>(null);
 
@@ -161,6 +163,37 @@ const Header: React.FC = () => {
   }, [location.pathname]);
 
   useEffect(() => {
+    let ignore = false;
+
+    const loadFavoriteTotal = async () => {
+      if (!currentUser?.maNguoiDung) {
+        setFavoriteTotal(0);
+        return;
+      }
+
+      try {
+        const favoritesResponse = await getFavoritePostsByUser(currentUser.maNguoiDung);
+
+        if (!ignore) {
+          setFavoriteTotal(favoritesResponse.length);
+        }
+      } catch {
+        if (!ignore) {
+          setFavoriteTotal(0);
+        }
+      }
+    };
+
+    loadFavoriteTotal();
+    window.addEventListener('favorite-posts:changed', loadFavoriteTotal);
+
+    return () => {
+      ignore = true;
+      window.removeEventListener('favorite-posts:changed', loadFavoriteTotal);
+    };
+  }, [currentUser?.maNguoiDung, location.pathname]);
+
+  useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 24);
     };
@@ -255,7 +288,7 @@ const Header: React.FC = () => {
 
           <button
             type="button"
-            className="rental-header__icon-button"
+            className="rental-header__icon-button rental-header__icon-button--favorite"
             aria-label="Yêu thích"
             onClick={() => navigate('/favorite-posts')}
           >
@@ -268,6 +301,9 @@ const Header: React.FC = () => {
                 strokeLinejoin="round"
               />
             </svg>
+            {favoriteTotal > 0 && (
+              <span className="rental-header__favorite-badge">{favoriteTotal}</span>
+            )}
           </button>
 
           <div className="rental-header__user-menu" ref={userMenuRef}>

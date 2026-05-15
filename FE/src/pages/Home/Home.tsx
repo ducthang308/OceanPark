@@ -1,6 +1,7 @@
 import './Home.css';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { HeartFilled } from '@ant-design/icons';
 import {
   createDefaultHomePageData,
   createListingPath,
@@ -155,7 +156,13 @@ const Home: React.FC = () => {
           <div className="site-home-post-grid">
             {featuredPosts.map((post) => (
               <Link key={post.id} to={`/posts/${post.id}`} className="site-home-post">
-                <img src={post.coverImage} alt={post.title} />
+                <div className="site-home-post__image-wrap">
+                  <img src={post.coverImage} alt={post.title} />
+                  <span className="site-home-post__favorite-count">
+                    <HeartFilled />
+                    {post.likeCount ?? 0}
+                  </span>
+                </div>
                 <div className="site-home-post__body">
                   <span>{post.categoryLabel}</span>
                   <h3>{post.title}</h3>

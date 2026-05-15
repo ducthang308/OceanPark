@@ -2,6 +2,7 @@ import fallbackRoomImage from '../../assets/img/co4la.png';
 import {
   getApartmentDetailByPost,
   getCategories,
+  getFavoriteCountByPost,
   getPostImages,
   getPosts,
 } from './PostManagementService';
@@ -118,6 +119,7 @@ export const DISTRICT_OPTIONS: IHomeDistrict[] = [
 ];
 
 export const PRICE_RANGE_OPTIONS: RangeFilterOption[] = [
+  { id: 'tat-ca', label: 'Tất cả', min: 0, max: Infinity },
   { id: 'duoi-3-trieu', label: 'Dưới 3 triệu', max: 3_000_000 },
   { id: '3-5-trieu', label: 'Từ 3 - 5 triệu', min: 3_000_000, max: 5_000_000 },
   { id: '5-7-trieu', label: 'Từ 5 - 7 triệu', min: 5_000_000, max: 7_000_000 },
@@ -127,6 +129,7 @@ export const PRICE_RANGE_OPTIONS: RangeFilterOption[] = [
 ];
 
 export const AREA_RANGE_OPTIONS: RangeFilterOption[] = [
+  { id: 'tat-ca', label: 'Tất cả', min: 0, max: Infinity },
   { id: 'duoi-20m2', label: 'Dưới 20 m²', max: 20 },
   { id: '20-30m2', label: 'Từ 20 - 30 m²', min: 20, max: 30 },
   { id: '30-50m2', label: 'Từ 30 - 50 m²', min: 30, max: 50 },
@@ -348,6 +351,7 @@ const buildPostCard = (
     area,
     districtId: resolveDistrictId(addressText, wardText),
     createdAtTime: getDateTime(post.ngayDang) || index,
+    likeCount: 0,
     hasVideo: hasVideoAsset(images),
     isFeatured: false,
     isNew: false,
@@ -389,17 +393,25 @@ export const getRentalListingData = async (): Promise<ListingData> => {
   const categories = apiCategories.length > 0 ? apiCategories : DEFAULT_HOME_CATEGORIES;
   const categoryLookup = createCategoryLookup(categories);
 
-  const mappedPosts = await Promise.all(
+  const mappedPosts: Array<IHomePostCard | null> = await Promise.all(
     postsResponse.filter(isPublicPost).map(async (post, index) => {
       const postId = post.maBaiDang?.trim();
-      const [detail, images] = postId
+      const [detail, images, likeCount] = postId
         ? await Promise.all([
             getApartmentDetailByPost(postId).catch(() => null),
             getPostImages(postId).catch(() => [] as HinhAnhBaiDangDTO[]),
+            getFavoriteCountByPost(postId).catch(() => 0),
           ])
-        : [null, [] as HinhAnhBaiDangDTO[]];
+        : [null, [] as HinhAnhBaiDangDTO[], 0];
 
-      return buildPostCard(post, detail, images, categoryLookup, index);
+      const postCard = buildPostCard(post, detail, images, categoryLookup, index);
+
+      return postCard
+        ? {
+            ...postCard,
+            likeCount,
+          }
+        : null;
     }),
   );
 

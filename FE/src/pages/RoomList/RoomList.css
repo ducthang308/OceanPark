@@ -566,8 +566,13 @@
     border-color 0.2s ease;
 }
 
-.room-list-like-btn:hover {
+.room-list-like-btn:hover:not(:disabled) {
   transform: translateY(-1px);
+}
+
+.room-list-like-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
 }
 
 .room-list-like-btn.is-active {

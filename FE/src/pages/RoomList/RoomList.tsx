@@ -1,12 +1,16 @@
 import './RoomList.css';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import fallbackRoomImage from '../../assets/img/co4la.png';
 import {
+  addFavoritePost,
   getApartmentDetailByPost,
   getCategories,
+  getFavoriteCountByPost,
+  getFavoritePostsByUser,
   getPostImages,
   getPosts,
+  removeFavoritePost,
 } from '../../services/api/PostManagementService';
 import type {
   BaiDangDTO,
@@ -201,10 +205,12 @@ const buildPostCard = (
 };
 
 const RoomList: React.FC = () => {
+  const navigate = useNavigate();
   const { slug } = useParams<{ slug?: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<RoomTab>('proposal');
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
+  const [favoriteActionIds, setFavoriteActionIds] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [postList, setPostList] = useState<RoomPostCard[]>([]);
   const [categoryOptions, setCategoryOptions] = useState<RoomCategory[]>(defaultCategories);
@@ -253,14 +259,22 @@ const RoomList: React.FC = () => {
         const mappedPosts = await Promise.all(
           postsResponse.filter(isPublicPost).map(async (post, index) => {
             const maBaiDang = post.maBaiDang?.trim();
-            const [detail, images] = maBaiDang
-              ? await Promise.all([
-                  getApartmentDetailByPost(maBaiDang).catch(() => null),
-                  getPostImages(maBaiDang).catch(() => [] as HinhAnhBaiDangDTO[]),
-                ])
-              : [null, [] as HinhAnhBaiDangDTO[]];
+            let detail: ChiTietCanHoDTO | null = null;
+            let images: HinhAnhBaiDangDTO[] = [];
+            let likeCount = 0;
 
-            return buildPostCard(post, detail, images, categoryLookup, index);
+            if (maBaiDang) {
+              [detail, images, likeCount] = await Promise.all([
+                getApartmentDetailByPost(maBaiDang).catch(() => null),
+                getPostImages(maBaiDang).catch(() => [] as HinhAnhBaiDangDTO[]),
+                getFavoriteCountByPost(maBaiDang).catch(() => 0),
+              ]);
+            }
+
+            return {
+              ...buildPostCard(post, detail, images, categoryLookup, index),
+              likeCount,
+            };
           }),
         );
 
@@ -293,6 +307,42 @@ const RoomList: React.FC = () => {
       ignore = true;
     };
   }, [reloadKey]);
+
+  useEffect(() => {
+    let ignore = false;
+
+    const loadFavoriteIds = async () => {
+      if (!maNguoiDung) {
+        setFavoriteIds([]);
+        return;
+      }
+
+      try {
+        const favoritesResponse = await getFavoritePostsByUser(maNguoiDung);
+        const ids = Array.from(
+          new Set(
+            favoritesResponse
+              .map((favorite) => favorite.maBaiDang?.trim())
+              .filter((postId): postId is string => Boolean(postId)),
+          ),
+        );
+
+        if (!ignore) {
+          setFavoriteIds(ids);
+        }
+      } catch {
+        if (!ignore) {
+          setFavoriteIds([]);
+        }
+      }
+    };
+
+    loadFavoriteIds();
+
+    return () => {
+      ignore = true;
+    };
+  }, [maNguoiDung]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -423,10 +473,58 @@ const RoomList: React.FC = () => {
     setCurrentPage(1);
   };
 
-  const toggleFavorite = (postId: string) => {
-    setFavoriteIds((prev) =>
-      prev.includes(postId) ? prev.filter((id) => id !== postId) : [...prev, postId],
-    );
+  const toggleFavorite = async (postId: string) => {
+    if (!maNguoiDung) {
+      navigate('/login');
+      return;
+    }
+
+    if (favoriteActionIds.includes(postId)) return;
+
+    setFavoriteActionIds((prev) => [...prev, postId]);
+
+    try {
+      const isFavorite = favoriteIds.includes(postId);
+
+      if (isFavorite) {
+        await removeFavoritePost(maNguoiDung, postId);
+      } else {
+        await addFavoritePost(maNguoiDung, postId);
+      }
+    } catch {
+      // Trạng thái có thể đã thay đổi ở tab khác; phần bên dưới sẽ lấy lại dữ liệu thật.
+    }
+
+    try {
+      const [favoritesResponse, likeCountResponse] = await Promise.all([
+        getFavoritePostsByUser(maNguoiDung),
+        getFavoriteCountByPost(postId),
+      ]);
+      const ids = Array.from(
+        new Set(
+          favoritesResponse
+            .map((favorite) => favorite.maBaiDang?.trim())
+            .filter((id): id is string => Boolean(id)),
+        ),
+      );
+
+      setFavoriteIds(ids);
+      setPostList((prev) =>
+        prev.map((post) =>
+          post.id === postId
+            ? {
+                ...post,
+                likeCount: likeCountResponse,
+              }
+            : post,
+        ),
+      );
+      window.dispatchEvent(new Event('favorite-posts:changed'));
+    } catch {
+      setReloadKey((value) => value + 1);
+    } finally {
+      setFavoriteActionIds((prev) => prev.filter((id) => id !== postId));
+    }
   };
 
   const getLikeCount = (post: RoomPostCard) => post.likeCount ?? 0;
@@ -568,6 +666,7 @@ const RoomList: React.FC = () => {
                 ) : paginatedPosts.length > 0 ? (
                   paginatedPosts.map((item) => {
                     const isFavorite = favoriteIds.includes(item.id);
+                    const isFavoriteProcessing = favoriteActionIds.includes(item.id);
                     const likeCount = getLikeCount(item);
 
                     return (
@@ -618,8 +717,10 @@ const RoomList: React.FC = () => {
                               type="button"
                               className={`room-list-like-btn ${isFavorite ? 'is-active' : ''}`}
                               aria-label="Yêu thích bài đăng"
+                              disabled={isFavoriteProcessing}
                               onClick={(event) => {
                                 event.preventDefault();
+                                event.stopPropagation();
                                 toggleFavorite(item.id);
                               }}
                             >
@@ -632,7 +733,7 @@ const RoomList: React.FC = () => {
                                   strokeLinejoin="round"
                                 />
                               </svg>
-                              <span>{likeCount + (isFavorite ? 1 : 0)}</span>
+                              <span>{likeCount}</span>
                             </button>
                           </div>
                         </div>
@@ -752,6 +853,7 @@ const RoomList: React.FC = () => {
                   ) : newestPosts.length > 0 ? (
                     newestPosts.map((post) => {
                       const isFavorite = favoriteIds.includes(post.id);
+                      const isFavoriteProcessing = favoriteActionIds.includes(post.id);
                       const likeCount = getLikeCount(post);
 
                       return (
@@ -782,8 +884,10 @@ const RoomList: React.FC = () => {
                                   isFavorite ? 'is-active' : ''
                                 }`}
                                 aria-label="Yêu thích bài đăng"
+                                disabled={isFavoriteProcessing}
                                 onClick={(event) => {
                                   event.preventDefault();
+                                  event.stopPropagation();
                                   toggleFavorite(post.id);
                                 }}
                               >
@@ -796,7 +900,7 @@ const RoomList: React.FC = () => {
                                     strokeLinejoin="round"
                                   />
                                 </svg>
-                                <span>{likeCount + (isFavorite ? 1 : 0)}</span>
+                                <span>{likeCount}</span>
                               </button>
                             </div>
                           </div>

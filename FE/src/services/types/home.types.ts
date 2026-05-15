@@ -39,6 +39,7 @@ export interface IHomePostCard {
   area?: number | null;
   districtId?: string;
   createdAtTime?: number;
+  likeCount?: number;
   hasVideo?: boolean;
   isFeatured?: boolean;
   isNew?: boolean;
