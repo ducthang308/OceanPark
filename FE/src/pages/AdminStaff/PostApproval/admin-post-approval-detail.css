@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
-  padding: 24px;
+  padding: 100px 24px 24px 24px;
   background: #f3f6fb;
   min-height: 100%;
   box-sizing: border-box;

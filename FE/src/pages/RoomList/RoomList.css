@@ -331,6 +331,45 @@
   gap: 22px;
 }
 
+.room-list-state {
+  min-height: 240px;
+  padding: 32px;
+  border: 1px solid rgba(18, 32, 40, 0.08);
+  border-radius: 18px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-shadow: 0 18px 40px rgba(18, 32, 40, 0.04);
+}
+
+.room-list-state h3 {
+  margin: 0 0 10px;
+  color: #182028;
+  font-size: 1.2rem;
+}
+
+.room-list-state p {
+  margin: 0;
+  max-width: 420px;
+  color: #6f7b86;
+  line-height: 1.7;
+}
+
+.room-list-state__retry {
+  margin-top: 18px;
+  min-height: 42px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 12px;
+  background: #182028;
+  color: #ffffff;
+  cursor: pointer;
+  font-weight: 700;
+}
+
 .room-list-pagination {
   margin-top: 24px;
   display: flex;
@@ -616,6 +655,15 @@
 .room-list-new-posts {
   display: grid;
   gap: 14px;
+}
+
+.room-list-sidebar-empty {
+  padding: 14px;
+  border-radius: 12px;
+  background: #f7f3ee;
+  color: #6f7b86;
+  font-size: 0.9rem;
+  line-height: 1.6;
 }
 
 .room-list-new-post {

@@ -1,33 +1,248 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import './PostDetail.css';
+import fallbackRoomImage from '../../assets/img/co4la.png';
+import {
+  getApartmentDetailByPost,
+  getCategories,
+  getPostById,
+  getPostImages,
+} from '../../services/api/PostManagementService';
+import type {
+  BaiDangDTO,
+  ChiTietCanHoDTO,
+  DanhMucDTO,
+  HinhAnhBaiDangDTO,
+} from '../../services/api/PostManagementService';
 import { homeMockData } from '../../services/mock/home.mock';
+
+interface PostDetailView {
+  id: string;
+  title: string;
+  priceText: string;
+  areaText: string;
+  addressText: string;
+  wardText: string;
+  categoryLabel: string;
+  description: string;
+  coverImage: string;
+  gallery: string[];
+  postedBy: string;
+  postedAtText: string;
+  phone: string;
+  tags: string[];
+  amenities: string[];
+  hasVideo: boolean;
+  isFeatured: boolean;
+  isNew: boolean;
+}
+
+const HIDDEN_POST_STATUSES = new Set(['HIDDEN', 'PENDING', 'CHO_DUYET', 'TU_CHOI', 'DELETED']);
+
+const formatCurrency = (value?: number) => {
+  if (typeof value !== 'number' || Number.isNaN(value) || value <= 0) {
+    return 'Liên hệ';
+  }
+
+  return `${new Intl.NumberFormat('vi-VN').format(value)}đ/tháng`;
+};
+
+const formatArea = (value?: number) => {
+  if (typeof value !== 'number' || Number.isNaN(value) || value <= 0) {
+    return 'Đang cập nhật';
+  }
+
+  return `${value} m²`;
+};
+
+const formatPostedAt = (value?: string) => {
+  if (!value) return 'Mới cập nhật';
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return date.toLocaleDateString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+};
+
+const isPublicPost = (post: BaiDangDTO) => {
+  const status = post.trangThai?.trim().toUpperCase();
+  return !status || !HIDDEN_POST_STATUSES.has(status);
+};
+
+const getImageUrl = (image: HinhAnhBaiDangDTO) =>
+  image.thumbnailUrl?.trim() || image.duongDan?.trim() || '';
+
+const hasVideoAsset = (images: HinhAnhBaiDangDTO[]) =>
+  images.some((image) => {
+    const type = (image.loai || '').toUpperCase();
+    const path = `${image.duongDan || ''} ${image.thumbnailUrl || ''}`.toLowerCase();
+
+    return type.includes('VIDEO') || /\.(mp4|mov|webm|avi)(\?|$)/i.test(path);
+  });
+
+const findMockPost = (id?: string): PostDetailView | null => {
+  if (!id) return null;
+
+  const allPosts = [...homeMockData.featuredPosts, ...homeMockData.newestPosts];
+  const uniquePosts = allPosts.filter(
+    (item, index, arr) => arr.findIndex((x) => x.id === item.id) === index,
+  );
+  const post = uniquePosts.find((item) => String(item.id) === String(id));
+
+  if (!post) return null;
+
+  return {
+    ...post,
+    id: String(post.id),
+    gallery: post.gallery.length > 0 ? post.gallery : [post.coverImage || fallbackRoomImage],
+    coverImage: post.coverImage || post.gallery[0] || fallbackRoomImage,
+    isFeatured: Boolean(post.isFeatured),
+    isNew: Boolean(post.isNew),
+    hasVideo: Boolean(post.hasVideo),
+  };
+};
+
+const buildApiPostDetail = (
+  post: BaiDangDTO,
+  detail: ChiTietCanHoDTO | null,
+  images: HinhAnhBaiDangDTO[],
+  categories: DanhMucDTO[],
+): PostDetailView | null => {
+  if (!post.maBaiDang || !isPublicPost(post)) return null;
+
+  const category = categories.find((item) => item.maDanhMuc === post.maDanhMuc);
+  const sortedImages = [...images].sort((a, b) => (a.thuTu ?? 0) - (b.thuTu ?? 0));
+  const gallery = sortedImages.map(getImageUrl).filter(Boolean);
+  const wardText = detail?.phuong?.trim() || 'Đang cập nhật';
+  const addressText =
+    [detail?.diaChiCuThe, detail?.phuong].filter(Boolean).join(', ') ||
+    'Đang cập nhật địa chỉ';
+
+  return {
+    id: post.maBaiDang,
+    title: post.tieuDe?.trim() || 'Bài đăng chưa có tiêu đề',
+    priceText: formatCurrency(detail?.gia),
+    areaText: formatArea(detail?.dienTich),
+    addressText,
+    wardText,
+    categoryLabel: category?.tenDanhMuc || post.maDanhMuc || 'Danh mục',
+    description: post.noiDung?.trim() || 'Chưa có mô tả chi tiết.',
+    coverImage: gallery[0] || fallbackRoomImage,
+    gallery: gallery.length > 0 ? gallery : [fallbackRoomImage],
+    postedBy: 'Chủ nhà',
+    postedAtText: formatPostedAt(post.ngayDang),
+    phone: post.lienHe?.trim() || 'Đang cập nhật',
+    tags: [],
+    amenities: [],
+    hasVideo: hasVideoAsset(images),
+    isFeatured: true,
+    isNew: true,
+  };
+};
 
 const PostDetail: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-
-  const post = useMemo(() => {
-    const allPosts = [...homeMockData.featuredPosts, ...homeMockData.newestPosts];
-    const uniquePosts = allPosts.filter(
-      (item, index, arr) => arr.findIndex((x) => x.id === item.id) === index,
-    );
-
-    return uniquePosts.find((p) => String(p.id) === String(id));
-  }, [id]);
-
+  const [post, setPost] = useState<PostDetailView | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [activeImage, setActiveImage] = useState(0);
   const [isFavorite, setIsFavorite] = useState(false);
 
+  useEffect(() => {
+    let ignore = false;
+
+    const loadPostDetail = async () => {
+      if (!id) {
+        setPost(null);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setLoadError('');
+      setActiveImage(0);
+
+      try {
+        const [postResponse, categoriesResponse] = await Promise.all([
+          getPostById(id),
+          getCategories().catch(() => [] as DanhMucDTO[]),
+        ]);
+        const maBaiDang = postResponse.maBaiDang || id;
+        const [detailResponse, imagesResponse] = await Promise.all([
+          getApartmentDetailByPost(maBaiDang).catch(() => null),
+          getPostImages(maBaiDang).catch(() => [] as HinhAnhBaiDangDTO[]),
+        ]);
+        const mappedPost = buildApiPostDetail(
+          postResponse,
+          detailResponse,
+          imagesResponse,
+          categoriesResponse,
+        );
+
+        if (!ignore) {
+          setPost(mappedPost);
+        }
+      } catch {
+        const mockPost = findMockPost(id);
+
+        if (!ignore) {
+          setPost(mockPost);
+          setLoadError(mockPost ? '' : 'Không tải được thông tin bài đăng.');
+        }
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadPostDetail();
+
+    return () => {
+      ignore = true;
+    };
+  }, [id]);
+
+  const detailItems = useMemo(() => {
+    if (!post) return [];
+
+    return [
+      { label: 'Mức giá', value: post.priceText },
+      { label: 'Diện tích', value: post.areaText },
+      { label: 'Khu vực', value: post.wardText },
+      { label: 'Loại tin', value: post.categoryLabel },
+      { label: 'Đăng lúc', value: post.postedAtText },
+      { label: 'Liên hệ', value: post.phone },
+    ];
+  }, [post]);
+
+  if (loading) {
+    return (
+      <div className="rental-detail-page">
+        <div className="rental-detail-container">
+          <div className="rental-detail-empty">
+            <h2>Đang tải bài đăng</h2>
+            <p>Hệ thống đang lấy thông tin chi tiết căn hộ.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!post) {
     return (
-      <div className="post-detail-page">
-        <div className="post-detail-container">
-          <div className="post-detail-empty">
+      <div className="rental-detail-page">
+        <div className="rental-detail-container">
+          <div className="rental-detail-empty">
             <h2>Không tìm thấy bài đăng</h2>
-            <p>Tin đăng này không tồn tại hoặc đã bị gỡ khỏi hệ thống.</p>
-            <button onClick={() => navigate('/')} className="post-detail-back-btn">
-              Quay về trang chủ
+            <p>{loadError || 'Tin đăng này không tồn tại hoặc đã bị gỡ khỏi hệ thống.'}</p>
+            <button onClick={() => navigate('/posts')} className="rental-detail-back-btn">
+              Quay về danh sách
             </button>
           </div>
         </div>
@@ -35,61 +250,63 @@ const PostDetail: React.FC = () => {
     );
   }
 
-  const detailItems = [
-    { label: 'Mức giá', value: post.priceText },
-    { label: 'Diện tích', value: post.areaText },
-    { label: 'Khu vực', value: post.wardText },
-    { label: 'Loại tin', value: post.categoryLabel },
-    { label: 'Đăng lúc', value: post.postedAtText },
-    { label: 'Liên hệ', value: post.phone },
-  ];
+  const activeGalleryImage = post.gallery[activeImage] || post.coverImage;
+  const phoneHref = post.phone === 'Đang cập nhật' ? undefined : `tel:${post.phone}`;
 
   return (
-    <div className="post-detail-page">
-      <div className="post-detail-container">
-        <div className="post-detail-breadcrumb">
+    <div className="rental-detail-page">
+      <div className="rental-detail-container">
+        <div className="rental-detail-breadcrumb">
           <span onClick={() => navigate('/')}>Trang chủ</span>
           <span>/</span>
-          <span>Tin đăng</span>
+          <span onClick={() => navigate('/posts')}>Tin đăng</span>
           <span>/</span>
           <strong>{post.title}</strong>
         </div>
 
-        <div className="post-detail-layout">
-          <div className="post-detail-main">
-            <section className="post-detail-gallery-card">
-              <div className="post-detail-gallery-main-wrap">
+        <div className="rental-detail-layout">
+          <div className="rental-detail-main">
+            <section className="rental-detail-gallery-card">
+              <div className="rental-detail-gallery-main-wrap">
                 <img
-                  src={post.gallery[activeImage] || post.coverImage}
+                  src={activeGalleryImage}
                   alt={post.title}
-                  className="post-detail-gallery-main"
+                  className="rental-detail-gallery-main"
                 />
 
-                <div className="post-detail-gallery-badges">
+                <div className="rental-detail-gallery-badges">
                   {post.isFeatured && (
-                    <span className="post-detail-badge post-detail-badge--hot">
+                    <span className="rental-detail-badge rental-detail-badge--hot">
                       Nổi bật
                     </span>
                   )}
                   {post.isNew && (
-                    <span className="post-detail-badge post-detail-badge--new">
+                    <span className="rental-detail-badge rental-detail-badge--new">
                       Mới đăng
                     </span>
                   )}
                   {post.hasVideo && (
-                    <span className="post-detail-badge post-detail-badge--video">
+                    <span className="rental-detail-badge rental-detail-badge--video">
                       Có video
                     </span>
                   )}
                 </div>
+
+                <button
+                  type="button"
+                  className={`rental-detail-gallery-favorite-btn ${isFavorite ? 'active' : ''}`}
+                  onClick={() => setIsFavorite((prev) => !prev)}
+                >
+                  {isFavorite ? '♥ Đã lưu' : '♡ Lưu tin'}
+                </button>
               </div>
 
-              <div className="post-detail-gallery-thumbs">
+              <div className="rental-detail-gallery-thumbs">
                 {post.gallery.map((img, index) => (
                   <button
                     key={`${img}-${index}`}
                     type="button"
-                    className={`post-detail-thumb ${activeImage === index ? 'active' : ''}`}
+                    className={`rental-detail-thumb ${activeImage === index ? 'active' : ''}`}
                     onClick={() => setActiveImage(index)}
                   >
                     <img src={img} alt={`${post.title}-${index + 1}`} />
@@ -98,45 +315,37 @@ const PostDetail: React.FC = () => {
               </div>
             </section>
 
-            <section className="post-detail-content-card">
-              <div className="post-detail-header">
-                <div className="post-detail-header-left">
-                  <h1 className="post-detail-title">{post.title}</h1>
+            <section className="rental-detail-content-card">
+              <div className="rental-detail-header">
+                <div className="rental-detail-header-left">
+                  <h1 className="rental-detail-title">{post.title}</h1>
 
-                  <div className="post-detail-meta-row">
-                    <div className="post-detail-price">{post.priceText}</div>
-                    <div className="post-detail-meta-chip">{post.areaText}</div>
-                    <div className="post-detail-meta-chip">{post.wardText}</div>
-                    <div className="post-detail-meta-chip">{post.categoryLabel}</div>
+                  <div className="rental-detail-meta-row">
+                    <div className="rental-detail-price">{post.priceText}</div>
+                    <div className="rental-detail-meta-chip">{post.areaText}</div>
+                    <div className="rental-detail-meta-chip">{post.wardText}</div>
+                    <div className="rental-detail-meta-chip">{post.categoryLabel}</div>
                   </div>
 
-                  <p className="post-detail-address">{post.addressText}</p>
+                  <p className="rental-detail-address">{post.addressText}</p>
                 </div>
-
-                <button
-                  type="button"
-                  className={`post-detail-favorite-btn ${isFavorite ? 'active' : ''}`}
-                  onClick={() => setIsFavorite((prev) => !prev)}
-                >
-                  {isFavorite ? '♥ Đã lưu' : '♡ Lưu tin'}
-                </button>
               </div>
 
-              <div className="post-detail-info-grid">
+              <div className="rental-detail-info-grid">
                 {detailItems.map((item) => (
-                  <div key={item.label} className="post-detail-info-item">
-                    <span className="post-detail-info-label">{item.label}</span>
-                    <strong className="post-detail-info-value">{item.value}</strong>
+                  <div key={item.label} className="rental-detail-info-item">
+                    <span className="rental-detail-info-label">{item.label}</span>
+                    <strong className="rental-detail-info-value">{item.value}</strong>
                   </div>
                 ))}
               </div>
 
-              {post.tags?.length > 0 && (
-                <div className="post-detail-section">
-                  <h3 className="post-detail-section-title">Từ khóa nổi bật</h3>
-                  <div className="post-detail-tag-list">
+              {post.tags.length > 0 && (
+                <div className="rental-detail-section">
+                  <h3 className="rental-detail-section-title">Từ khóa nổi bật</h3>
+                  <div className="rental-detail-tag-list">
                     {post.tags.map((tag) => (
-                      <span key={tag} className="post-detail-tag">
+                      <span key={tag} className="rental-detail-tag">
                         #{tag}
                       </span>
                     ))}
@@ -144,18 +353,18 @@ const PostDetail: React.FC = () => {
                 </div>
               )}
 
-              <div className="post-detail-section">
-                <h3 className="post-detail-section-title">Mô tả chi tiết</h3>
-                <p className="post-detail-description">{post.description}</p>
+              <div className="rental-detail-section">
+                <h3 className="rental-detail-section-title">Mô tả chi tiết</h3>
+                <p className="rental-detail-description">{post.description}</p>
               </div>
 
-              {post.amenities?.length > 0 && (
-                <div className="post-detail-section">
-                  <h3 className="post-detail-section-title">Tiện ích</h3>
-                  <div className="post-detail-amenities">
+              {post.amenities.length > 0 && (
+                <div className="rental-detail-section">
+                  <h3 className="rental-detail-section-title">Tiện ích</h3>
+                  <div className="rental-detail-amenities">
                     {post.amenities.map((item) => (
-                      <div key={item} className="post-detail-amenity">
-                        <span className="post-detail-amenity-dot" />
+                      <div key={item} className="rental-detail-amenity">
+                        <span className="rental-detail-amenity-dot" />
                         <span>{item}</span>
                       </div>
                     ))}
@@ -165,49 +374,49 @@ const PostDetail: React.FC = () => {
             </section>
           </div>
 
-          <aside className="post-detail-sidebar">
-            <div className="post-detail-owner-card">
-              <div className="post-detail-owner-avatar">
-                {post.postedBy?.charAt(0)?.toUpperCase() || 'C'}
+          <aside className="rental-detail-sidebar">
+            <div className="rental-detail-owner-card">
+              <div className="rental-detail-owner-avatar">
+                {post.postedBy.charAt(0).toUpperCase() || 'C'}
               </div>
 
-              <div className="post-detail-owner-content">
-                <p className="post-detail-owner-label">Người đăng</p>
-                <h3 className="post-detail-owner-name">{post.postedBy}</h3>
-                <p className="post-detail-owner-subtext">
+              <div className="rental-detail-owner-content">
+                <p className="rental-detail-owner-label">Người đăng</p>
+                <h3 className="rental-detail-owner-name">{post.postedBy}</h3>
+                <p className="rental-detail-owner-subtext">
                   Tin đăng đang hoạt động, phản hồi nhanh
                 </p>
               </div>
 
-              <div className="post-detail-owner-actions">
-                <a href={`tel:${post.phone}`} className="post-detail-btn post-detail-btn--call">
+              <div className="rental-detail-owner-actions">
+                <a href={phoneHref} className="rental-detail-btn rental-detail-btn--call">
                   Gọi ngay
                 </a>
 
                 <button
                   type="button"
-                  className="post-detail-btn post-detail-btn--zalo"
+                  className="rental-detail-btn rental-detail-btn--zalo"
                 >
                   Nhắn Zalo
                 </button>
 
                 <button
                   type="button"
-                  className="post-detail-btn post-detail-btn--primary"
+                  className="rental-detail-btn rental-detail-btn--primary"
                   onClick={() => navigate(`/payment/${post.id}`)}
                 >
                   Thanh toán / Đặt cọc
                 </button>
               </div>
 
-              <div className="post-detail-owner-note">
+              <div className="rental-detail-owner-note">
                 Ưu tiên người thuê thiện chí, có thể giữ chỗ nhanh sau khi thanh toán.
               </div>
             </div>
 
-            <div className="post-detail-side-card">
-              <h4 className="post-detail-side-title">Cam kết hiển thị</h4>
-              <ul className="post-detail-side-list">
+            <div className="rental-detail-side-card">
+              <h4 className="rental-detail-side-title">Cam kết hiển thị</h4>
+              <ul className="rental-detail-side-list">
                 <li>Thông tin rõ ràng, dễ theo dõi</li>
                 <li>Ảnh hiển thị lớn, dễ xem trên mobile</li>
                 <li>Nút liên hệ và thanh toán nổi bật</li>
