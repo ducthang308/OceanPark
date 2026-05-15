@@ -103,6 +103,12 @@
   transform: translateY(-1px);
 }
 
+.rental-detail-gallery-favorite-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
+  transform: none;
+}
+
 .rental-detail-gallery-favorite-btn.active {
   background: #fff4f0;
   color: #d94f3d;

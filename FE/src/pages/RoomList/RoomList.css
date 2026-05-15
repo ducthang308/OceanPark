@@ -566,8 +566,13 @@
     border-color 0.2s ease;
 }
 
-.room-list-like-btn:hover {
+.room-list-like-btn:hover:not(:disabled) {
   transform: translateY(-1px);
+}
+
+.room-list-like-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
 }
 
 .room-list-like-btn.is-active {
@@ -650,6 +655,11 @@
 .room-list-filter-list li a:hover {
   background: #f0e6d9;
   transform: translateX(2px);
+}
+
+.room-list-filter-list li a.is-active {
+  background: #0e8f8c;
+  color: #ffffff;
 }
 
 .room-list-new-posts {

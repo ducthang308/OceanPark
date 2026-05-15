@@ -1,19 +1,39 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { HeartFilled, SearchOutlined } from '@ant-design/icons';
 import './FavoritePostsPage.css';
+import fallbackRoomImage from '../../assets/img/co4la.png';
+import {
+  getApartmentDetailByPost,
+  getCategories,
+  getFavoriteCountByPost,
+  getFavoritePostsByUser,
+  getPostById,
+  getPostImages,
+  removeFavoritePost,
+} from '../../services/api/PostManagementService';
+import type {
+  BaiDangDTO,
+  BaiDangYeuThichDTO,
+  ChiTietCanHoDTO,
+  DanhMucDTO,
+  HinhAnhBaiDangDTO,
+} from '../../services/api/PostManagementService';
+import { normalizeText } from '../../services/api/HomeService';
+import { getAuthSession } from '../../utils/storage';
 
 type FavoritePostStatus = 'Còn trống' | 'Đã cho thuê' | 'Sắp trống';
-type PostCategory = 'PHÒNG TRỌ' | 'CĂN HỘ' | 'NHÀ NGUYÊN CĂN';
 
 interface FavoritePost {
-  id: number;
+  id: string;
   code: string;
   title: string;
-  price: number;
-  area: number;
+  price: number | null;
+  area: number | null;
   location: string;
   district: string;
   city: string;
-  category: PostCategory;
+  category: string;
   displayStatus: string;
   rentalStatus: FavoritePostStatus;
   thumbnail: string;
@@ -21,104 +41,228 @@ interface FavoritePost {
   startDate: string;
   endDate: string;
   likedAt: string;
+  likedAtTime: number;
+  likeCount: number;
   isFeatured?: boolean;
 }
 
-const mockFavoritePosts: FavoritePost[] = [
-  {
-    id: 1,
-    code: '685701',
-    title: 'Căn hộ full nội thất gần cầu Rồng, vào ở ngay',
-    price: 4500000,
-    area: 32,
-    location: 'Cho thuê căn hộ',
-    district: 'Hải Châu',
-    city: 'Đà Nẵng',
-    category: 'CĂN HỘ',
-    displayStatus: 'YÊU THÍCH',
-    rentalStatus: 'Còn trống',
-    thumbnail:
-      'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=800&q=80',
-    imageCount: 5,
-    startDate: '10/4/2026',
-    endDate: '10/5/2026',
-    likedAt: '22/4/2026',
-    isFeatured: true,
-  },
-  {
-    id: 2,
-    code: '685702',
-    title: 'Chính chủ cho thuê phòng trọ mới xây 100%',
-    price: 2500000,
-    area: 18,
-    location: 'Cho thuê phòng trọ',
-    district: 'Sơn Trà',
-    city: 'Đà Nẵng',
-    category: 'PHÒNG TRỌ',
-    displayStatus: 'YÊU THÍCH',
-    rentalStatus: 'Đã cho thuê',
-    thumbnail:
-      'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=800&q=80',
-    imageCount: 3,
-    startDate: '12/4/2026',
-    endDate: '12/5/2026',
-    likedAt: '21/4/2026',
-  },
-  {
-    id: 3,
-    code: '685703',
-    title: 'Nhà nguyên căn 2 phòng ngủ, khu dân cư an ninh',
-    price: 7200000,
-    area: 58,
-    location: 'Cho thuê nhà nguyên căn',
-    district: 'Thanh Khê',
-    city: 'Đà Nẵng',
-    category: 'NHÀ NGUYÊN CĂN',
-    displayStatus: 'YÊU THÍCH',
-    rentalStatus: 'Sắp trống',
-    thumbnail:
-      'https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=800&q=80',
-    imageCount: 7,
-    startDate: '15/4/2026',
-    endDate: '15/5/2026',
-    likedAt: '20/4/2026',
-  },
-];
+const HIDDEN_POST_STATUSES = new Set(['HIDDEN', 'PENDING', 'CHO_DUYET', 'TU_CHOI', 'DELETED']);
 
-const formatPrice = (value: number) => {
+const formatPrice = (value: number | null) => {
+  if (typeof value !== 'number' || Number.isNaN(value) || value <= 0) {
+    return 'Liên hệ';
+  }
+
   return `${value.toLocaleString('vi-VN')} đ/tháng`;
 };
 
+const formatArea = (value: number | null) => {
+  if (typeof value !== 'number' || Number.isNaN(value) || value <= 0) {
+    return 'Đang cập nhật';
+  }
+
+  return `${value} m²`;
+};
+
+const formatDate = (value?: string | null) => {
+  if (!value) return 'Đang cập nhật';
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return date.toLocaleDateString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+};
+
+const getDateTime = (value?: string | null) => {
+  if (!value) return 0;
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+};
+
+const getImageUrl = (image: HinhAnhBaiDangDTO) =>
+  image.thumbnailUrl?.trim() || image.duongDan?.trim() || '';
+
+const isPublicPost = (post: BaiDangDTO) => {
+  const status = post.trangThai?.trim().toUpperCase();
+  return !status || !HIDDEN_POST_STATUSES.has(status);
+};
+
+const resolveRentalStatus = (status?: string): FavoritePostStatus => {
+  const normalizedStatus = normalizeText(status || '');
+
+  if (
+    normalizedStatus.includes('da thue') ||
+    normalizedStatus.includes('da cho thue') ||
+    normalizedStatus.includes('rented')
+  ) {
+    return 'Đã cho thuê';
+  }
+
+  if (normalizedStatus.includes('sap trong')) {
+    return 'Sắp trống';
+  }
+
+  return 'Còn trống';
+};
+
+const buildFavoritePost = async (
+  favorite: BaiDangYeuThichDTO,
+  categories: DanhMucDTO[],
+  index: number,
+): Promise<FavoritePost | null> => {
+  const maBaiDang = favorite.maBaiDang?.trim();
+  if (!maBaiDang) return null;
+
+  try {
+    const [postResponse, detailResponse, imagesResponse, likeCountResponse] = await Promise.all([
+      getPostById(maBaiDang),
+      getApartmentDetailByPost(maBaiDang).catch(() => null as ChiTietCanHoDTO | null),
+      getPostImages(maBaiDang).catch(() => [] as HinhAnhBaiDangDTO[]),
+      getFavoriteCountByPost(maBaiDang).catch(() => 0),
+    ]);
+
+    if (!isPublicPost(postResponse)) return null;
+
+    const category = categories.find((item) => item.maDanhMuc === postResponse.maDanhMuc);
+    const sortedImages = [...imagesResponse].sort((a, b) => (a.thuTu ?? 0) - (b.thuTu ?? 0));
+    const gallery = sortedImages.map(getImageUrl).filter(Boolean);
+    const address = detailResponse?.diaChiCuThe?.trim() || 'Đang cập nhật địa chỉ';
+    const ward = detailResponse?.phuong?.trim() || '';
+    const title =
+      postResponse.tieuDe?.trim() ||
+      favorite.tieuDeBaiDang?.trim() ||
+      'Bài đăng chưa có tiêu đề';
+
+    return {
+      id: maBaiDang,
+      code: maBaiDang,
+      title,
+      price: typeof detailResponse?.gia === 'number' ? detailResponse.gia : null,
+      area: typeof detailResponse?.dienTich === 'number' ? detailResponse.dienTich : null,
+      location: address,
+      district: ward || 'Đang cập nhật',
+      city: 'Đà Nẵng',
+      category: category?.tenDanhMuc || postResponse.maDanhMuc || 'Danh mục',
+      displayStatus: 'YÊU THÍCH',
+      rentalStatus: resolveRentalStatus(postResponse.trangThai),
+      thumbnail: gallery[0] || fallbackRoomImage,
+      imageCount: gallery.length,
+      startDate: formatDate(postResponse.ngayDang),
+      endDate: postResponse.trangThai || 'Đang hiển thị',
+      likedAt: formatDate(favorite.ngayTao),
+      likedAtTime: getDateTime(favorite.ngayTao),
+      likeCount: likeCountResponse,
+      isFeatured: index < 3,
+    };
+  } catch {
+    return {
+      id: maBaiDang,
+      code: maBaiDang,
+      title: favorite.tieuDeBaiDang?.trim() || 'Bài đăng chưa có tiêu đề',
+      price: null,
+      area: null,
+      location: 'Đang cập nhật địa chỉ',
+      district: 'Đang cập nhật',
+      city: 'Đà Nẵng',
+      category: 'Danh mục',
+      displayStatus: 'YÊU THÍCH',
+      rentalStatus: 'Còn trống',
+      thumbnail: fallbackRoomImage,
+      imageCount: 0,
+      startDate: 'Đang cập nhật',
+      endDate: 'Đang cập nhật',
+      likedAt: formatDate(favorite.ngayTao),
+      likedAtTime: getDateTime(favorite.ngayTao),
+      likeCount: 0,
+      isFeatured: index < 3,
+    };
+  }
+};
+
 const FavoritePostsPage: React.FC = () => {
+  const navigate = useNavigate();
   const [search, setSearch] = useState('');
-  const [favorites, setFavorites] = useState<FavoritePost[]>(mockFavoritePosts);
+  const [favorites, setFavorites] = useState<FavoritePost[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [removingIds, setRemovingIds] = useState<string[]>([]);
+
+  const session = getAuthSession();
+  const maNguoiDung = session?.user.maNguoiDung || '';
+
+  const loadFavorites = useCallback(async () => {
+    if (!maNguoiDung) {
+      setFavorites([]);
+      setLoading(false);
+      setError('Bạn cần đăng nhập để xem danh sách yêu thích.');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const [favoritesResponse, categoriesResponse] = await Promise.all([
+        getFavoritePostsByUser(maNguoiDung),
+        getCategories().catch(() => [] as DanhMucDTO[]),
+      ]);
+
+      const mappedPosts = await Promise.all(
+        favoritesResponse.map((favorite, index) =>
+          buildFavoritePost(favorite, categoriesResponse, index),
+        ),
+      );
+
+      setFavorites(
+        mappedPosts
+          .filter((post): post is FavoritePost => Boolean(post))
+          .sort((a, b) => b.likedAtTime - a.likedAtTime),
+      );
+    } catch {
+      setFavorites([]);
+      setError('Không tải được danh sách yêu thích. Vui lòng thử lại.');
+    } finally {
+      setLoading(false);
+    }
+  }, [maNguoiDung]);
+
+  useEffect(() => {
+    loadFavorites();
+  }, [loadFavorites]);
 
   const filteredPosts = useMemo(() => {
-    const keyword = search.trim().toLowerCase();
+    const keyword = normalizeText(search.trim());
 
     if (!keyword) return favorites;
 
     return favorites.filter((post) => {
-      return (
-        post.title.toLowerCase().includes(keyword) ||
-        post.code.toLowerCase().includes(keyword) ||
-        post.district.toLowerCase().includes(keyword) ||
-        post.category.toLowerCase().includes(keyword)
+      const target = normalizeText(
+        `${post.title} ${post.code} ${post.district} ${post.category} ${post.location}`,
       );
+
+      return target.includes(keyword);
     });
   }, [search, favorites]);
 
-  const handleRemoveFavorite = (id: number) => {
-    setFavorites((prev) => prev.filter((item) => item.id !== id));
-  };
+  const handleRemoveFavorite = async (id: string) => {
+    if (!maNguoiDung || removingIds.includes(id)) return;
 
-  const handleViewDetail = (post: FavoritePost) => {
-    console.log('Xem chi tiết bài đăng:', post);
-    // navigate(`/post/${post.id}`);
-  };
+    setRemovingIds((prev) => [...prev, id]);
 
-  const handleContact = (post: FavoritePost) => {
-    console.log('Liên hệ bài đăng:', post);
+    try {
+      await removeFavoritePost(maNguoiDung, id);
+      await loadFavorites();
+      window.dispatchEvent(new Event('favorite-posts:changed'));
+    } catch {
+      setError('Không thể hủy yêu thích bài đăng này. Vui lòng thử lại.');
+    } finally {
+      setRemovingIds((prev) => prev.filter((item) => item !== id));
+    }
   };
 
   return (
@@ -131,133 +275,154 @@ const FavoritePostsPage: React.FC = () => {
           </div>
 
           <div className="favorite-post-search">
-            <span className="favorite-post-search-icon">⌕</span>
+            <SearchOutlined className="favorite-post-search-icon" />
             <input
               type="text"
-              placeholder="Tìm theo mã tin hoặc tiêu đề"
+              placeholder="Tìm theo mã tin, tiêu đề hoặc khu vực"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
         </div>
 
-        {filteredPosts.length > 0 ? (
-          <div className="favorite-post-list">
-            {filteredPosts.map((post) => (
-              <article className="favorite-post-card" key={post.id}>
-                <div className="favorite-post-card__left">
-                  <div className="favorite-post-thumb-wrap">
-                    <img
-                      src={post.thumbnail}
-                      alt={post.title}
-                      className="favorite-post-thumb"
-                    />
+        {error && (
+          <div className="favorite-post-alert">
+            <span>{error}</span>
+            <button type="button" onClick={loadFavorites}>
+              Tải lại
+            </button>
+          </div>
+        )}
 
-                    <div className="favorite-post-badge-stack">
-                      {post.isFeatured && (
-                        <span className="favorite-post-badge favorite-post-badge--featured">
-                          NỔI BẬT
+        {loading ? (
+          <div className="favorite-post-empty">
+            <div className="favorite-post-empty__icon">
+              <HeartFilled />
+            </div>
+            <h3>Đang tải danh sách yêu thích</h3>
+            <p>Hệ thống đang lấy các tin bạn đã lưu.</p>
+          </div>
+        ) : filteredPosts.length > 0 ? (
+          <div className="favorite-post-list">
+            {filteredPosts.map((post) => {
+              const isRemoving = removingIds.includes(post.id);
+
+              return (
+                <article className="favorite-post-card" key={post.id}>
+                  <div className="favorite-post-card__left">
+                    <div className="favorite-post-thumb-wrap">
+                      <img
+                        src={post.thumbnail}
+                        alt={post.title}
+                        className="favorite-post-thumb"
+                      />
+
+                      <div className="favorite-post-badge-stack">
+                        {post.isFeatured && (
+                          <span className="favorite-post-badge favorite-post-badge--featured">
+                            NỔI BẬT
+                          </span>
+                        )}
+                        <span className="favorite-post-badge favorite-post-badge--saved">
+                          {post.displayStatus}
                         </span>
-                      )}
-                      <span className="favorite-post-badge favorite-post-badge--saved">
-                        {post.displayStatus}
+                      </div>
+
+                    </div>
+                  </div>
+
+                  <div className="favorite-post-card__center">
+                    <div className="favorite-post-tags">
+                      <span className="favorite-post-tag favorite-post-tag--category">
+                        {post.category}
+                      </span>
+
+                      <span
+                        className={`favorite-post-tag favorite-post-tag--status ${
+                          post.rentalStatus === 'Còn trống'
+                            ? 'is-available'
+                            : post.rentalStatus === 'Đã cho thuê'
+                              ? 'is-rented'
+                              : 'is-soon'
+                        }`}
+                      >
+                        {post.rentalStatus}
                       </span>
                     </div>
 
-                    <div className="favorite-post-image-count">
-                      <span>📷</span>
-                      <strong>{post.imageCount}</strong>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="favorite-post-card__center">
-                  <div className="favorite-post-tags">
-                    <span className="favorite-post-tag favorite-post-tag--category">
-                      {post.category}
-                    </span>
-
-                    <span
-                      className={`favorite-post-tag favorite-post-tag--status ${
-                        post.rentalStatus === 'Còn trống'
-                          ? 'is-available'
-                          : post.rentalStatus === 'Đã cho thuê'
-                          ? 'is-rented'
-                          : 'is-soon'
-                      }`}
+                    <h2
+                      className="favorite-post-title"
+                      onClick={() => navigate(`/posts/${post.id}`)}
                     >
-                      {post.rentalStatus}
-                    </span>
-                  </div>
+                      {post.title}
+                    </h2>
 
-                  <h2
-                    className="favorite-post-title"
-                    onClick={() => handleViewDetail(post)}
-                  >
-                    {post.title}
-                  </h2>
-
-                  <div className="favorite-post-meta">
-                    <span className="favorite-post-price">{formatPrice(post.price)}</span>
-                    <span className="favorite-post-dot">•</span>
-                    <span className="favorite-post-area">{post.area} m²</span>
-                    <span className="favorite-post-dot">•</span>
-                    <span className="favorite-post-address">
-                      {post.location} {post.district}, {post.city}
-                    </span>
-                  </div>
-
-                  <div className="favorite-post-info-grid">
-                    <div className="favorite-post-info-box">
-                      <span className="favorite-post-info-label">Mã tin</span>
-                      <strong className="favorite-post-info-value">{post.code}</strong>
+                    <div className="favorite-post-meta">
+                      <span className="favorite-post-price">{formatPrice(post.price)}</span>
+                      <span className="favorite-post-dot">•</span>
+                      <span className="favorite-post-area">{formatArea(post.area)}</span>
+                      <span className="favorite-post-dot">•</span>
+                      <span className="favorite-post-address">
+                        {post.location} {post.district}, {post.city}
+                      </span>
                     </div>
 
-                    <div className="favorite-post-info-box">
-                      <span className="favorite-post-info-label">Ngày bắt đầu</span>
-                      <strong className="favorite-post-info-value">{post.startDate}</strong>
-                    </div>
+                    <div className="favorite-post-info-grid">
+                      <div className="favorite-post-info-box">
+                        <span className="favorite-post-info-label">Mã tin</span>
+                        <strong className="favorite-post-info-value">{post.code}</strong>
+                      </div>
 
-                    <div className="favorite-post-info-box">
-                      <span className="favorite-post-info-label">Ngày kết thúc</span>
-                      <strong className="favorite-post-info-value">{post.endDate}</strong>
-                    </div>
+                      <div className="favorite-post-info-box">
+                        <span className="favorite-post-info-label">Ngày đăng</span>
+                        <strong className="favorite-post-info-value">{post.startDate}</strong>
+                      </div>
 
-                    <div className="favorite-post-info-box">
-                      <span className="favorite-post-info-label">Đã lưu ngày</span>
-                      <strong className="favorite-post-info-value">{post.likedAt}</strong>
+                      <div className="favorite-post-info-box">
+                        <span className="favorite-post-info-label">Trạng thái</span>
+                        <strong className="favorite-post-info-value">{post.endDate}</strong>
+                      </div>
+
+                      <div className="favorite-post-info-box">
+                        <span className="favorite-post-info-label">Đã lưu ngày</span>
+                        <strong className="favorite-post-info-value">{post.likedAt}</strong>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="favorite-post-card__right">
-                  <button
-                    className="favorite-post-action favorite-post-action--outline"
-                    onClick={() => handleViewDetail(post)}
-                  >
-                    Xem chi tiết
-                  </button>
+                  <div className="favorite-post-card__right">
+                    <Link
+                      className="favorite-post-action favorite-post-action--outline"
+                      to={`/posts/${post.id}`}
+                    >
+                      Xem chi tiết
+                    </Link>
 
-                  <button
-                    className="favorite-post-action favorite-post-action--primary"
-                    onClick={() => handleContact(post)}
-                  >
-                    Liên hệ ngay
-                  </button>
-
-                  <button
-                    className="favorite-post-action favorite-post-action--danger-soft"
-                    onClick={() => handleRemoveFavorite(post.id)}
-                  >
-                    Bỏ yêu thích
-                  </button>
-                </div>
-              </article>
-            ))}
+                    <button
+                      className="favorite-post-action favorite-post-action--danger-soft"
+                      type="button"
+                      disabled={isRemoving}
+                      onClick={() => handleRemoveFavorite(post.id)}
+                    >
+                      {isRemoving ? (
+                        'Đang hủy...'
+                      ) : (
+                        <>
+                          <HeartFilled />
+                          Bỏ yêu thích
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         ) : (
           <div className="favorite-post-empty">
-            <div className="favorite-post-empty__icon">❤</div>
+            <div className="favorite-post-empty__icon">
+              <HeartFilled />
+            </div>
             <h3>Chưa có bài đăng phù hợp</h3>
             <p>Thử tìm với từ khóa khác hoặc thêm bài đăng mới vào danh sách yêu thích.</p>
           </div>

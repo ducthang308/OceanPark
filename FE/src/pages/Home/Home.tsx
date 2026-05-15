@@ -1,12 +1,20 @@
 import './Home.css';
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { homeMockData } from '../../services/mock/home.mock';
+import { HeartFilled } from '@ant-design/icons';
+import {
+  createDefaultHomePageData,
+  createListingPath,
+  getHomePageData,
+} from '../../services/api/HomeService';
+import type { IHomePageData } from '../../services/types/home.types';
 
 import { useUserNeedDialog } from '../../hooks/useUserNeedDialog';
 import UserNeedDialog from '../../components/common/UserNeedDialog/UserNeedDialog';
 
 const Home: React.FC = () => {
+  const [homeData, setHomeData] = useState<IHomePageData>(() => createDefaultHomePageData());
+  const [homeLoading, setHomeLoading] = useState(true);
   const maNguoiDung = localStorage.getItem('userId');
 
   const {
@@ -17,11 +25,46 @@ const Home: React.FC = () => {
     submit,
   } = useUserNeedDialog(maNguoiDung);
 
-  const featuredPosts = homeMockData.featuredPosts.slice(0, 3);
-  const newestPosts = homeMockData.newestPosts.slice(0, 3);
-  const popularDistricts = homeMockData.districts
+  useEffect(() => {
+    let ignore = false;
+
+    const loadHomeData = async () => {
+      setHomeLoading(true);
+
+      try {
+        const data = await getHomePageData();
+        if (!ignore) setHomeData(data);
+      } catch {
+        if (!ignore) setHomeData(createDefaultHomePageData());
+      } finally {
+        if (!ignore) setHomeLoading(false);
+      }
+    };
+
+    loadHomeData();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const featuredPosts = homeData.featuredPosts.slice(0, 3);
+  const newestPosts = homeData.newestPosts.slice(0, 3);
+  const popularDistricts = homeData.districts
     .filter((district) => district.id !== 'all')
     .slice(0, 6);
+  const stats = useMemo(
+    () =>
+      homeData.stats.map((item, index) =>
+        index === 0 && homeLoading
+          ? {
+              ...item,
+              value: '...',
+            }
+          : item,
+      ),
+    [homeData.stats, homeLoading],
+  );
 
   return (
     <>
@@ -32,8 +75,8 @@ const Home: React.FC = () => {
           <div className="site-home-hero__container">
             <div className="site-home-hero__content">
               <p className="site-home-eyebrow">Nền tảng cho thuê nổi bật tại Đà Nẵng</p>
-              <h1>{homeMockData.heroTitle}</h1>
-              <p className="site-home-hero__description">{homeMockData.heroSubtitle}</p>
+              <h1>{homeData.heroTitle}</h1>
+              <p className="site-home-hero__description">{homeData.heroSubtitle}</p>
 
               <div className="site-home-hero__actions">
                 <Link to="/danh-muc/phong-tro" className="site-home-btn site-home-btn--primary">
@@ -49,7 +92,7 @@ const Home: React.FC = () => {
 
         <section className="site-home-stats">
           <div className="site-home-stats__inner">
-            {homeMockData.stats.map((item) => (
+            {stats.map((item) => (
               <div key={item.label} className="site-home-stat">
                 <strong>{item.value}</strong>
                 <span>{item.label}</span>
@@ -65,13 +108,13 @@ const Home: React.FC = () => {
           </div>
 
           <div className="site-home-categories">
-            {homeMockData.categories.map((category) => (
+            {homeData.categories.map((category, index) => (
               <Link
                 key={category.id}
-                to={`/danh-muc/${category.slug}`}
+                to={createListingPath({ categorySlug: category.slug })}
                 className="site-home-category"
               >
-                <span>{String(category.id).padStart(2, '0')}</span>
+                <span>{String(index + 1).padStart(2, '0')}</span>
                 <h3>{category.label}</h3>
                 <p>{category.description}</p>
               </Link>
@@ -89,7 +132,7 @@ const Home: React.FC = () => {
             {popularDistricts.map((district) => (
               <Link
                 key={district.id}
-                to="/danh-muc/phong-tro"
+                to={createListingPath({ districtId: district.id })}
                 className="site-home-district"
               >
                 <strong>{district.name}</strong>
@@ -105,7 +148,7 @@ const Home: React.FC = () => {
               <span className="site-home-eyebrow">Gợi ý dành cho bạn</span>
               <h2>Tin nổi bật theo nhu cầu tìm kiếm</h2>
             </div>
-            <Link to="/danh-muc/phong-tro" className="site-home-link">
+            <Link to={createListingPath({ categorySlug: 'phong-tro' })} className="site-home-link">
               Xem tất cả
             </Link>
           </div>
@@ -113,7 +156,13 @@ const Home: React.FC = () => {
           <div className="site-home-post-grid">
             {featuredPosts.map((post) => (
               <Link key={post.id} to={`/posts/${post.id}`} className="site-home-post">
-                <img src={post.coverImage} alt={post.title} />
+                <div className="site-home-post__image-wrap">
+                  <img src={post.coverImage} alt={post.title} />
+                  <span className="site-home-post__favorite-count">
+                    <HeartFilled />
+                    {post.likeCount ?? 0}
+                  </span>
+                </div>
                 <div className="site-home-post__body">
                   <span>{post.categoryLabel}</span>
                   <h3>{post.title}</h3>
@@ -134,7 +183,7 @@ const Home: React.FC = () => {
               <span className="site-home-eyebrow">Tin mới đăng</span>
               <h2>Cập nhật gần đây</h2>
             </div>
-            <Link to="/danh-muc/phong-tro" className="site-home-link">
+            <Link to={createListingPath({ categorySlug: 'phong-tro' })} className="site-home-link">
               Xem thêm
             </Link>
           </div>

@@ -4,10 +4,14 @@ import { useNavigate, useParams } from 'react-router-dom';
 import './PostDetail.css';
 import fallbackRoomImage from '../../assets/img/co4la.png';
 import {
+  addFavoritePost,
   getApartmentDetailByPost,
   getCategories,
+  getFavoriteCountByPost,
+  getFavoritePostsByUser,
   getPostById,
   getPostImages,
+  removeFavoritePost,
 } from '../../services/api/PostManagementService';
 import type {
   BaiDangDTO,
@@ -16,6 +20,7 @@ import type {
   HinhAnhBaiDangDTO,
 } from '../../services/api/PostManagementService';
 import { homeMockData } from '../../services/mock/home.mock';
+import { getAuthSession } from '../../utils/storage';
 
 interface PostDetailView {
   id: string;
@@ -160,6 +165,10 @@ const PostDetail: React.FC = () => {
   const [loadError, setLoadError] = useState('');
   const [activeImage, setActiveImage] = useState(0);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [favoriteCount, setFavoriteCount] = useState(0);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
+
+  const maNguoiDung = getAuthSession()?.user.maNguoiDung || '';
 
   useEffect(() => {
     let ignore = false;
@@ -215,6 +224,76 @@ const PostDetail: React.FC = () => {
       ignore = true;
     };
   }, [id]);
+
+  useEffect(() => {
+    let ignore = false;
+
+    const loadFavoriteInfo = async () => {
+      if (!post?.id) {
+        setIsFavorite(false);
+        setFavoriteCount(0);
+        return;
+      }
+
+      const [countResponse, favoritesResponse] = await Promise.all([
+        getFavoriteCountByPost(post.id).catch(() => 0),
+        maNguoiDung
+          ? getFavoritePostsByUser(maNguoiDung).catch(() => [])
+          : Promise.resolve([]),
+      ]);
+
+      if (ignore) return;
+
+      setFavoriteCount(countResponse);
+      setIsFavorite(
+        favoritesResponse.some((favorite) => favorite.maBaiDang?.trim() === post.id),
+      );
+    };
+
+    loadFavoriteInfo();
+
+    return () => {
+      ignore = true;
+    };
+  }, [maNguoiDung, post?.id]);
+
+  const handleToggleFavorite = async () => {
+    if (!post?.id) return;
+
+    if (!maNguoiDung) {
+      navigate('/login');
+      return;
+    }
+
+    if (favoriteLoading) return;
+
+    setFavoriteLoading(true);
+
+    try {
+      if (isFavorite) {
+        await removeFavoritePost(maNguoiDung, post.id);
+      } else {
+        await addFavoritePost(maNguoiDung, post.id);
+      }
+    } catch {
+      // Dữ liệu có thể đã đổi ở nơi khác; luôn lấy lại trạng thái thật từ API bên dưới.
+    }
+
+    try {
+      const [countResponse, favoritesResponse] = await Promise.all([
+        getFavoriteCountByPost(post.id),
+        getFavoritePostsByUser(maNguoiDung),
+      ]);
+
+      setFavoriteCount(countResponse);
+      setIsFavorite(
+        favoritesResponse.some((favorite) => favorite.maBaiDang?.trim() === post.id),
+      );
+      window.dispatchEvent(new Event('favorite-posts:changed'));
+    } finally {
+      setFavoriteLoading(false);
+    }
+  };
 
   const detailItems = useMemo(() => {
     if (!post) return [];
@@ -347,9 +426,10 @@ const PostDetail: React.FC = () => {
                 <button
                   type="button"
                   className={`rental-detail-gallery-favorite-btn ${isFavorite ? 'active' : ''}`}
-                  onClick={() => setIsFavorite((prev) => !prev)}
+                  disabled={favoriteLoading}
+                  onClick={handleToggleFavorite}
                 >
-                  {isFavorite ? '♥ Đã lưu' : '♡ Lưu tin'}
+                  {isFavorite ? `♥ Đã lưu (${favoriteCount})` : `♡ Lưu tin (${favoriteCount})`}
                 </button>
               </div>
 

@@ -5,16 +5,14 @@ import "./navbar.css";
 import {
     EditOutlined,
     FolderOpenOutlined,
-    CreditCardOutlined,
     FileTextOutlined,
-    DollarOutlined,
     UserOutlined,
     LogoutOutlined,
 } from '@ant-design/icons';
 import { Menu } from 'antd';
 import type { MenuProps } from 'antd';
-import { useNavigate } from 'react-router-dom';
-import { LANDLORD_ROLE_IDS } from '../../../constants/roles';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { LANDLORD_ROLE_IDS, ROLE_ID } from '../../../constants/roles';
 import type { RoleId } from '../../../constants/roles';
 import { useAuth } from '../../../hooks/useAuth';
 import { clearAuthSession } from '../../../utils/storage';
@@ -67,6 +65,12 @@ const items: SidebarItem[] = [
         label: 'Quản lý tài khoản',
     },
     {
+        key: '10',
+        icon: <FileTextOutlined />,
+        label: 'Quản lý giao dịch',
+        allowedRoles: [ROLE_ID.NGUOI_THUE],
+    },
+    {
         key: '9',
         icon: <LogoutOutlined />,
         label: 'Đăng xuất',
@@ -75,6 +79,7 @@ const items: SidebarItem[] = [
 
 const navbar = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { user, roleId } = useAuth();
     const isLandlordRole = Boolean(roleId && LANDLORD_ROLE_IDS.includes(roleId));
     const visibleItems = items.filter((item) => {
@@ -105,6 +110,9 @@ const navbar = () => {
             case '8':
                 navigate('/AccountManagement');
                 break;
+            case '10':
+                navigate('/tenant-transactions');
+                break;
             case '9':
                 clearAuthSession();
                 navigate('/login');
@@ -113,6 +121,15 @@ const navbar = () => {
                 break;
         }
     };
+    const selectedKey = (() => {
+        if (location.pathname === '/listing') return ['1'];
+        if (location.pathname === '/list-post') return ['2'];
+        if (location.pathname === '/history') return ['5'];
+        if (location.pathname === '/AccountManagement') return ['8'];
+        if (location.pathname === '/tenant-transactions') return ['10'];
+        return [];
+    })();
+
     return (
         <div className="navbar-management">
             <div className="nav-header">
@@ -140,8 +157,9 @@ const navbar = () => {
                     mode="vertical"
                     className="custom-ant-menu"
                     items={visibleItems}
+                    selectedKeys={selectedKey}
                     onClick={handleMenuClick}
-                    style={{ width: 250, fontSize: 16, border: 'none' }}
+                    style={{ width: 240, fontSize: 14, border: 'none' }}
                 />
             </div>
 
