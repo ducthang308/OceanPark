@@ -50,6 +50,11 @@ export const getPosts = async () => {
   return res.data;
 };
 
+export const getPostById = async (maBaiDang: string) => {
+  const res = await axiosClient.get<BaiDangDTO>(`/api/v1/bai-dang/${maBaiDang}`);
+  return res.data;
+};
+
 export const createPost = async (payload: BaiDangDTO) => {
   const res = await axiosClient.post<BaiDangDTO>("/api/v1/bai-dang", payload);
   return res.data;

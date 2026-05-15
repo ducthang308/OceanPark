@@ -1,18 +1,207 @@
 import './RoomList.css';
-import React, { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import fallbackRoomImage from '../../assets/img/co4la.png';
+import {
+  getApartmentDetailByPost,
+  getCategories,
+  getPostImages,
+  getPosts,
+} from '../../services/api/PostManagementService';
+import type {
+  BaiDangDTO,
+  ChiTietCanHoDTO,
+  DanhMucDTO,
+  HinhAnhBaiDangDTO,
+} from '../../services/api/PostManagementService';
 import { homeMockData } from '../../services/mock/home.mock';
 
 import { useUserNeedDialog } from '../../hooks/useUserNeedDialog';
 import UserNeedDialog from '../../components/common/UserNeedDialog/UserNeedDialog';
 
 const POSTS_PER_PAGE = 3;
+const HIDDEN_POST_STATUSES = new Set(['HIDDEN', 'PENDING', 'CHO_DUYET', 'TU_CHOI', 'DELETED']);
+
+type RoomTab = 'proposal' | 'new' | 'video';
+
+interface RoomCategory {
+  id: string;
+  label: string;
+  slug: string;
+  description: string;
+}
+
+interface RoomPostCard {
+  id: string;
+  title: string;
+  priceText: string;
+  areaText: string;
+  addressText: string;
+  wardText: string;
+  categoryLabel: string;
+  categorySlug: string;
+  description: string;
+  coverImage: string;
+  gallery: string[];
+  postedBy: string;
+  postedAtText: string;
+  phone: string;
+  hasVideo: boolean;
+  isFeatured: boolean;
+  isNew: boolean;
+  createdAtTime: number;
+  likeCount?: number;
+}
+
+const normalizeText = (value: string) =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[đĐ]/g, (char) => (char === 'đ' ? 'd' : 'D'))
+    .toLowerCase();
+
+const slugify = (value: string) =>
+  normalizeText(value)
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'danh-muc';
+
+const formatCurrency = (value?: number) => {
+  if (typeof value !== 'number' || Number.isNaN(value) || value <= 0) {
+    return 'Liên hệ';
+  }
+
+  return `${new Intl.NumberFormat('vi-VN').format(value)}đ/tháng`;
+};
+
+const formatArea = (value?: number) => {
+  if (typeof value !== 'number' || Number.isNaN(value) || value <= 0) {
+    return 'Đang cập nhật';
+  }
+
+  return `${value} m²`;
+};
+
+const formatPostedAt = (value?: string) => {
+  if (!value) return 'Mới cập nhật';
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return date.toLocaleDateString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+};
+
+const getDateTime = (value?: string) => {
+  if (!value) return 0;
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+};
+
+const defaultCategories: RoomCategory[] = homeMockData.categories.map((category) => ({
+  id: category.key,
+  label: category.label,
+  slug: category.slug,
+  description: category.description,
+}));
+
+const mapCategoryDto = (category: DanhMucDTO): RoomCategory => {
+  const label = category.tenDanhMuc || category.maDanhMuc || 'Danh mục';
+
+  return {
+    id: category.maDanhMuc,
+    label,
+    slug: slugify(label),
+    description: `Khám phá ${label.toLowerCase()} phù hợp nhu cầu của bạn`,
+  };
+};
+
+const createCategoryLookup = (categories: RoomCategory[]) => {
+  const lookup = new Map<string, RoomCategory>();
+
+  defaultCategories.forEach((category, index) => {
+    lookup.set(category.id, category);
+    lookup.set(category.slug, category);
+    lookup.set(String(index + 1), category);
+    lookup.set(`DM${index + 1}`, category);
+  });
+
+  categories.forEach((category) => {
+    lookup.set(category.id, category);
+    lookup.set(category.slug, category);
+  });
+
+  return lookup;
+};
+
+const isPublicPost = (post: BaiDangDTO) => {
+  const status = post.trangThai?.trim().toUpperCase();
+  return !status || !HIDDEN_POST_STATUSES.has(status);
+};
+
+const getImageUrl = (image: HinhAnhBaiDangDTO) =>
+  image.thumbnailUrl?.trim() || image.duongDan?.trim() || '';
+
+const hasVideoAsset = (images: HinhAnhBaiDangDTO[]) =>
+  images.some((image) => {
+    const type = (image.loai || '').toUpperCase();
+    const path = `${image.duongDan || ''} ${image.thumbnailUrl || ''}`.toLowerCase();
+
+    return type.includes('VIDEO') || /\.(mp4|mov|webm|avi)(\?|$)/i.test(path);
+  });
+
+const buildPostCard = (
+  post: BaiDangDTO,
+  detail: ChiTietCanHoDTO | null,
+  images: HinhAnhBaiDangDTO[],
+  categoryLookup: Map<string, RoomCategory>,
+  index: number,
+): RoomPostCard => {
+  const category = post.maDanhMuc ? categoryLookup.get(post.maDanhMuc) : undefined;
+  const sortedImages = [...images].sort((a, b) => (a.thuTu ?? 0) - (b.thuTu ?? 0));
+  const gallery = sortedImages.map(getImageUrl).filter(Boolean);
+  const wardText = detail?.phuong?.trim() || 'Đang cập nhật';
+  const addressText =
+    [detail?.diaChiCuThe, detail?.phuong].filter(Boolean).join(', ') ||
+    'Đang cập nhật địa chỉ';
+
+  return {
+    id: post.maBaiDang?.trim() || `post-${index + 1}`,
+    title: post.tieuDe?.trim() || 'Bài đăng chưa có tiêu đề',
+    priceText: formatCurrency(detail?.gia),
+    areaText: formatArea(detail?.dienTich),
+    addressText,
+    wardText,
+    categoryLabel: category?.label || 'Danh mục',
+    categorySlug: category?.slug || 'danh-muc',
+    description: post.noiDung?.trim() || 'Chưa có mô tả chi tiết.',
+    coverImage: gallery[0] || fallbackRoomImage,
+    gallery: gallery.length > 0 ? gallery : [fallbackRoomImage],
+    postedBy: 'Chủ nhà',
+    postedAtText: formatPostedAt(post.ngayDang),
+    phone: post.lienHe?.trim() || 'Đang cập nhật',
+    hasVideo: hasVideoAsset(images),
+    isFeatured: false,
+    isNew: false,
+    createdAtTime: getDateTime(post.ngayDang),
+    likeCount: 0,
+  };
+};
 
 const RoomList: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'proposal' | 'new' | 'video'>('proposal');
+  const { slug } = useParams<{ slug?: string }>();
+  const [activeTab, setActiveTab] = useState<RoomTab>('proposal');
   const [activeDistrict, setActiveDistrict] = useState('all');
-  const [favoriteIds, setFavoriteIds] = useState<number[]>([102, 104]);
+  const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [postList, setPostList] = useState<RoomPostCard[]>([]);
+  const [categoryOptions, setCategoryOptions] = useState<RoomCategory[]>(defaultCategories);
+  const [postsLoading, setPostsLoading] = useState(true);
+  const [postsError, setPostsError] = useState('');
+  const [reloadKey, setReloadKey] = useState(0);
 
   const maNguoiDung = localStorage.getItem('userId');
 
@@ -24,17 +213,131 @@ const RoomList: React.FC = () => {
     submit,
   } = useUserNeedDialog(maNguoiDung);
 
+  useEffect(() => {
+    let ignore = false;
+
+    const loadPosts = async () => {
+      setPostsLoading(true);
+      setPostsError('');
+
+      try {
+        const [postsResponse, categoriesResponse] = await Promise.all([
+          getPosts(),
+          getCategories().catch(() => [] as DanhMucDTO[]),
+        ]);
+
+        if (ignore) return;
+
+        const apiCategories = categoriesResponse.map(mapCategoryDto);
+        const resolvedCategories = apiCategories.length > 0 ? apiCategories : defaultCategories;
+        const categoryLookup = createCategoryLookup(resolvedCategories);
+
+        setCategoryOptions(resolvedCategories);
+
+        const mappedPosts = await Promise.all(
+          postsResponse.filter(isPublicPost).map(async (post, index) => {
+            const maBaiDang = post.maBaiDang?.trim();
+            const [detail, images] = maBaiDang
+              ? await Promise.all([
+                  getApartmentDetailByPost(maBaiDang).catch(() => null),
+                  getPostImages(maBaiDang).catch(() => [] as HinhAnhBaiDangDTO[]),
+                ])
+              : [null, [] as HinhAnhBaiDangDTO[]];
+
+            return buildPostCard(post, detail, images, categoryLookup, index);
+          }),
+        );
+
+        if (ignore) return;
+
+        const sortedPosts = mappedPosts
+          .sort((a, b) => b.createdAtTime - a.createdAtTime)
+          .map((post, index) => ({
+            ...post,
+            isFeatured: index < 3,
+            isNew: index < 5,
+          }));
+
+        setPostList(sortedPosts);
+      } catch {
+        if (ignore) return;
+
+        setPostList([]);
+        setPostsError('Không tải được danh sách bài đăng. Vui lòng thử lại.');
+      } finally {
+        if (!ignore) {
+          setPostsLoading(false);
+        }
+      }
+    };
+
+    loadPosts();
+
+    return () => {
+      ignore = true;
+    };
+  }, [reloadKey]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [slug, activeDistrict]);
+
+  const activeCategory = useMemo(
+    () => categoryOptions.find((category) => category.slug === slug),
+    [categoryOptions, slug],
+  );
+
+  const categoryFilteredPosts = useMemo(() => {
+    if (!slug) return postList;
+    return postList.filter((post) => post.categorySlug === slug);
+  }, [postList, slug]);
+
+  const districtFilteredPosts = useMemo(() => {
+    if (activeDistrict === 'all') return categoryFilteredPosts;
+
+    const district = homeMockData.districts.find((item) => item.id === activeDistrict);
+    if (!district) return categoryFilteredPosts;
+
+    const districtName = normalizeText(district.name);
+
+    return categoryFilteredPosts.filter((post) =>
+      normalizeText(`${post.addressText} ${post.wardText}`).includes(districtName),
+    );
+  }, [activeDistrict, categoryFilteredPosts]);
+
   const visibleFeaturedPosts = useMemo(() => {
+    const sortedPosts = [...districtFilteredPosts].sort((a, b) => {
+      if (activeTab === 'proposal') {
+        return Number(b.isFeatured) - Number(a.isFeatured) || b.createdAtTime - a.createdAtTime;
+      }
+
+      return b.createdAtTime - a.createdAtTime;
+    });
+
     if (activeTab === 'video') {
-      return homeMockData.featuredPosts.filter((item) => item.hasVideo);
+      return sortedPosts.filter((item) => item.hasVideo);
     }
 
-    if (activeTab === 'new') {
-      return homeMockData.newestPosts.slice(0, 3);
-    }
+    return sortedPosts;
+  }, [activeTab, districtFilteredPosts]);
 
-    return homeMockData.featuredPosts;
-  }, [activeTab]);
+  const newestPosts = useMemo(
+    () => [...postList].sort((a, b) => b.createdAtTime - a.createdAtTime).slice(0, 5),
+    [postList],
+  );
+
+  const heroStats = useMemo(
+    () =>
+      homeMockData.stats.map((item, index) =>
+        index === 0
+          ? {
+              ...item,
+              value: postsLoading ? '...' : String(postList.length),
+            }
+          : item,
+      ),
+    [postList.length, postsLoading],
+  );
 
   const totalPages = Math.ceil(visibleFeaturedPosts.length / POSTS_PER_PAGE);
   const paginatedPosts = visibleFeaturedPosts.slice(
@@ -42,18 +345,24 @@ const RoomList: React.FC = () => {
     currentPage * POSTS_PER_PAGE,
   );
 
-  const handleTabChange = (tab: 'proposal' | 'new' | 'video') => {
+  useEffect(() => {
+    if (totalPages > 0 && currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  const handleTabChange = (tab: RoomTab) => {
     setActiveTab(tab);
     setCurrentPage(1);
   };
 
-  const toggleFavorite = (postId: number) => {
+  const toggleFavorite = (postId: string) => {
     setFavoriteIds((prev) =>
       prev.includes(postId) ? prev.filter((id) => id !== postId) : [...prev, postId],
     );
   };
 
-  const getLikeCount = (post: { id: number; likeCount?: number }) => post.likeCount ?? 0;
+  const getLikeCount = (post: RoomPostCard) => post.likeCount ?? 0;
 
   return (
     <>
@@ -76,7 +385,7 @@ const RoomList: React.FC = () => {
               </div>
 
               <div className="room-list-hero__stats">
-                {homeMockData.stats.map((item) => (
+                {heroStats.map((item) => (
                   <div key={item.label} className="room-list-stat-card">
                     <strong>{item.value}</strong>
                     <span>{item.label}</span>
@@ -94,7 +403,7 @@ const RoomList: React.FC = () => {
           </div>
 
           <div className="room-list-categories__grid">
-            {homeMockData.categories.map((category) => (
+            {categoryOptions.map((category, index) => (
               <Link
                 key={category.id}
                 to={`/danh-muc/${category.slug}`}
@@ -102,7 +411,7 @@ const RoomList: React.FC = () => {
               >
                 <div className="room-list-category-card__top">
                   <span className="room-list-category-card__index">
-                    {String(category.id).padStart(2, '0')}
+                    {String(index + 1).padStart(2, '0')}
                   </span>
                   <span className="room-list-category-card__arrow">↗</span>
                 </div>
@@ -141,8 +450,8 @@ const RoomList: React.FC = () => {
             <div className="room-list-content__main">
               <div className="room-list-tabs-header">
                 <div className="room-list-section-heading room-list-section-heading--compact">
-                  <span>Gợi ý dành cho bạn</span>
-                  <h2>Tin nổi bật theo nhu cầu tìm kiếm</h2>
+                  <span>{activeCategory ? 'Danh mục đang xem' : 'Gợi ý dành cho bạn'}</span>
+                  <h2>{activeCategory?.label || 'Tin nổi bật theo nhu cầu tìm kiếm'}</h2>
                 </div>
 
                 <div className="room-list-tabs">
@@ -171,74 +480,103 @@ const RoomList: React.FC = () => {
               </div>
 
               <div className="room-list-featured-list">
-                {paginatedPosts.map((item) => {
-                  const isFavorite = favoriteIds.includes(item.id);
-                  const likeCount = getLikeCount(item);
-
-                  return (
-                    <Link
-                      key={item.id}
-                      to={`/posts/${item.id}`}
-                      className="room-list-featured-card"
+                {postsLoading ? (
+                  <div className="room-list-state">
+                    <h3>Đang tải bài đăng</h3>
+                    <p>Hệ thống đang lấy dữ liệu bài đăng mới nhất.</p>
+                  </div>
+                ) : postsError ? (
+                  <div className="room-list-state">
+                    <h3>Không tải được bài đăng</h3>
+                    <p>{postsError}</p>
+                    <button
+                      type="button"
+                      className="room-list-state__retry"
+                      onClick={() => setReloadKey((value) => value + 1)}
                     >
-                      <div className="room-list-featured-card__image-wrap">
-                        <img
-                          className="room-list-featured-card__image"
-                          src={item.coverImage || item.gallery?.[1]}
-                          alt={item.title}
-                        />
-                        <div className="room-list-featured-card__overlay-meta">
-                          <span className="room-list-badge">{item.categoryLabel}</span>
-                          {item.hasVideo && (
-                            <span className="room-list-badge room-list-badge--light">
-                              Video
-                            </span>
-                          )}
+                      Tải lại
+                    </button>
+                  </div>
+                ) : paginatedPosts.length > 0 ? (
+                  paginatedPosts.map((item) => {
+                    const isFavorite = favoriteIds.includes(item.id);
+                    const likeCount = getLikeCount(item);
+
+                    return (
+                      <Link
+                        key={item.id}
+                        to={`/posts/${item.id}`}
+                        className="room-list-featured-card"
+                      >
+                        <div className="room-list-featured-card__image-wrap">
+                          <img
+                            className="room-list-featured-card__image"
+                            src={item.coverImage}
+                            alt={item.title}
+                          />
+                          <div className="room-list-featured-card__overlay-meta">
+                            <span className="room-list-badge">{item.categoryLabel}</span>
+                            {item.isFeatured && (
+                              <span className="room-list-badge room-list-badge--light">
+                                Nổi bật
+                              </span>
+                            )}
+                            {item.hasVideo && (
+                              <span className="room-list-badge room-list-badge--light">
+                                Video
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </div>
 
-                      <div className="room-list-featured-card__content">
-                        <h3>{item.title}</h3>
+                        <div className="room-list-featured-card__content">
+                          <h3>{item.title}</h3>
 
-                        <div className="room-list-featured-card__meta">
-                          <strong>{item.priceText}</strong>
-                          <span>{item.areaText}</span>
-                          <span>{item.wardText}</span>
-                        </div>
-
-                        <p className="room-list-featured-card__address">{item.addressText}</p>
-
-                        <div className="room-list-featured-card__footer">
-                          <div className="room-list-featured-card__owner">
-                            <b>{item.postedBy}</b>
-                            <span>{item.phone}</span>
+                          <div className="room-list-featured-card__meta">
+                            <strong>{item.priceText}</strong>
+                            <span>{item.areaText}</span>
+                            <span>{item.wardText}</span>
                           </div>
 
-                          <button
-                            type="button"
-                            className={`room-list-like-btn ${isFavorite ? 'is-active' : ''}`}
-                            aria-label="Yêu thích bài đăng"
-                            onClick={(event) => {
-                              event.preventDefault();
-                              toggleFavorite(item.id);
-                            }}
-                          >
-                            <svg viewBox="0 0 24 24" aria-hidden="true">
-                              <path
-                                d="M12 20s-6.8-4.3-9-8.2C1.4 8.8 3 5.5 6.4 5.1c2-.2 3.4.8 4.3 2.1c.9-1.3 2.4-2.3 4.3-2.1c3.4.4 5 3.7 3.4 6.7C18.8 15.7 12 20 12 20Z"
-                                fill={isFavorite ? 'currentColor' : 'none'}
-                                stroke="currentColor"
-                                strokeWidth="1.8"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
-                            <span>{likeCount + (isFavorite ? 1 : 0)}</span>
-                          </button>
+                          <p className="room-list-featured-card__address">{item.addressText}</p>
+
+                          <div className="room-list-featured-card__footer">
+                            <div className="room-list-featured-card__owner">
+                              <b>{item.postedBy}</b>
+                              <span>{item.phone}</span>
+                            </div>
+
+                            <button
+                              type="button"
+                              className={`room-list-like-btn ${isFavorite ? 'is-active' : ''}`}
+                              aria-label="Yêu thích bài đăng"
+                              onClick={(event) => {
+                                event.preventDefault();
+                                toggleFavorite(item.id);
+                              }}
+                            >
+                              <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path
+                                  d="M12 20s-6.8-4.3-9-8.2C1.4 8.8 3 5.5 6.4 5.1c2-.2 3.4.8 4.3 2.1c.9-1.3 2.4-2.3 4.3-2.1c3.4.4 5 3.7 3.4 6.7C18.8 15.7 12 20 12 20Z"
+                                  fill={isFavorite ? 'currentColor' : 'none'}
+                                  stroke="currentColor"
+                                  strokeWidth="1.8"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                              <span>{likeCount + (isFavorite ? 1 : 0)}</span>
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    </Link>
-                  );
-                })}
+                      </Link>
+                    );
+                  })
+                ) : (
+                  <div className="room-list-state">
+                    <h3>Chưa có bài đăng phù hợp</h3>
+                    <p>Thử chọn danh mục hoặc khu vực khác để xem thêm tin đăng.</p>
+                  </div>
+                )}
               </div>
 
               {totalPages > 1 && (
@@ -321,59 +659,65 @@ const RoomList: React.FC = () => {
                 </div>
 
                 <div className="room-list-new-posts">
-                  {homeMockData.newestPosts.map((post) => {
-                    const isFavorite = favoriteIds.includes(post.id);
-                    const likeCount = getLikeCount(post);
+                  {postsLoading ? (
+                    <div className="room-list-sidebar-empty">Đang tải tin mới...</div>
+                  ) : newestPosts.length > 0 ? (
+                    newestPosts.map((post) => {
+                      const isFavorite = favoriteIds.includes(post.id);
+                      const likeCount = getLikeCount(post);
 
-                    return (
-                      <Link
-                        key={post.id}
-                        to={`/posts/${post.slug || post.id}`}
-                        className="room-list-new-post"
-                      >
-                        <div className="room-list-new-post__image-wrap">
-                          <img src={post.coverImage} alt={post.title} />
-                        </div>
-
-                        <div className="room-list-new-post__content">
-                          <h4>{post.title}</h4>
-                          <strong>{post.priceText}</strong>
-
-                          <div className="room-list-new-post__meta">
-                            <span>{post.areaText}</span>
-                            <span>{post.wardText}</span>
+                      return (
+                        <Link
+                          key={post.id}
+                          to={`/posts/${post.id}`}
+                          className="room-list-new-post"
+                        >
+                          <div className="room-list-new-post__image-wrap">
+                            <img src={post.coverImage} alt={post.title} />
                           </div>
 
-                          <div className="room-list-new-post__bottom">
-                            <small>{post.postedAtText}</small>
+                          <div className="room-list-new-post__content">
+                            <h4>{post.title}</h4>
+                            <strong>{post.priceText}</strong>
 
-                            <button
-                              type="button"
-                              className={`room-list-like-btn room-list-like-btn--small ${
-                                isFavorite ? 'is-active' : ''
-                              }`}
-                              aria-label="Yêu thích bài đăng"
-                              onClick={(event) => {
-                                event.preventDefault();
-                                toggleFavorite(post.id);
-                              }}
-                            >
-                              <svg viewBox="0 0 24 24" aria-hidden="true">
-                                <path
-                                  d="M12 20s-6.8-4.3-9-8.2C1.4 8.8 3 5.5 6.4 5.1c2-.2 3.4.8 4.3 2.1c.9-1.3 2.4-2.3 4.3-2.1c3.4.4 5 3.7 3.4 6.7C18.8 15.7 12 20 12 20Z"
-                                  fill={isFavorite ? 'currentColor' : 'none'}
-                                  stroke="currentColor"
-                                  strokeWidth="1.8"
-                                  strokeLinejoin="round"
-                                />
-                              </svg>
-                              <span>{likeCount + (isFavorite ? 1 : 0)}</span>
-                            </button>
+                            <div className="room-list-new-post__meta">
+                              <span>{post.areaText}</span>
+                              <span>{post.wardText}</span>
+                            </div>
+
+                            <div className="room-list-new-post__bottom">
+                              <small>{post.postedAtText}</small>
+
+                              <button
+                                type="button"
+                                className={`room-list-like-btn room-list-like-btn--small ${
+                                  isFavorite ? 'is-active' : ''
+                                }`}
+                                aria-label="Yêu thích bài đăng"
+                                onClick={(event) => {
+                                  event.preventDefault();
+                                  toggleFavorite(post.id);
+                                }}
+                              >
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                  <path
+                                    d="M12 20s-6.8-4.3-9-8.2C1.4 8.8 3 5.5 6.4 5.1c2-.2 3.4.8 4.3 2.1c.9-1.3 2.4-2.3 4.3-2.1c3.4.4 5 3.7 3.4 6.7C18.8 15.7 12 20 12 20Z"
+                                    fill={isFavorite ? 'currentColor' : 'none'}
+                                    stroke="currentColor"
+                                    strokeWidth="1.8"
+                                    strokeLinejoin="round"
+                                  />
+                                </svg>
+                                <span>{likeCount + (isFavorite ? 1 : 0)}</span>
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      </Link>
-                    );
-                  })}
+                        </Link>
+                      );
+                    })
+                  ) : (
+                    <div className="room-list-sidebar-empty">Chưa có tin mới.</div>
+                  )}
                 </div>
               </div>
             </aside>

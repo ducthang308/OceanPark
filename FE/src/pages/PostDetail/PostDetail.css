@@ -1,4 +1,4 @@
-.post-detail-page {
+.rental-detail-page {
   background: #f6f3ee;
 
   /* QUAN TRỌNG: đẩy xuống dưới header */
@@ -7,12 +7,12 @@
   min-height: 100vh;
 }
 
-.post-detail-container {
+.rental-detail-container {
   max-width: 1240px;
   margin: 0 auto;
 }
 
-.post-detail-breadcrumb {
+.rental-detail-breadcrumb {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -21,47 +21,47 @@
   font-size: 14px;
 }
 
-.post-detail-breadcrumb span:first-child {
+.rental-detail-breadcrumb span:first-child {
   cursor: pointer;
   color: #d86b1f;
   font-weight: 600;
 }
 
-.post-detail-layout {
+.rental-detail-layout {
   display: grid;
   grid-template-columns: minmax(0, 2fr) 340px;
   gap: 24px;
   align-items: start;
 }
 
-.post-detail-main {
+.rental-detail-main {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.post-detail-gallery-card,
-.post-detail-content-card,
-.post-detail-owner-card,
-.post-detail-side-card,
-.post-detail-empty {
+.rental-detail-gallery-card,
+.rental-detail-content-card,
+.rental-detail-owner-card,
+.rental-detail-side-card,
+.rental-detail-empty {
   background: #ffffff;
   border: 1px solid #ede6dc;
   border-radius: 20px;
   box-shadow: 0 12px 30px rgba(39, 23, 9, 0.06);
 }
 
-.post-detail-gallery-card {
+.rental-detail-gallery-card {
   padding: 16px;
 }
 
-.post-detail-gallery-main-wrap {
+.rental-detail-gallery-main-wrap {
   position: relative;
   overflow: hidden;
   border-radius: 18px;
 }
 
-.post-detail-gallery-main {
+.rental-detail-gallery-main {
   width: 100%;
   height: 500px;
   object-fit: cover;
@@ -69,7 +69,7 @@
   background: #f4f4f4;
 }
 
-.post-detail-gallery-badges {
+.rental-detail-gallery-badges {
   position: absolute;
   top: 14px;
   left: 14px;
@@ -78,7 +78,38 @@
   gap: 8px;
 }
 
-.post-detail-badge {
+.rental-detail-gallery-favorite-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid rgba(234, 223, 206, 0.95);
+  background: rgba(255, 255, 255, 0.94);
+  color: #8a5a32;
+  border-radius: 14px;
+  box-shadow: 0 10px 24px rgba(39, 23, 9, 0.12);
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+  font-weight: 800;
+  transition:
+    transform 0.2s ease,
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.rental-detail-gallery-favorite-btn:hover {
+  transform: translateY(-1px);
+}
+
+.rental-detail-gallery-favorite-btn.active {
+  background: #fff4f0;
+  color: #d94f3d;
+  border-color: #ffd1ca;
+}
+
+.rental-detail-badge {
   padding: 7px 12px;
   border-radius: 999px;
   font-size: 12px;
@@ -87,26 +118,26 @@
   backdrop-filter: blur(4px);
 }
 
-.post-detail-badge--hot {
+.rental-detail-badge--hot {
   background: linear-gradient(135deg, #ff6a3d, #ff9a3d);
 }
 
-.post-detail-badge--new {
+.rental-detail-badge--new {
   background: linear-gradient(135deg, #00a86b, #35c98a);
 }
 
-.post-detail-badge--video {
+.rental-detail-badge--video {
   background: linear-gradient(135deg, #3b82f6, #5fa2ff);
 }
 
-.post-detail-gallery-thumbs {
+.rental-detail-gallery-thumbs {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(82px, 1fr));
   gap: 10px;
   margin-top: 14px;
 }
 
-.post-detail-thumb {
+.rental-detail-thumb {
   border: 1px solid #ebe2d5;
   background: #fff;
   padding: 0;
@@ -116,28 +147,28 @@
   transition: all 0.2s ease;
 }
 
-.post-detail-thumb img {
+.rental-detail-thumb img {
   width: 100%;
   height: 72px;
   object-fit: cover;
   display: block;
 }
 
-.post-detail-thumb:hover {
+.rental-detail-thumb:hover {
   transform: translateY(-2px);
   border-color: #e18a44;
 }
 
-.post-detail-thumb.active {
+.rental-detail-thumb.active {
   border-color: #e18a44;
   box-shadow: 0 0 0 3px rgba(225, 138, 68, 0.16);
 }
 
-.post-detail-content-card {
+.rental-detail-content-card {
   padding: 24px;
 }
 
-.post-detail-header {
+.rental-detail-header {
   display: flex;
   justify-content: space-between;
   gap: 16px;
@@ -145,21 +176,21 @@
   margin-bottom: 20px;
 }
 
-.post-detail-title {
+.rental-detail-title {
   margin: 0 0 14px;
   font-size: 30px;
   line-height: 1.35;
   color: #1f2937;
 }
 
-.post-detail-meta-row {
+.rental-detail-meta-row {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
   margin-bottom: 12px;
 }
 
-.post-detail-price {
+.rental-detail-price {
   padding: 10px 14px;
   background: #fff3eb;
   color: #d85d12;
@@ -169,7 +200,7 @@
   font-weight: 800;
 }
 
-.post-detail-meta-chip {
+.rental-detail-meta-chip {
   padding: 10px 12px;
   background: #f9f6f1;
   color: #5f6368;
@@ -179,81 +210,62 @@
   font-weight: 600;
 }
 
-.post-detail-address {
+.rental-detail-address {
   margin: 0;
   font-size: 15px;
   color: #6b7280;
 }
 
-.post-detail-favorite-btn {
-  border: 1px solid #eadfce;
-  background: #fff;
-  color: #8a5a32;
-  padding: 12px 16px;
-  border-radius: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.2s ease;
-}
-
-.post-detail-favorite-btn:hover,
-.post-detail-favorite-btn.active {
-  background: #fff4f0;
-  color: #d94f3d;
-  border-color: #ffd1ca;
-}
-
-.post-detail-info-grid {
+.rental-detail-info-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
   margin-bottom: 24px;
 }
 
-.post-detail-info-item {
+.rental-detail-info-item {
   background: #faf8f4;
   border: 1px solid #eee6da;
   border-radius: 16px;
   padding: 16px;
 }
 
-.post-detail-info-label {
+.rental-detail-info-label {
   display: block;
   margin-bottom: 8px;
   color: #8a8f98;
   font-size: 13px;
 }
 
-.post-detail-info-value {
+.rental-detail-info-value {
   color: #1f2937;
   font-size: 15px;
 }
 
-.post-detail-section + .post-detail-section {
+.rental-detail-section + .rental-detail-section {
   margin-top: 24px;
 }
 
-.post-detail-section-title {
+.rental-detail-section-title {
   margin: 0 0 14px;
   font-size: 20px;
   color: #1f2937;
 }
 
-.post-detail-description {
+.rental-detail-description {
   margin: 0;
   line-height: 1.8;
   color: #4b5563;
   font-size: 15px;
 }
 
-.post-detail-tag-list {
+.rental-detail-tag-list {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
 }
 
-.post-detail-tag {
+.rental-detail-tag {
   padding: 8px 12px;
   border-radius: 999px;
   background: #f5f8ff;
@@ -263,13 +275,13 @@
   font-weight: 600;
 }
 
-.post-detail-amenities {
+.rental-detail-amenities {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
-.post-detail-amenity {
+.rental-detail-amenity {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -281,7 +293,7 @@
   font-weight: 500;
 }
 
-.post-detail-amenity-dot {
+.rental-detail-amenity-dot {
   width: 10px;
   height: 10px;
   border-radius: 50%;
@@ -289,7 +301,7 @@
   flex-shrink: 0;
 }
 
-.post-detail-sidebar {
+.rental-detail-sidebar {
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -297,11 +309,11 @@
   top: 20px;
 }
 
-.post-detail-owner-card {
+.rental-detail-owner-card {
   padding: 24px;
 }
 
-.post-detail-owner-avatar {
+.rental-detail-owner-avatar {
   width: 72px;
   height: 72px;
   border-radius: 50%;
@@ -314,31 +326,31 @@
   margin-bottom: 16px;
 }
 
-.post-detail-owner-label {
+.rental-detail-owner-label {
   margin: 0 0 6px;
   font-size: 13px;
   color: #8b9098;
 }
 
-.post-detail-owner-name {
+.rental-detail-owner-name {
   margin: 0 0 8px;
   font-size: 22px;
   color: #1f2937;
 }
 
-.post-detail-owner-subtext {
+.rental-detail-owner-subtext {
   margin: 0 0 18px;
   color: #6b7280;
   font-size: 14px;
 }
 
-.post-detail-owner-actions {
+.rental-detail-owner-actions {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.post-detail-btn {
+.rental-detail-btn {
   width: 100%;
   border: none;
   border-radius: 14px;
@@ -351,28 +363,28 @@
   transition: transform 0.2s ease, opacity 0.2s ease;
 }
 
-.post-detail-btn:hover {
+.rental-detail-btn:hover {
   transform: translateY(-1px);
   opacity: 0.96;
 }
 
-.post-detail-btn--call {
+.rental-detail-btn--call {
   background: #17b26a;
   color: #fff;
 }
 
-.post-detail-btn--zalo {
+.rental-detail-btn--zalo {
   background: #e9f3ff;
   color: #1565d8;
   border: 1px solid #d2e7ff;
 }
 
-.post-detail-btn--primary {
+.rental-detail-btn--primary {
   background: linear-gradient(135deg, #ea7b2c, #d65b10);
   color: #fff;
 }
 
-.post-detail-owner-note {
+.rental-detail-owner-note {
   margin-top: 16px;
   padding: 14px;
   border-radius: 14px;
@@ -383,39 +395,39 @@
   line-height: 1.6;
 }
 
-.post-detail-side-card {
+.rental-detail-side-card {
   padding: 20px;
 }
 
-.post-detail-side-title {
+.rental-detail-side-title {
   margin: 0 0 12px;
   font-size: 18px;
   color: #1f2937;
 }
 
-.post-detail-side-list {
+.rental-detail-side-list {
   margin: 0;
   padding-left: 18px;
   color: #4b5563;
   line-height: 1.8;
 }
 
-.post-detail-empty {
+.rental-detail-empty {
   padding: 40px 24px;
   text-align: center;
 }
 
-.post-detail-empty h2 {
+.rental-detail-empty h2 {
   margin: 0 0 10px;
   color: #1f2937;
 }
 
-.post-detail-empty p {
+.rental-detail-empty p {
   margin: 0 0 18px;
   color: #6b7280;
 }
 
-.post-detail-back-btn {
+.rental-detail-back-btn {
   border: none;
   background: #de6f22;
   color: #fff;
@@ -426,65 +438,67 @@
 }
 
 @media (max-width: 1080px) {
-  .post-detail-layout {
+  .rental-detail-layout {
     grid-template-columns: 1fr;
   }
 
-  .post-detail-sidebar {
+  .rental-detail-sidebar {
     position: static;
   }
 }
 
 @media (max-width: 768px) {
-  .post-detail-page {
+  .rental-detail-page {
     padding: 20px 12px 40px;
   }
 
-  .post-detail-gallery-main {
+  .rental-detail-gallery-main {
     height: 320px;
   }
 
-  .post-detail-content-card,
-  .post-detail-owner-card,
-  .post-detail-side-card {
+  .rental-detail-content-card,
+  .rental-detail-owner-card,
+  .rental-detail-side-card {
     padding: 18px;
   }
 
-  .post-detail-title {
+  .rental-detail-title {
     font-size: 24px;
   }
 
-  .post-detail-header {
+  .rental-detail-header {
     flex-direction: column;
   }
 
-  .post-detail-favorite-btn {
-    width: 100%;
+  .rental-detail-gallery-favorite-btn {
+    min-height: 40px;
+    padding: 0 14px;
+    font-size: 14px;
   }
 
-  .post-detail-info-grid {
+  .rental-detail-info-grid {
     grid-template-columns: 1fr 1fr;
   }
 
-  .post-detail-amenities {
+  .rental-detail-amenities {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 520px) {
-  .post-detail-gallery-main {
+  .rental-detail-gallery-main {
     height: 250px;
   }
 
-  .post-detail-info-grid {
+  .rental-detail-info-grid {
     grid-template-columns: 1fr;
   }
 
-  .post-detail-price {
+  .rental-detail-price {
     width: 100%;
   }
 
-  .post-detail-meta-chip {
+  .rental-detail-meta-chip {
     width: fit-content;
   }
 }
