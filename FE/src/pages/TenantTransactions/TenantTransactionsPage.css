@@ -1,0 +1,372 @@
+.tenant-transactions-layout {
+  min-height: 100vh;
+  padding: 100px 0 48px;
+  background: #f4f6fb;
+  color: #1e293b;
+  display: grid;
+  grid-template-columns: 265px minmax(0, 1fr);
+  align-items: start;
+}
+
+.tenant-transactions-content {
+  min-width: 0;
+  padding: 0 28px;
+}
+
+.tenant-transactions-shell {
+  width: min(1040px, 100%);
+  margin: 0 auto;
+}
+
+.tenant-transactions-page__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.tenant-transactions-page__header p {
+  margin: 0 0 8px;
+  color: #3b82f6;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tenant-transactions-page__header h1 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 26px;
+  line-height: 1.2;
+}
+
+.tenant-transactions-page__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tenant-transactions-page__back,
+.tenant-transactions-page__reload,
+.tenant-primary-btn,
+.tenant-secondary-btn,
+.tenant-transaction-detail-btn {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 10px;
+  padding: 0 14px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease,
+    color 0.2s ease;
+}
+
+.tenant-transactions-page__back,
+.tenant-secondary-btn {
+  background: #ffffff;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.tenant-transactions-page__reload,
+.tenant-primary-btn {
+  background: #1d4ed8;
+  color: #ffffff;
+}
+
+.tenant-transactions-page__back:hover,
+.tenant-transactions-page__reload:hover,
+.tenant-primary-btn:hover,
+.tenant-secondary-btn:hover,
+.tenant-transaction-detail-btn:hover {
+  transform: translateY(-1px);
+}
+
+.tenant-transactions-page__reload:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+  transform: none;
+}
+
+.tenant-transactions-alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.tenant-transactions-panel {
+  padding: 20px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 8px 40px rgba(15, 23, 42, 0.07);
+}
+
+.tenant-transactions-panel__title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.tenant-transactions-panel__title h2 {
+  margin: 0;
+  color: #1e293b;
+  font-size: 18px;
+}
+
+.tenant-transactions-panel__title span {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.tenant-transaction-table-wrap {
+  overflow-x: auto;
+}
+
+.tenant-transaction-table {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+}
+
+.tenant-transaction-table th,
+.tenant-transaction-table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid #eef2f7;
+  text-align: left;
+  vertical-align: middle;
+  font-size: 13px;
+}
+
+.tenant-transaction-table th {
+  color: #64748b;
+  background: #f8fafc;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tenant-transaction-table td {
+  color: #1e293b;
+}
+
+.tenant-transaction-table__empty {
+  height: 96px;
+  color: #64748b !important;
+  text-align: center !important;
+}
+
+.tenant-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.tenant-status--success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.tenant-status--warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.tenant-status--danger {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.tenant-status--neutral {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.tenant-transaction-detail-btn {
+  min-height: 32px;
+  padding: 0 11px;
+  font-size: 13px;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.tenant-transaction-detail-btn:hover {
+  background: #dbeafe;
+}
+
+.tenant-invoice-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.tenant-invoice-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.54);
+}
+
+.tenant-invoice-modal__panel {
+  position: relative;
+  z-index: 1;
+  width: min(760px, 100%);
+  max-height: min(720px, calc(100vh - 48px));
+  overflow-y: auto;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.24);
+}
+
+.tenant-invoice-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 24px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.tenant-invoice-modal__header p {
+  margin: 0 0 4px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tenant-invoice-modal__header h3 {
+  margin: 0;
+  color: #1e293b;
+  font-size: 22px;
+}
+
+.tenant-invoice-modal__close {
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #334155;
+  cursor: pointer;
+}
+
+.tenant-invoice-modal__loading {
+  padding: 56px 24px;
+  color: #64748b;
+  text-align: center;
+  font-weight: 600;
+}
+
+.tenant-invoice-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 24px;
+}
+
+.tenant-invoice-detail-grid > div {
+  min-height: 82px;
+  padding: 14px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #eef2f7;
+}
+
+.tenant-invoice-detail-grid__wide {
+  grid-column: 1 / -1;
+}
+
+.tenant-invoice-detail-grid span {
+  display: block;
+  margin-bottom: 8px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.tenant-invoice-detail-grid strong {
+  display: block;
+  color: #1e293b;
+  font-size: 15px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.tenant-invoice-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 0 24px 24px;
+}
+
+@media (max-width: 768px) {
+  .tenant-transactions-layout {
+    display: block;
+    padding: 100px 16px 48px;
+  }
+
+  .tenant-transactions-layout .navbar-management {
+    display: none;
+  }
+
+  .tenant-transactions-content {
+    padding: 0;
+  }
+
+  .tenant-transactions-page__header,
+  .tenant-transactions-panel__title,
+  .tenant-invoice-modal__actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .tenant-transactions-page__actions,
+  .tenant-transactions-page__back,
+  .tenant-transactions-page__reload,
+  .tenant-invoice-modal__actions button {
+    width: 100%;
+  }
+
+  .tenant-transactions-panel,
+  .tenant-invoice-detail-grid {
+    padding: 18px;
+  }
+
+  .tenant-invoice-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}

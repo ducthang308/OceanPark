@@ -12,6 +12,7 @@ import Home from './pages/Home/Home.tsx';
 import RoomList from './pages/RoomList/RoomList.tsx';
 import TopUpPage from './pages/TopUpPages/TopUpPage.tsx';
 import AccountManagement from './pages/AccountManagement/AccountManagement.tsx';
+import TenantTransactionsPage from './pages/TenantTransactions/TenantTransactionsPage.tsx';
 import BlogAboutUs from './pages/Blog/AboutUsBlog.tsx';
 import PostDetail from './pages/PostDetail/PostDetail.tsx';
 import PaymentPage from './pages/Payment/PaymentPage.tsx';
@@ -50,11 +51,11 @@ function UserLayout() {
 }
 
 function ScrollToTop() {
-  const { pathname, search } = useLocation();
+  const { pathname } = useLocation();
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-  }, [pathname, search]);
+  }, [pathname]);
 
   return null;
 }
@@ -82,6 +83,10 @@ function App() {
             <Route path="/payment/:type" element={<PaymentPage />} />
             <Route path="/payment/sepay" element={<SepayPaymentPage />} />
             <Route path="/favorite-posts" element={<FavoritePostsPage />} />
+          </Route>
+
+          <Route element={<ProtectedRoute allowedRoles={[ROLE_ID.NGUOI_THUE]} />}>
+            <Route path="/tenant-transactions" element={<TenantTransactionsPage />} />
           </Route>
 
           <Route element={<ProtectedRoute allowedRoles={LANDLORD_ROLE_IDS} />}>

@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import './header.css';
 import { useNavigate } from 'react-router-dom';
-import { LANDLORD_ROLE_IDS } from '../../../constants/roles';
+import { LANDLORD_ROLE_IDS, ROLE_ID } from '../../../constants/roles';
 import type { RoleId } from '../../../constants/roles';
 import { clearAuthSession, getAuthSession } from '../../../utils/storage';
 
@@ -112,6 +112,12 @@ const Header: React.FC = () => {
   const authenticatedMenuItems: UserMenuItem[] = useMemo(
     () => [
       { key: 'profile', label: 'Thông tin tài khoản', to: '/AccountManagement' },
+      {
+        key: 'tenant-transactions',
+        label: 'Quản lý giao dịch',
+        to: '/tenant-transactions',
+        allowedRoles: [ROLE_ID.NGUOI_THUE],
+      },
       {
         key: 'my-posts',
         label: 'Bài đăng của tôi',

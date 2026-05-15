@@ -331,7 +331,11 @@ const AccountManagement = () => {
               <i className="fas fa-mobile-alt"></i> Số điện thoại
             </div>
             <div className="info-value">{displayPhone}</div>
-            <button type="button" className="change-link link-button" onClick={() => handleTabChange('phone')}>
+            <button
+              type="button"
+              className="change-link link-button"
+              onClick={() => handleTabChange('phone')}
+            >
               <i className="fas fa-exchange-alt"></i> Đổi số điện thoại
             </button>
           </div>
@@ -358,7 +362,11 @@ const AccountManagement = () => {
               <i className="fas fa-lock"></i> Mật khẩu
             </div>
             <div className="info-value">••••••••</div>
-            <button type="button" className="change-link link-button" onClick={() => handleTabChange('password')}>
+            <button
+              type="button"
+              className="change-link link-button"
+              onClick={() => handleTabChange('password')}
+            >
               <i className="fas fa-exchange-alt"></i> Đổi mật khẩu
             </button>
           </div>
@@ -446,7 +454,11 @@ const AccountManagement = () => {
           />
         </div>
         <div className="action-group">
-          <button type="button" className="submit-btn secondary-btn" onClick={() => handleTabChange('profile')}>
+          <button
+            type="button"
+            className="submit-btn secondary-btn"
+            onClick={() => handleTabChange('profile')}
+          >
             <i className="fas fa-arrow-left"></i> Quay lại
           </button>
           <button
@@ -489,7 +501,11 @@ const AccountManagement = () => {
           />
         </div>
         <div className="action-group">
-          <button type="button" className="submit-btn secondary-btn" onClick={() => handleTabChange('profile')}>
+          <button
+            type="button"
+            className="submit-btn secondary-btn"
+            onClick={() => handleTabChange('profile')}
+          >
             <i className="fas fa-arrow-left"></i> Quay lại
           </button>
           <button
