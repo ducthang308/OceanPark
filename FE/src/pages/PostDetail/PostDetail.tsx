@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { createSepayPayment } from '../../services/api/PostManagementService';
 import { useNavigate, useParams } from 'react-router-dom';
 import './PostDetail.css';
 import fallbackRoomImage from '../../assets/img/co4la.png';
@@ -45,6 +46,13 @@ const formatCurrency = (value?: number) => {
   }
 
   return `${new Intl.NumberFormat('vi-VN').format(value)}đ/tháng`;
+};
+
+const parsePriceToNumber = (priceText?: string) => {
+  if (!priceText) return 0;
+
+  const numberOnly = priceText.replace(/[^\d]/g, '');
+  return Number(numberOnly || 0);
 };
 
 const formatArea = (value?: number) => {
@@ -220,6 +228,50 @@ const PostDetail: React.FC = () => {
       { label: 'Liên hệ', value: post.phone },
     ];
   }, [post]);
+
+  const handleRentApartment = async () => {
+    try {
+      const maNguoiDung =
+        localStorage.getItem('maNguoiDung') ||
+        localStorage.getItem('userId');
+
+      if (!maNguoiDung) {
+        alert('Vui lòng đăng nhập trước khi thuê căn hộ');
+        navigate('/login');
+        return;
+      }
+
+      if (!post?.id) {
+        alert('Không tìm thấy bài đăng');
+        return;
+      }
+
+      const soTien = parsePriceToNumber(post.priceText);
+
+      if (!soTien || soTien <= 0) {
+        alert('Không xác định được giá thuê căn hộ');
+        return;
+      }
+
+      const payment = await createSepayPayment({
+        maNguoiDung,
+        maBaiDang: post.id,
+        loaiHoaDon: 'THUE_CAN_HO',
+        soTien,
+        ghiChu: `Thanh toán thuê căn hộ ${post.title}`,
+      });
+
+      navigate('/payment/sepay', {
+        state: payment,
+      });
+    } catch (error: any) {
+      console.error(error);
+      alert(
+        error?.response?.data?.message ||
+        'Không thể tạo thanh toán thuê căn hộ'
+      );
+    }
+  };
 
   if (loading) {
     return (
@@ -403,7 +455,7 @@ const PostDetail: React.FC = () => {
                 <button
                   type="button"
                   className="rental-detail-btn rental-detail-btn--primary"
-                  onClick={() => navigate(`/payment/${post.id}`)}
+                  onClick={handleRentApartment}
                 >
                   Thanh toán / Đặt cọc
                 </button>
