@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route, Outlet, useLocation } from 'rea
 import ProtectedRoute from './components/auth/ProtectedRoute.tsx';
 import Header from './components/layout/Header/header.tsx';
 import Footer from './components/layout/Footer/footer.tsx';
+import ChatBox from './components/common/ChatBox/ChatBox.tsx';
 // import Navbar from "./components/layout/Navbar/navbar.tsx";
 
 import LoginPage from './pages/Login/LoginPage.tsx';
@@ -45,6 +46,7 @@ function UserLayout() {
       <main>
         <Outlet />
       </main>
+      <ChatBox />
       <Footer />
     </>
   );
