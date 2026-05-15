@@ -652,6 +652,11 @@
   transform: translateX(2px);
 }
 
+.room-list-filter-list li a.is-active {
+  background: #0e8f8c;
+  color: #ffffff;
+}
+
 .room-list-new-posts {
   display: grid;
   gap: 14px;

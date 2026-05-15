@@ -1,6 +1,6 @@
 import './RoomList.css';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import fallbackRoomImage from '../../assets/img/co4la.png';
 import {
   getApartmentDetailByPost,
@@ -14,7 +14,20 @@ import type {
   DanhMucDTO,
   HinhAnhBaiDangDTO,
 } from '../../services/api/PostManagementService';
-import { homeMockData } from '../../services/mock/home.mock';
+import {
+  AREA_RANGE_OPTIONS,
+  DEFAULT_HOME_CATEGORIES,
+  DISTRICT_OPTIONS,
+  HOME_DEFAULT_STATS,
+  HOME_STATIC_CONTENT,
+  PRICE_RANGE_OPTIONS,
+  createListingPath,
+  findRangeOption,
+  isNumberInRange,
+  normalizeText,
+  resolveDistrictId,
+  slugify,
+} from '../../services/api/HomeService';
 
 import { useUserNeedDialog } from '../../hooks/useUserNeedDialog';
 import UserNeedDialog from '../../components/common/UserNeedDialog/UserNeedDialog';
@@ -50,20 +63,11 @@ interface RoomPostCard {
   isFeatured: boolean;
   isNew: boolean;
   createdAtTime: number;
+  price: number | null;
+  area: number | null;
+  districtId?: string;
   likeCount?: number;
 }
-
-const normalizeText = (value: string) =>
-  value
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[đĐ]/g, (char) => (char === 'đ' ? 'd' : 'D'))
-    .toLowerCase();
-
-const slugify = (value: string) =>
-  normalizeText(value)
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '') || 'danh-muc';
 
 const formatCurrency = (value?: number) => {
   if (typeof value !== 'number' || Number.isNaN(value) || value <= 0) {
@@ -101,7 +105,7 @@ const getDateTime = (value?: string) => {
   return Number.isNaN(date.getTime()) ? 0 : date.getTime();
 };
 
-const defaultCategories: RoomCategory[] = homeMockData.categories.map((category) => ({
+const defaultCategories: RoomCategory[] = DEFAULT_HOME_CATEGORIES.map((category) => ({
   id: category.key,
   label: category.label,
   slug: category.slug,
@@ -163,6 +167,8 @@ const buildPostCard = (
   const category = post.maDanhMuc ? categoryLookup.get(post.maDanhMuc) : undefined;
   const sortedImages = [...images].sort((a, b) => (a.thuTu ?? 0) - (b.thuTu ?? 0));
   const gallery = sortedImages.map(getImageUrl).filter(Boolean);
+  const price = typeof detail?.gia === 'number' ? detail.gia : null;
+  const area = typeof detail?.dienTich === 'number' ? detail.dienTich : null;
   const wardText = detail?.phuong?.trim() || 'Đang cập nhật';
   const addressText =
     [detail?.diaChiCuThe, detail?.phuong].filter(Boolean).join(', ') ||
@@ -171,8 +177,8 @@ const buildPostCard = (
   return {
     id: post.maBaiDang?.trim() || `post-${index + 1}`,
     title: post.tieuDe?.trim() || 'Bài đăng chưa có tiêu đề',
-    priceText: formatCurrency(detail?.gia),
-    areaText: formatArea(detail?.dienTich),
+    priceText: formatCurrency(price ?? undefined),
+    areaText: formatArea(area ?? undefined),
     addressText,
     wardText,
     categoryLabel: category?.label || 'Danh mục',
@@ -187,14 +193,17 @@ const buildPostCard = (
     isFeatured: false,
     isNew: false,
     createdAtTime: getDateTime(post.ngayDang),
+    price,
+    area,
+    districtId: resolveDistrictId(addressText, wardText),
     likeCount: 0,
   };
 };
 
 const RoomList: React.FC = () => {
   const { slug } = useParams<{ slug?: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<RoomTab>('proposal');
-  const [activeDistrict, setActiveDistrict] = useState('all');
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [postList, setPostList] = useState<RoomPostCard[]>([]);
@@ -212,6 +221,13 @@ const RoomList: React.FC = () => {
     initialValues,
     submit,
   } = useUserNeedDialog(maNguoiDung);
+
+  const queryDistrict = searchParams.get('district') || 'all';
+  const activeDistrict = DISTRICT_OPTIONS.some((district) => district.id === queryDistrict)
+    ? queryDistrict
+    : 'all';
+  const activePriceRangeId = searchParams.get('price') || '';
+  const activeAreaRangeId = searchParams.get('area') || '';
 
   useEffect(() => {
     let ignore = false;
@@ -280,7 +296,7 @@ const RoomList: React.FC = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [slug, activeDistrict]);
+  }, [slug, activeDistrict, activePriceRangeId, activeAreaRangeId]);
 
   const activeCategory = useMemo(
     () => categoryOptions.find((category) => category.slug === slug),
@@ -292,21 +308,59 @@ const RoomList: React.FC = () => {
     return postList.filter((post) => post.categorySlug === slug);
   }, [postList, slug]);
 
+  const districtOptions = useMemo(
+    () =>
+      DISTRICT_OPTIONS.map((district) => {
+        if (district.id === 'all') {
+          return {
+            ...district,
+            postCount: categoryFilteredPosts.length,
+          };
+        }
+
+        return {
+          ...district,
+          postCount: categoryFilteredPosts.filter((post) => post.districtId === district.id)
+            .length,
+        };
+      }),
+    [categoryFilteredPosts],
+  );
+
   const districtFilteredPosts = useMemo(() => {
     if (activeDistrict === 'all') return categoryFilteredPosts;
 
-    const district = homeMockData.districts.find((item) => item.id === activeDistrict);
+    const district = DISTRICT_OPTIONS.find((item) => item.id === activeDistrict);
     if (!district) return categoryFilteredPosts;
 
     const districtName = normalizeText(district.name);
 
     return categoryFilteredPosts.filter((post) =>
+      post.districtId === activeDistrict ||
       normalizeText(`${post.addressText} ${post.wardText}`).includes(districtName),
     );
   }, [activeDistrict, categoryFilteredPosts]);
 
+  const priceRange = useMemo(
+    () => findRangeOption(PRICE_RANGE_OPTIONS, activePriceRangeId),
+    [activePriceRangeId],
+  );
+  const areaRange = useMemo(
+    () => findRangeOption(AREA_RANGE_OPTIONS, activeAreaRangeId),
+    [activeAreaRangeId],
+  );
+
+  const filteredPosts = useMemo(
+    () =>
+      districtFilteredPosts.filter(
+        (post) =>
+          isNumberInRange(post.price, priceRange) && isNumberInRange(post.area, areaRange),
+      ),
+    [areaRange, districtFilteredPosts, priceRange],
+  );
+
   const visibleFeaturedPosts = useMemo(() => {
-    const sortedPosts = [...districtFilteredPosts].sort((a, b) => {
+    const sortedPosts = [...filteredPosts].sort((a, b) => {
       if (activeTab === 'proposal') {
         return Number(b.isFeatured) - Number(a.isFeatured) || b.createdAtTime - a.createdAtTime;
       }
@@ -319,7 +373,7 @@ const RoomList: React.FC = () => {
     }
 
     return sortedPosts;
-  }, [activeTab, districtFilteredPosts]);
+  }, [activeTab, filteredPosts]);
 
   const newestPosts = useMemo(
     () => [...postList].sort((a, b) => b.createdAtTime - a.createdAtTime).slice(0, 5),
@@ -328,7 +382,7 @@ const RoomList: React.FC = () => {
 
   const heroStats = useMemo(
     () =>
-      homeMockData.stats.map((item, index) =>
+      HOME_DEFAULT_STATS.map((item, index) =>
         index === 0
           ? {
               ...item,
@@ -356,6 +410,19 @@ const RoomList: React.FC = () => {
     setCurrentPage(1);
   };
 
+  const updateSearchFilter = (key: 'district' | 'price' | 'area', value: string) => {
+    const nextParams = new URLSearchParams(searchParams);
+
+    if (!value || value === 'all') {
+      nextParams.delete(key);
+    } else {
+      nextParams.set(key, value);
+    }
+
+    setSearchParams(nextParams);
+    setCurrentPage(1);
+  };
+
   const toggleFavorite = (postId: string) => {
     setFavoriteIds((prev) =>
       prev.includes(postId) ? prev.filter((id) => id !== postId) : [...prev, postId],
@@ -363,6 +430,7 @@ const RoomList: React.FC = () => {
   };
 
   const getLikeCount = (post: RoomPostCard) => post.likeCount ?? 0;
+  const currentCategorySlug = activeCategory?.slug || slug;
 
   return (
     <>
@@ -372,8 +440,8 @@ const RoomList: React.FC = () => {
           <div className="room-list-hero__container">
             <div className="room-list-hero__content">
               <p className="room-list-hero__eyebrow">Nền tảng cho thuê nổi bật tại Đà Nẵng</p>
-              <h1>{homeMockData.heroTitle}</h1>
-              <p className="room-list-hero__description">{homeMockData.heroSubtitle}</p>
+              <h1>{HOME_STATIC_CONTENT.heroTitle}</h1>
+              <p className="room-list-hero__description">{HOME_STATIC_CONTENT.heroSubtitle}</p>
 
               <div className="room-list-hero__actions">
                 <Link to="/danh-muc/phong-tro" className="room-list-btn room-list-btn--primary">
@@ -429,14 +497,14 @@ const RoomList: React.FC = () => {
           </div>
 
           <div className="room-list-districts__chips">
-            {homeMockData.districts.map((district) => (
+            {districtOptions.map((district) => (
               <button
                 key={district.id}
                 type="button"
                 className={`room-list-district-chip ${
                   activeDistrict === district.id ? 'is-active' : ''
                 }`}
-                onClick={() => setActiveDistrict(district.id)}
+                onClick={() => updateSearchFilter('district', district.id)}
               >
                 <span>{district.name}</span>
                 <small>{district.postCount} tin</small>
@@ -630,9 +698,19 @@ const RoomList: React.FC = () => {
                   <h3>Khoảng giá phổ biến</h3>
                 </div>
                 <ul className="room-list-filter-list">
-                  {homeMockData.priceRanges.map((item) => (
-                    <li key={item}>
-                      <Link to="/danh-muc/phong-tro">{item}</Link>
+                  {PRICE_RANGE_OPTIONS.map((item) => (
+                    <li key={item.id}>
+                      <Link
+                        to={createListingPath({
+                          categorySlug: currentCategorySlug,
+                          districtId: activeDistrict,
+                          priceRangeId: item.id,
+                          areaRangeId: activeAreaRangeId,
+                        })}
+                        className={activePriceRangeId === item.id ? 'is-active' : undefined}
+                      >
+                        {item.label}
+                      </Link>
                     </li>
                   ))}
                 </ul>
@@ -644,9 +722,19 @@ const RoomList: React.FC = () => {
                   <h3>Lựa chọn theo nhu cầu</h3>
                 </div>
                 <ul className="room-list-filter-list">
-                  {homeMockData.areaRanges.map((item) => (
-                    <li key={item}>
-                      <Link to="/danh-muc/phong-tro">{item}</Link>
+                  {AREA_RANGE_OPTIONS.map((item) => (
+                    <li key={item.id}>
+                      <Link
+                        to={createListingPath({
+                          categorySlug: currentCategorySlug,
+                          districtId: activeDistrict,
+                          priceRangeId: activePriceRangeId,
+                          areaRangeId: item.id,
+                        })}
+                        className={activeAreaRangeId === item.id ? 'is-active' : undefined}
+                      >
+                        {item.label}
+                      </Link>
                     </li>
                   ))}
                 </ul>

@@ -1,5 +1,5 @@
 export interface IHomeCategory {
-  id: number;
+  id: string | number;
   key: string;
   label: string;
   slug: string;
@@ -18,7 +18,7 @@ export interface IHomeStat {
 }
 
 export interface IHomePostCard {
-  id: number;
+  id: string | number;
   title: string;
   slug: string;
   priceText: string;
@@ -26,6 +26,7 @@ export interface IHomePostCard {
   addressText: string;
   wardText: string;
   categoryLabel: string;
+  categorySlug?: string;
   description: string;
   coverImage: string;
   gallery: string[];
@@ -34,6 +35,10 @@ export interface IHomePostCard {
   phone: string;
   tags: string[];
   amenities: string[];
+  price?: number | null;
+  area?: number | null;
+  districtId?: string;
+  createdAtTime?: number;
   hasVideo?: boolean;
   isFeatured?: boolean;
   isNew?: boolean;
