@@ -50,9 +50,9 @@ export const HOME_STATIC_CONTENT = {
 };
 
 export const HOME_DEFAULT_STATS: IHomeStat[] = [
-  { label: 'Tin đang hiển thị', value: '73.513+' },
-  { label: 'Chủ nhà đang hoạt động', value: '8.200+' },
-  { label: 'Khu vực được phủ', value: '56+' },
+  { label: 'Tin đang hiển thị', value: '0' },
+  { label: 'Chủ nhà đang hoạt động', value: '0' },
+  { label: 'Khu vực được phủ', value: '0' },
 ];
 
 export const DEFAULT_HOME_CATEGORIES: IHomeCategory[] = [
@@ -439,6 +439,7 @@ export const createDefaultHomePageData = (): IHomePageData => ({
   stats: HOME_DEFAULT_STATS,
   categories: DEFAULT_HOME_CATEGORIES,
   districts: DISTRICT_OPTIONS,
+  allPosts: [],
   featuredPosts: [],
   newestPosts: [],
   priceRanges: PRICE_RANGE_OPTIONS.map((item) => item.label),
@@ -454,6 +455,7 @@ export const getHomePageData = async (): Promise<IHomePageData> => {
     stats: data.stats,
     categories: data.categories,
     districts: data.districts,
+    allPosts: data.posts,
     featuredPosts: data.posts.filter((post) => post.isFeatured).slice(0, 3),
     newestPosts: data.posts.slice(0, 5),
     priceRanges: PRICE_RANGE_OPTIONS.map((item) => item.label),

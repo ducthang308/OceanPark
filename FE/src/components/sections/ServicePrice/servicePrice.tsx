@@ -1,8 +1,18 @@
 import React from 'react'
 import { Table } from 'antd';
+import type { TableProps } from 'antd';
 import "./index.css"
 
-const columns = [
+interface ServicePriceRow {
+    key: string;
+    vip1: string;
+    vip2: string;
+    vip3: string;
+    vip4: string;
+    normal: string;
+}
+
+const columns: TableProps<ServicePriceRow>['columns'] = [
     {
         title: 'Thông tin',
         dataIndex: 'key',
@@ -13,35 +23,35 @@ const columns = [
         title: 'Tin VIP Nổi Bật',
         dataIndex: 'vip1',
         key: 'vip1',
-        render: (text) => <div dangerouslySetInnerHTML={{ __html: text }} />,
+        render: (text?: string) => <div dangerouslySetInnerHTML={{ __html: text || '' }} />,
     },
     {
         title: 'Tin VIP 1',
         dataIndex: 'vip2',
         key: 'vip2',
-        render: (text) => <div dangerouslySetInnerHTML={{ __html: text }} />,
+        render: (text?: string) => <div dangerouslySetInnerHTML={{ __html: text || '' }} />,
     },
     {
         title: 'Tin VIP 2',
         dataIndex: 'vip3',
         key: 'vip3',
-        render: (text) => <div dangerouslySetInnerHTML={{ __html: text }} />,
+        render: (text?: string) => <div dangerouslySetInnerHTML={{ __html: text || '' }} />,
     },
     {
         title: 'Tin VIP 3',
         dataIndex: 'vip4',
         key: 'vip4',
-        render: (text) => <div dangerouslySetInnerHTML={{ __html: text }} />,
+        render: (text?: string) => <div dangerouslySetInnerHTML={{ __html: text || '' }} />,
     },
     {
         title: 'Tin Thường',
         dataIndex: 'normal',
         key: 'normal',
-        render: (text) => <div dangerouslySetInnerHTML={{ __html: text }} />,
+        render: (text?: string) => <div dangerouslySetInnerHTML={{ __html: text || '' }} />,
     },
 ];
 
-const data = [
+const data: ServicePriceRow[] = [
     {
         key: 'Giá ngày',
         vip1: '50.000₫<br/><span style="font-size:12px;">(Tối thiểu 3 ngày)</span>',
@@ -108,7 +118,7 @@ const data = [
     },
 ];
 
-const servicePrice = () => {
+const ServicePrice: React.FC = () => {
     return (
         <div className="container-service-price">
             <div className="service-price">
@@ -119,6 +129,7 @@ const servicePrice = () => {
                 className='title-color center-text padding-table'
                 columns={columns}
                 dataSource={data}
+                rowKey="key"
                 pagination={false}
                 bordered
             />
@@ -126,4 +137,4 @@ const servicePrice = () => {
     )
 }
 
-export default servicePrice
+export default ServicePrice

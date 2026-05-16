@@ -20,6 +20,7 @@ import PaymentPage from './pages/Payment/PaymentPage.tsx';
 import Listing from './pages/ManagementPage/components/ListingPage/listing.tsx';
 import ListPost from './pages/ManagementPage/components/ListPostPage/listPost.tsx';
 import FavoritePostsPage from './pages/FavoritePostsPage/FavoritePostsPage';
+import ServicePrice from './components/sections/ServicePrice/servicePrice.tsx';
 
 import AdminLayout from './pages/AdminStaff/components/AdminLayout.tsx';
 import AdminDashboard from './pages/AdminStaff/Dashboard/AdminDashboard.tsx';
@@ -76,6 +77,7 @@ function App() {
           <Route path="/oauth2/redirect" element={<OAuth2RedirectPage />} />
           <Route path="/oauth2/success" element={<OAuth2RedirectPage />} />
           <Route path="/blog" element={<BlogAboutUs />} />
+          <Route path="/service-price" element={<ServicePrice />} />
           <Route path="/posts/:id" element={<PostDetail />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />

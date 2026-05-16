@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Table, Tag, Select, DatePicker, Input, Row, Col, Button } from 'antd';
-import dayjs from 'dayjs';
 import './Index.css';
 
 const { RangePicker } = DatePicker;

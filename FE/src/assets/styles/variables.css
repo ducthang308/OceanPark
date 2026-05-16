@@ -1,0 +1,54 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap');
+
+:root {
+  /* Primary Colors */
+  --color-primary-teal: #0b8b7f;
+  --color-primary-teal-dark: #098976;
+  --color-primary-teal-light: #e5f5f3;
+
+  --color-accent-gold: #c89b67;
+  --color-accent-orange: #e8745a;
+  --color-accent-orange-light: #f0d4c8;
+
+  /* Neutral Colors */
+  --color-neutral-50: #f9fafb;
+  --color-neutral-100: #f3f4f6;
+  --color-neutral-200: #e5e7eb;
+  --color-neutral-300: #d1d5db;
+  --color-neutral-600: #4b5563;
+  --color-neutral-900: #1a1a1a;
+
+  /* Status Colors */
+  --color-success: #10b981;
+  --color-warning: #d4984a;
+  --color-error: #e86b6b;
+  --color-info: #4a9fbe;
+
+  /* Semantic */
+  --color-background: #ffffff;
+  --color-background-subtle: #f8f9fb;
+  --color-text-primary: #1a1a1a;
+  --color-text-secondary: #6b7280;
+  --color-border: #e5e7eb;
+  --color-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --color-shadow-md: 0 8px 16px rgba(0, 0, 0, 0.08);
+  --color-shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.1);
+
+  /* Luxury Soft aliases */
+  --font-heading: 'Poppins', 'Segoe UI', sans-serif;
+  --font-body: 'Outfit', 'Segoe UI', sans-serif;
+  --luxury-surface: rgba(255, 255, 255, 0.94);
+  --luxury-surface-muted: #f8f9fb;
+  --luxury-line: rgba(26, 26, 26, 0.08);
+  --luxury-line-strong: rgba(11, 139, 127, 0.22);
+  --luxury-radius-card: 8px;
+  --luxury-radius-field: 8px;
+  --luxury-radius-pill: 999px;
+  --luxury-shadow-soft: 0 10px 30px rgba(26, 26, 26, 0.07);
+  --luxury-shadow-hover: 0 14px 36px rgba(26, 26, 26, 0.1);
+  --luxury-gradient-teal: linear-gradient(135deg, #0b8b7f 0%, #098976 100%);
+  --luxury-gradient-warm: linear-gradient(135deg, #c89b67 0%, #e8745a 100%);
+  --luxury-gradient-page: linear-gradient(180deg, #ffffff 0%, #f8f9fb 46%, #eef8f6 100%);
+  --luxury-container: 1240px;
+  --app-header-height: 80px;
+}

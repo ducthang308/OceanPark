@@ -234,6 +234,9 @@ const RoomList: React.FC = () => {
     : 'all';
   const activePriceRangeId = searchParams.get('price') || '';
   const activeAreaRangeId = searchParams.get('area') || '';
+  const directMinPrice = Number(searchParams.get('minPrice') || '');
+  const directMaxPrice = Number(searchParams.get('maxPrice') || '');
+  const directMinArea = Number(searchParams.get('minArea') || '');
 
   useEffect(() => {
     let ignore = false;
@@ -346,7 +349,7 @@ const RoomList: React.FC = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [slug, activeDistrict, activePriceRangeId, activeAreaRangeId]);
+  }, [slug, activeDistrict, activePriceRangeId, activeAreaRangeId, directMinPrice, directMaxPrice, directMinArea]);
 
   const activeCategory = useMemo(
     () => categoryOptions.find((category) => category.slug === slug),
@@ -404,9 +407,13 @@ const RoomList: React.FC = () => {
     () =>
       districtFilteredPosts.filter(
         (post) =>
-          isNumberInRange(post.price, priceRange) && isNumberInRange(post.area, areaRange),
+          isNumberInRange(post.price, priceRange) &&
+          isNumberInRange(post.area, areaRange) &&
+          (!directMinPrice || (typeof post.price === 'number' && post.price >= directMinPrice)) &&
+          (!directMaxPrice || (typeof post.price === 'number' && post.price <= directMaxPrice)) &&
+          (!directMinArea || (typeof post.area === 'number' && post.area >= directMinArea)),
       ),
-    [areaRange, districtFilteredPosts, priceRange],
+    [areaRange, directMaxPrice, directMinArea, directMinPrice, districtFilteredPosts, priceRange],
   );
 
   const visibleFeaturedPosts = useMemo(() => {
@@ -426,7 +433,7 @@ const RoomList: React.FC = () => {
   }, [activeTab, filteredPosts]);
 
   const newestPosts = useMemo(
-    () => [...postList].sort((a, b) => b.createdAtTime - a.createdAtTime).slice(0, 5),
+    () => [...postList].sort((a, b) => b.createdAtTime - a.createdAtTime).slice(0, 3),
     [postList],
   );
 
