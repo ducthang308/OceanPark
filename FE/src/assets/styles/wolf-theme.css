@@ -1,48 +1,185 @@
 :root {
-  --wolf-bg: #ffffff;
-  --wolf-surface: #ffffff;
-  --wolf-surface-soft: #f8f5f0;
-  --wolf-text: #1f1f1f;
-  --wolf-text-soft: #666666;
-  --wolf-heading: #111111;
-  --wolf-border: rgba(0, 0, 0, 0.08);
-  --wolf-accent: #b89567;
-  --wolf-accent-dark: #8c6b45;
-  --wolf-dark: #171717;
-  --wolf-dark-2: #232323;
-  --wolf-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-  --wolf-radius-lg: 24px;
-  --wolf-radius-md: 16px;
-  --wolf-radius-sm: 10px;
-  --wolf-container: 1280px;
-}
-
-* {
-  box-sizing: border-box;
+  --wolf-bg: var(--color-background);
+  --wolf-surface: var(--color-background);
+  --wolf-surface-soft: var(--color-background-subtle);
+  --wolf-text: var(--color-text-primary);
+  --wolf-text-soft: var(--color-text-secondary);
+  --wolf-heading: var(--color-text-primary);
+  --wolf-border: var(--luxury-line);
+  --wolf-accent: var(--color-accent-gold);
+  --wolf-accent-dark: #a87947;
+  --wolf-dark: #111c1b;
+  --wolf-dark-2: #172422;
+  --wolf-shadow: var(--luxury-shadow-soft);
+  --wolf-radius-lg: var(--luxury-radius-card);
+  --wolf-radius-md: var(--luxury-radius-card);
+  --wolf-radius-sm: var(--luxury-radius-field);
+  --wolf-container: var(--luxury-container);
 }
 
 body {
-  margin: 0;
-  font-family: "Inter", "Segoe UI", sans-serif;
-  color: var(--wolf-text);
-  background: var(--wolf-bg);
+  font-family: var(--font-body);
+  font-weight: 400;
+  color: var(--color-text-primary);
+  background: var(--luxury-gradient-page);
+}
+
+body,
+p,
+li,
+td,
+th,
+input,
+textarea,
+select,
+button {
+  line-height: 1.7;
+}
+
+h1,
+.wolf-hero__title,
+.site-home-hero h1,
+.room-list-hero h1,
+.rental-detail-title {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0;
+}
+
+h2,
+h3,
+h4,
+.wolf-section__title,
+.wolf-page-header__title,
+.site-home-section-heading h2,
+.room-list-section-heading h2,
+.admin-panel-title,
+.post-page-title,
+.listing-main-title {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0;
+}
+
+::selection {
+  background: rgba(11, 139, 127, 0.18);
+  color: var(--color-text-primary);
+}
+
+#root {
+  min-height: 100vh;
+  background: var(--luxury-gradient-page);
 }
 
 img {
-  max-width: 100%;
-  display: block;
+  border-style: none;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
+a,
+button {
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
 }
 
+button:not(:disabled) {
+  cursor: pointer;
+}
+
+input,
+textarea,
+select,
+.ant-input,
+.ant-input-affix-wrapper,
+.ant-input-number,
+.ant-select-selector {
+  border-radius: var(--luxury-radius-field) !important;
+}
+
+input:focus,
+textarea:focus,
+select:focus,
+.ant-input:focus,
+.ant-input-focused,
+.ant-input-affix-wrapper-focused,
+.ant-input-number-focused,
+.ant-select-focused .ant-select-selector {
+  border-color: var(--color-primary-teal) !important;
+  box-shadow: 0 0 0 4px rgba(11, 139, 127, 0.12) !important;
+}
+
+.ant-btn {
+  border-radius: var(--luxury-radius-field) !important;
+  font-weight: 600 !important;
+  box-shadow: none;
+}
+
+.ant-btn-primary,
+.ant-btn-primary:not(:disabled):not(.ant-btn-disabled) {
+  background: var(--luxury-gradient-teal) !important;
+  border-color: var(--color-primary-teal) !important;
+  color: #ffffff !important;
+  box-shadow: 0 10px 24px rgba(11, 139, 127, 0.2) !important;
+}
+
+.ant-btn-primary:hover,
+.ant-btn-primary:not(:disabled):not(.ant-btn-disabled):hover {
+  background: var(--color-primary-teal-dark) !important;
+  border-color: var(--color-primary-teal-dark) !important;
+  transform: translateY(-1px);
+}
+
+.ant-table-wrapper .ant-table,
+.ant-table {
+  border-radius: var(--luxury-radius-card) !important;
+  border-color: var(--color-border) !important;
+  color: var(--color-text-primary);
+  box-shadow: var(--color-shadow-sm);
+}
+
+.ant-table-thead > tr > th {
+  background: var(--color-primary-teal-light) !important;
+  color: var(--color-text-primary) !important;
+  font-family: var(--font-heading);
+  font-weight: 600 !important;
+  letter-spacing: 0;
+}
+
+.ant-table-tbody > tr > td {
+  border-bottom-color: var(--color-border) !important;
+}
+
+.ant-table-tbody > tr:hover > td {
+  background: #f2fbfa !important;
+}
+
+.ant-modal-content,
+.ant-dropdown,
+.ant-popover-inner {
+  border-radius: var(--luxury-radius-card) !important;
+  box-shadow: var(--color-shadow-lg) !important;
+}
+
+.ant-tag,
+.admin-badge,
+.tenant-status,
+.post-approval-badge,
+.room-list-badge,
+.favorite-post-tag,
+.favorite-post-badge {
+  border-radius: var(--luxury-radius-pill) !important;
+  letter-spacing: 0 !important;
+}
+
+/* Shared wolf helpers */
 .wolf-shell {
   min-height: 100vh;
-  background:
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0)),
-    var(--wolf-bg);
+  background: var(--luxury-gradient-page);
 }
 
 .wolf-main {
@@ -59,7 +196,7 @@ a {
 }
 
 .wolf-section--dark {
-  background: var(--wolf-dark);
+  background: linear-gradient(180deg, #111c1b 0%, #172422 100%);
   color: #ffffff;
 }
 
@@ -69,11 +206,8 @@ a {
 
 .wolf-section__title {
   margin: 0;
-  font-size: clamp(28px, 4vw, 48px);
-  line-height: 1.15;
-  font-weight: 700;
+  font-size: 42px;
   color: var(--wolf-heading);
-  letter-spacing: -0.02em;
 }
 
 .wolf-section--dark .wolf-section__title {
@@ -84,16 +218,11 @@ a {
   margin: 12px 0 0;
   max-width: 760px;
   font-size: 16px;
-  line-height: 1.7;
   color: var(--wolf-text-soft);
 }
 
 .wolf-section--dark .wolf-section__subtitle {
-  color: rgba(255, 255, 255, 0.72);
-}
-
-.wolf-section__body {
-  width: 100%;
+  color: rgba(255, 255, 255, 0.74);
 }
 
 .wolf-hero {
@@ -101,14 +230,25 @@ a {
   min-height: 72vh;
   display: flex;
   align-items: center;
-  background-color: #2c2c2c;
+  background-color: #172422;
   background-size: cover;
   background-position: center;
   color: #ffffff;
   overflow: hidden;
 }
 
+.wolf-hero::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: 120px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0), var(--color-background-subtle));
+  pointer-events: none;
+}
+
 .wolf-hero__inner {
+  position: relative;
+  z-index: 1;
   padding-top: 72px;
   padding-bottom: 72px;
 }
@@ -117,30 +257,31 @@ a {
   max-width: 720px;
 }
 
-.wolf-hero__eyebrow {
-  display: inline-block;
-  margin-bottom: 16px;
+.wolf-hero__eyebrow,
+.wolf-page-header__eyebrow,
+.site-home-eyebrow,
+.room-list-hero__eyebrow,
+.room-list-section-heading span,
+.user-need-dialog__eyebrow,
+.rental-footer__service-label,
+.tenant-transactions-page__header p {
+  color: var(--color-accent-gold);
   font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
+  font-weight: 700;
+  letter-spacing: 0;
   text-transform: uppercase;
-  color: #e7d1af;
 }
 
 .wolf-hero__title {
   margin: 0;
-  font-size: clamp(40px, 6vw, 72px);
-  line-height: 1.08;
-  font-weight: 700;
-  letter-spacing: -0.03em;
+  font-size: 56px;
 }
 
 .wolf-hero__desc {
   margin: 20px 0 0;
   max-width: 620px;
   font-size: 17px;
-  line-height: 1.8;
-  color: rgba(255, 255, 255, 0.82);
+  color: rgba(255, 255, 255, 0.84);
 }
 
 .wolf-hero__actions {
@@ -150,11 +291,17 @@ a {
   margin-top: 28px;
 }
 
+.wolf-card,
+.wolf-panel,
+.wolf-table-wrap,
+.wolf-form-wrap {
+  background: var(--luxury-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--luxury-radius-card);
+  box-shadow: var(--luxury-shadow-soft);
+}
+
 .wolf-card {
-  background: var(--wolf-surface);
-  border: 1px solid var(--wolf-border);
-  border-radius: var(--wolf-radius-lg);
-  box-shadow: var(--wolf-shadow);
   padding: 24px;
 }
 
@@ -175,90 +322,1005 @@ a {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
-.wolf-btn {
+.wolf-btn,
+.site-home-btn,
+.room-list-btn,
+.rental-detail-btn,
+.password-submit,
+.login-btn,
+.submit-btn,
+.update-btn,
+.tu-submit-btn,
+.continue-btn,
+.admin-btn,
+.post-approval-btn,
+.tenant-primary-btn,
+.tenant-secondary-btn,
+.tenant-transactions-page__back,
+.tenant-transactions-page__reload,
+.favorite-post-action {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 48px;
-  padding: 0 22px;
-  border-radius: 999px;
-  border: 1px solid transparent;
+  min-height: 46px;
+  border-radius: var(--luxury-radius-field);
   font-size: 14px;
   font-weight: 600;
-  cursor: pointer;
-  transition: all 0.25s ease;
+  letter-spacing: 0;
 }
 
-.wolf-btn--primary {
-  background: var(--wolf-accent);
+.wolf-btn--primary,
+.site-home-btn--primary,
+.room-list-btn--primary,
+.rental-detail-btn--primary,
+.password-submit,
+.login-btn,
+.submit-btn,
+.update-btn,
+.continue-btn,
+.tenant-primary-btn,
+.post-approval-btn--primary,
+.favorite-post-action--primary {
+  background: var(--luxury-gradient-teal);
+  color: #ffffff;
+  border: 1px solid var(--color-primary-teal);
+  box-shadow: 0 12px 26px rgba(11, 139, 127, 0.2);
+}
+
+.wolf-btn--primary:hover,
+.site-home-btn--primary:hover,
+.room-list-btn--primary:hover,
+.rental-detail-btn--primary:hover,
+.password-submit:hover:not(:disabled),
+.login-btn:hover,
+.submit-btn:hover,
+.update-btn:hover,
+.continue-btn:hover:not(:disabled),
+.tenant-primary-btn:hover,
+.post-approval-btn--primary:hover,
+.favorite-post-action--primary:hover:not(:disabled) {
+  background: var(--color-primary-teal-dark);
+  border-color: var(--color-primary-teal-dark);
+  box-shadow: var(--color-shadow-md);
+  transform: translateY(-1px);
+}
+
+.wolf-btn--secondary,
+.site-home-btn--ghost,
+.room-list-btn--ghost {
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  color: #ffffff;
+  backdrop-filter: blur(12px);
+}
+
+.wolf-btn--secondary:hover,
+.site-home-btn--ghost:hover,
+.room-list-btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.22);
+  transform: translateY(-1px);
+}
+
+/* Header */
+.rental-header {
+  --header-text: #ffffff;
+  --header-line: rgba(255, 255, 255, 0.14);
+  --header-overlay: linear-gradient(
+    180deg,
+    rgba(17, 28, 27, 0.82) 0%,
+    rgba(17, 28, 27, 0.48) 62%,
+    rgba(17, 28, 27, 0) 100%
+  );
+  --header-solid: linear-gradient(180deg, #111c1b 0%, #172422 100%);
+  --accent: var(--color-accent-gold);
+  color: var(--header-text);
+  background: var(--header-overlay);
+  box-shadow: none;
+}
+
+.rental-header--scrolled,
+.rental-header--mobile-open {
+  color: #ffffff;
+  background: var(--header-solid);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 12px 32px rgba(17, 28, 27, 0.2);
+  backdrop-filter: blur(18px);
+}
+
+.rental-header__container {
+  min-height: 78px;
+  max-width: 1320px;
+}
+
+.rental-header__brand-text {
+  font-family: var(--font-heading);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.rental-header--scrolled .rental-header__brand-text,
+.rental-header--mobile-open .rental-header__brand-text,
+.rental-header--scrolled .rental-header__icon-button,
+.rental-header--mobile-open .rental-header__icon-button,
+.rental-header--scrolled .rental-header__nav-link,
+.rental-header--mobile-open .rental-header__nav-link {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.rental-header--scrolled .rental-header__brand-text,
+.rental-header--mobile-open .rental-header__brand-text,
+.rental-header--scrolled .rental-header__nav-link:hover,
+.rental-header--mobile-open .rental-header__nav-link:hover,
+.rental-header--scrolled .rental-header__nav-link.is-active,
+.rental-header--mobile-open .rental-header__nav-link.is-active {
   color: #ffffff;
 }
 
-.wolf-btn--primary:hover {
-  background: var(--wolf-accent-dark);
+.rental-header__nav-link {
+  min-height: 78px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: rgba(255, 255, 255, 0.86);
 }
 
-.wolf-btn--secondary {
-  background: transparent;
-  border-color: rgba(255, 255, 255, 0.35);
+.rental-header__nav-link::after {
+  bottom: 21px;
+  background: var(--color-accent-gold);
+}
+
+.rental-header__icon-button {
+  border: 1px solid transparent;
+}
+
+.rental-header--scrolled .rental-header__icon-button:hover,
+.rental-header--mobile-open .rental-header__icon-button:hover,
+.rental-header__icon-button.is-open {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.16);
   color: #ffffff;
 }
 
-.wolf-btn--secondary:hover {
-  background: rgba(255, 255, 255, 0.08);
+.rental-user-dropdown,
+.admin-topbar__dropdown {
+  border-radius: var(--luxury-radius-card);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--color-shadow-lg);
 }
 
-.wolf-panel {
-  background: var(--wolf-surface);
-  border: 1px solid var(--wolf-border);
-  border-radius: var(--wolf-radius-md);
-  padding: 20px;
+.rental-user-dropdown__avatar,
+.admin-topbar__avatar,
+.avatar,
+.rental-detail-owner-avatar {
+  background: var(--luxury-gradient-teal);
 }
 
-.wolf-table-wrap {
-  background: var(--wolf-surface);
-  border: 1px solid var(--wolf-border);
-  border-radius: var(--wolf-radius-md);
-  box-shadow: var(--wolf-shadow);
+.rental-mobile-nav {
+  background: rgba(17, 28, 27, 0.98);
+  backdrop-filter: blur(18px);
+}
+
+/* Public pages */
+.site-home-page,
+.room-list-page,
+.rental-detail-page,
+.about-page,
+.favorite-post-page,
+.password-page,
+.login-wrapper {
+  background: var(--luxury-gradient-page);
+  color: var(--color-text-primary);
+}
+
+.site-home-hero,
+.room-list-hero {
+  min-height: 690px;
+  background:
+    linear-gradient(90deg, rgba(10, 23, 22, 0.78) 0%, rgba(10, 23, 22, 0.5) 52%, rgba(10, 23, 22, 0.18) 100%),
+    url('../../assets/img/img2.png') center/cover no-repeat;
+}
+
+.site-home-hero__overlay,
+.room-list-hero__overlay {
+  background:
+    linear-gradient(180deg, rgba(10, 23, 22, 0.08) 0%, rgba(10, 23, 22, 0.58) 100%),
+    linear-gradient(120deg, rgba(11, 139, 127, 0.2), rgba(200, 155, 103, 0.08) 48%, transparent 100%);
+}
+
+.site-home-hero__container,
+.room-list-hero__container {
+  max-width: 1240px;
+  padding-top: 150px;
+}
+
+.site-home-hero h1,
+.room-list-hero h1 {
+  max-width: 780px;
+  font-size: 54px;
+  color: #ffffff;
+}
+
+.site-home-hero__description,
+.room-list-hero__description {
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 17px;
+}
+
+.site-home-stats__inner,
+.room-list-hero__stats {
+  gap: 16px;
+}
+
+.site-home-stat,
+.room-list-stat-card,
+.site-home-category,
+.site-home-district,
+.site-home-post,
+.site-home-latest__item,
+.room-list-category-card,
+.room-list-district-chip,
+.room-list-state,
+.room-list-featured-card,
+.room-list-sidebar-card,
+.rental-detail-gallery-card,
+.rental-detail-content-card,
+.rental-detail-owner-card,
+.rental-detail-side-card,
+.rental-detail-empty,
+.about-card,
+.feature-card,
+.favorite-post-card,
+.favorite-post-empty,
+.password-card,
+.login-form {
+  background: var(--luxury-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--luxury-radius-card);
+  box-shadow: var(--luxury-shadow-soft);
+}
+
+.site-home-stat:hover,
+.site-home-category:hover,
+.site-home-district:hover,
+.site-home-post:hover,
+.site-home-latest__item:hover,
+.room-list-category-card:hover,
+.room-list-district-chip:hover,
+.room-list-featured-card:hover,
+.room-list-sidebar-card:hover,
+.favorite-post-card:hover,
+.about-card:hover,
+.feature-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--luxury-line-strong);
+  box-shadow: var(--luxury-shadow-hover);
+}
+
+.site-home-stat strong,
+.room-list-stat-card strong,
+.site-home-link,
+.site-home-post__body span,
+.room-list-filter-list li a.is-active,
+.room-list-featured-card__owner span,
+.rental-detail-breadcrumb span:first-child,
+.favorite-post-title:hover,
+.change-link,
+.forgot-password,
+.password-card__footer a,
+.about-card a {
+  color: var(--color-primary-teal);
+}
+
+.site-home-stat strong {
+  font-family: var(--font-heading);
+  font-weight: 700;
+}
+
+.site-home-section,
+.room-list-categories,
+.room-list-districts,
+.room-list-content {
+  max-width: 1240px;
+}
+
+.site-home-section-heading h2,
+.room-list-section-heading h2,
+.about-panel h2,
+.favorite-post-heading h1 {
+  font-size: 36px;
+}
+
+.site-home-section--soft {
+  background: linear-gradient(180deg, #effaf8 0%, #ffffff 100%);
+}
+
+.site-home-category span,
+.room-list-category-card__arrow,
+.room-list-filter-list li a,
+.rental-detail-info-item,
+.rental-detail-meta-chip,
+.rental-detail-amenity,
+.favorite-post-info-box,
+.about-panel,
+.feature-card,
+.user-need-check {
+  background: var(--color-background-subtle);
+  border-color: var(--color-border);
+}
+
+.site-home-post__meta strong,
+.site-home-latest__item p,
+.room-list-featured-card__meta strong,
+.room-list-new-post__content strong,
+.rental-detail-price,
+.favorite-post-price,
+.tu-summary-row--total strong,
+.sepay-price,
+.payment-breadcrumb span:first-child {
+  color: var(--color-accent-orange);
+}
+
+.room-list-district-chip.is-active,
+.room-list-tabs button.is-active,
+.room-list-pagination__page.is-active {
+  background: var(--luxury-gradient-teal);
+  border-color: var(--color-primary-teal);
+  color: #ffffff;
+}
+
+.room-list-district-chip.is-active span,
+.room-list-district-chip.is-active small {
+  color: #ffffff;
+}
+
+.room-list-tabs button,
+.room-list-pagination__btn,
+.room-list-pagination__page,
+.rental-detail-gallery-favorite-btn,
+.rental-detail-thumb,
+.favorite-post-search,
+.tenant-transactions-page__back,
+.tenant-secondary-btn,
+.favorite-post-action--outline,
+.tu-back-btn {
+  border-radius: var(--luxury-radius-field);
+  border: 1px solid var(--color-border);
+  background: #ffffff;
+  color: var(--color-text-primary);
+}
+
+.room-list-tabs button:hover,
+.room-list-pagination__btn:hover:not(:disabled),
+.room-list-pagination__page:hover,
+.rental-detail-gallery-favorite-btn:hover,
+.favorite-post-action--outline:hover:not(:disabled) {
+  border-color: var(--luxury-line-strong);
+  color: var(--color-primary-teal);
+}
+
+.room-list-badge {
+  background: rgba(17, 28, 27, 0.82);
+  color: #ffffff;
+}
+
+.room-list-badge--light {
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--color-text-primary);
+}
+
+.room-list-featured-card__image,
+.site-home-post__image-wrap img,
+.favorite-post-thumb,
+.rental-detail-gallery-main {
+  filter: saturate(0.96) contrast(1.02);
+}
+
+.rental-detail-page {
+  padding-top: 118px;
+}
+
+.rental-detail-price {
+  background: #fff7f4;
+  border-color: rgba(232, 116, 90, 0.22);
+  border-radius: var(--luxury-radius-field);
+}
+
+.rental-detail-badge--hot,
+.favorite-post-badge--featured {
+  background: var(--luxury-gradient-warm);
+}
+
+.rental-detail-badge--new,
+.favorite-post-badge--saved,
+.tenant-status--success,
+.admin-badge.success,
+.post-approval-badge.approved {
+  background: rgba(16, 185, 129, 0.12);
+  color: #087a55;
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.rental-detail-badge--video,
+.admin-badge.info,
+.post-approval-badge.pending {
+  background: rgba(74, 159, 190, 0.12);
+  color: #267492;
+  border-color: rgba(74, 159, 190, 0.2);
+}
+
+.rental-detail-btn--call,
+.post-approval-btn--success,
+.admin-btn.success,
+.status-btn.available {
+  background: linear-gradient(135deg, var(--color-success), #0b9b6d);
+  color: #ffffff;
+}
+
+.rental-detail-btn--zalo {
+  background: var(--color-primary-teal-light);
+  color: var(--color-primary-teal);
+  border: 1px solid var(--luxury-line-strong);
+}
+
+.rental-detail-owner-card {
+  text-align: center;
+}
+
+.rental-detail-owner-avatar {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.rental-detail-owner-note,
+.note-span,
+.favorite-post-alert {
+  background: #fff8ef;
+  border-color: rgba(200, 155, 103, 0.28);
+  color: #8a5d2d;
+}
+
+/* Auth */
+.login-wrapper {
+  min-height: calc(100vh - 80px);
+  align-items: center;
+  padding: 120px 20px 64px;
+}
+
+.login-form {
+  width: min(540px, 100%);
+  padding: 34px;
+}
+
+.login-tabs {
+  border-bottom-color: var(--color-border);
+}
+
+.login-tabs span {
+  font-family: var(--font-heading);
+  color: var(--color-text-secondary);
+}
+
+.active-tab {
+  color: var(--color-primary-teal) !important;
+  border-bottom-color: var(--color-primary-teal);
+}
+
+.login-form input,
+.password-input,
+.form-input,
+.post-approval-input,
+.post-approval-select,
+.tenant-invoice-detail-grid > div,
+.sepay-info-item,
+.tu-money-btn,
+.tu-qr-amount,
+.payment-breadcrumb,
+.pricing-notes {
+  border: 1px solid var(--color-border);
+  border-radius: var(--luxury-radius-field);
+  background: #ffffff;
+}
+
+.login-form input {
+  padding: 13px 14px;
+}
+
+.forgot-password,
+.forgot-link {
+  color: var(--color-error);
+}
+
+.password-page {
+  margin-top: 0;
+  padding-top: 130px;
+}
+
+.password-eyebrow {
+  color: var(--color-accent-gold);
+  letter-spacing: 0;
+}
+
+.password-card h1 {
+  font-size: 32px;
+}
+
+.password-alert--success {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.22);
+  color: #087a55;
+}
+
+.password-alert--error {
+  background: rgba(232, 107, 107, 0.1);
+  border-color: rgba(232, 107, 107, 0.22);
+  color: #b63f3f;
+}
+
+/* Management sidebars and user dashboards */
+.main-layout,
+.payment-layout,
+.sepay-layout,
+.tenant-transactions-layout,
+.tu-layout,
+.post-container,
+.container-listing {
+  background: var(--luxury-gradient-page);
+}
+
+.main-layout,
+.payment-layout,
+.sepay-layout,
+.tenant-transactions-layout {
+  padding-top: var(--app-header-height);
+}
+
+.tu-layout {
+  padding-top: var(--app-header-height);
+}
+
+.tu-content {
+  padding-top: 32px;
+}
+
+.navbar-management {
+  height: calc(100vh - var(--app-header-height));
+  top: var(--app-header-height);
+  align-self: start;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--color-border);
+  border-top: 0;
+  border-bottom: 0;
+  border-left: 0;
+  border-radius: 0;
+  box-shadow: var(--luxury-shadow-soft);
+}
+
+.nav-payment {
+  background: #fff8ef;
+  border-color: rgba(200, 155, 103, 0.28);
+  border-radius: var(--luxury-radius-field);
+}
+
+.btn-payment .ant-btn {
+  background: var(--color-accent-gold) !important;
+  color: #ffffff !important;
+}
+
+.custom-ant-menu .ant-menu-item {
+  border-radius: var(--luxury-radius-field);
+}
+
+.custom-ant-menu .ant-menu-item-selected {
+  color: var(--color-primary-teal);
+  background: var(--color-primary-teal-light) !important;
+}
+
+.container,
+.account-management-container,
+.card,
+.profile-info,
+.info-item,
+.invoice-section,
+.category-listing,
+.area-listing,
+.map-listing,
+.detail-listing,
+.features-listing,
+.img-listing,
+.video-listing,
+.contact-listing,
+.post-card,
+.empty-post,
+.payment-shell,
+.pricing-wrapper,
+.pricing-notes,
+.sepay-card,
+.tu-card,
+.tenant-transactions-panel,
+.tenant-invoice-modal__panel {
+  border-radius: var(--luxury-radius-card);
+  border: 1px solid var(--color-border);
+  background: var(--luxury-surface);
+  box-shadow: var(--luxury-shadow-soft);
+}
+
+.profile-info,
+.invoice-section,
+.browse_photos,
+.map-listing__address-preview,
+.post-detail-item,
+.tu-card__icon,
+.tu-bonus-pill,
+.sepay-qr-panel {
+  background: var(--color-background-subtle);
+  border-color: var(--color-border);
+}
+
+.tab.active,
+.change-link,
+.info-label i,
+.invoice-title i,
+.listing-back-btn:hover,
+.post-card:hover .post-title,
+.post-badge-group .ant-tag,
+.favorite-post-tag--category,
+.tenant-transaction-detail-btn,
+.account-role {
+  color: var(--color-primary-teal) !important;
+}
+
+.tab.active::after {
+  background: var(--luxury-gradient-teal);
+}
+
+.profile-info {
+  background: linear-gradient(135deg, #f7fbfa 0%, #ffffff 100%);
+}
+
+.form-input:focus,
+.post-approval-input:focus,
+.post-approval-select:focus {
+  border-color: var(--color-primary-teal);
+  box-shadow: 0 0 0 4px rgba(11, 139, 127, 0.12);
+}
+
+.secondary-btn,
+.tenant-secondary-btn {
+  background: #ffffff;
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.tu-header__icon,
+.tu-summary-row--bonus,
+.tu-bonus-pill.is-active {
+  color: var(--color-success);
+}
+
+.tu-tab.is-active,
+.tu-money-btn.is-selected {
+  background: var(--luxury-gradient-teal);
+  border-color: transparent;
+  color: #ffffff;
+  box-shadow: 0 10px 24px rgba(11, 139, 127, 0.22);
+}
+
+.tu-tab:hover,
+.tu-money-btn:hover,
+.tu-back-btn:hover {
+  border-color: var(--color-primary-teal);
+  color: var(--color-primary-teal);
+  background: var(--color-primary-teal-light);
+}
+
+.tu-submit-btn,
+.sepay-card__header {
+  background: linear-gradient(135deg, #111c1b, #17312e);
+}
+
+.sepay-card__header {
+  color: #ffffff;
+}
+
+.sepay-info-item--code,
+.sepay-status.pending {
+  background: #fff8ef;
+  border-color: rgba(200, 155, 103, 0.28);
+  color: #8a5d2d;
+}
+
+/* Service pricing */
+.container-service-price {
+  min-height: 100vh;
+  background: var(--luxury-gradient-page);
+  padding: 132px 28px 72px;
+}
+
+.service-price {
+  width: min(960px, 100%);
+  margin: 0 auto;
+  padding: 28px;
+  background: var(--luxury-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--luxury-radius-card);
+  box-shadow: var(--luxury-shadow-soft);
+}
+
+.service-price-title {
+  font-family: var(--font-heading);
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  letter-spacing: 0;
+}
+
+.service-price-date {
+  margin-top: 8px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.padding-table {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+  padding: 0;
+}
+
+.title-color .ant-table {
   overflow: hidden;
 }
 
-.wolf-form-wrap {
-  max-width: 520px;
-  margin: 0 auto;
-  background: var(--wolf-surface);
-  border: 1px solid var(--wolf-border);
-  border-radius: var(--wolf-radius-lg);
-  box-shadow: var(--wolf-shadow);
-  padding: 32px;
+.title-color thead > tr > th:nth-child(2),
+.title-color thead > tr > th:nth-child(3),
+.title-color thead > tr > th:nth-child(4),
+.title-color thead > tr > th:nth-child(5),
+.title-color thead > tr > th:nth-child(6) {
+  color: #ffffff !important;
 }
 
-.wolf-page-header {
-  margin-bottom: 28px;
+.title-color thead > tr > th:nth-child(2) {
+  background: linear-gradient(135deg, #17312e, var(--color-primary-teal)) !important;
 }
 
-.wolf-page-header__eyebrow {
-  display: inline-block;
-  margin-bottom: 10px;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--wolf-accent);
+.title-color thead > tr > th:nth-child(3) {
+  background: linear-gradient(135deg, var(--color-primary-teal), #4a9fbe) !important;
 }
 
-.wolf-page-header__title {
-  margin: 0;
-  font-size: clamp(28px, 4vw, 44px);
-  line-height: 1.15;
-  font-weight: 700;
-  color: var(--wolf-heading);
+.title-color thead > tr > th:nth-child(4) {
+  background: linear-gradient(135deg, var(--color-accent-gold), #d4984a) !important;
 }
 
-.wolf-page-header__desc {
-  margin: 12px 0 0;
-  color: var(--wolf-text-soft);
-  line-height: 1.7;
+.title-color thead > tr > th:nth-child(5) {
+  background: linear-gradient(135deg, var(--color-accent-orange), #c89b67) !important;
+}
+
+.title-color thead > tr > th:nth-child(6) {
+  background: linear-gradient(135deg, #4b5563, #1a1a1a) !important;
+}
+
+/* Admin */
+.admin-layout {
+  background: var(--luxury-gradient-page);
+}
+
+.admin-layout__sidebar {
+  background: linear-gradient(180deg, #111c1b 0%, #17312e 100%);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.admin-layout__brand-badge,
+.admin-stat-icon--primary,
+.payment-summary-card__icon,
+.payment-cell-icon {
+  background: var(--color-primary-teal-light);
+  color: var(--color-primary-teal);
+}
+
+.admin-layout__nav-link {
+  border-radius: var(--luxury-radius-field);
+}
+
+.admin-layout__nav-link:hover,
+.admin-layout__nav-link.active {
+  background: rgba(229, 245, 243, 0.14);
+  color: #ffffff;
+}
+
+.admin-layout__footer-card {
+  border-radius: var(--luxury-radius-card);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.admin-topbar,
+.admin-stat-card,
+.admin-panel,
+.post-approval-filter-card,
+.post-approval-stat-card,
+.post-approval-table-card,
+.payment-summary-card,
+.payment-toolbar-card,
+.payment-list-card,
+.payment-detail-card,
+.post-detail-card {
+  border-radius: var(--luxury-radius-card);
+  border: 1px solid var(--color-border);
+  background: var(--luxury-surface);
+  box-shadow: var(--luxury-shadow-soft);
+}
+
+.admin-stat-card--primary,
+.admin-stat-card--success,
+.admin-stat-card--warning,
+.admin-stat-card--info {
+  background: linear-gradient(135deg, #ffffff 0%, #f7fbfa 100%);
+}
+
+.admin-stat-card::after {
+  display: none;
+}
+
+.admin-stat-chip--primary,
+.admin-panel-badge,
+.payment-summary-card__tag {
+  background: var(--color-primary-teal-light);
+  color: var(--color-primary-teal);
+}
+
+.admin-stat-chip--success {
+  background: rgba(16, 185, 129, 0.12);
+  color: #087a55;
+}
+
+.admin-stat-chip--warning,
+.admin-badge.pending,
+.tenant-status--warning {
+  background: #fff8ef;
+  color: #8a5d2d;
+}
+
+.admin-stat-chip--info {
+  background: rgba(74, 159, 190, 0.12);
+  color: #267492;
+}
+
+.admin-panel-badge--danger,
+.admin-badge.danger,
+.tenant-status--danger,
+.post-approval-badge.rejected,
+.favorite-post-action--danger-soft {
+  background: rgba(232, 107, 107, 0.12);
+  color: #b63f3f;
+  border-color: rgba(232, 107, 107, 0.22);
+}
+
+.admin-mini-item,
+.post-approval-table thead th,
+.tenant-transaction-table th,
+.payment-list-item,
+.payment-detail-item,
+.post-detail-info-item,
+.payment-timeline-item__icon {
+  background: var(--color-background-subtle);
+  border-color: var(--color-border);
+}
+
+.post-approval-btn--success,
+.admin-btn.success {
+  background: linear-gradient(135deg, var(--color-success), #0b9b6d);
+}
+
+.post-approval-btn--danger,
+.admin-btn.danger,
+.status-btn.rented {
+  background: linear-gradient(135deg, var(--color-error), #cf4f4f);
+}
+
+.post-approval-btn--secondary,
+.post-approval-btn--light,
+.admin-btn.ghost {
+  background: #ffffff;
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+}
+
+/* Chat and dialogs */
+.floating-chat__launcher,
+.floating-chat__message--me,
+.floating-chat__composer button {
+  background: var(--luxury-gradient-teal);
+  color: #ffffff;
+}
+
+.floating-chat__panel,
+.user-need-dialog__panel {
+  border-radius: var(--luxury-radius-card);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--color-shadow-lg);
+}
+
+.floating-chat__header {
+  background: linear-gradient(135deg, #111c1b, #17312e);
+}
+
+.floating-chat__conversations,
+.floating-chat__messages {
+  background: var(--color-background-subtle);
+}
+
+.floating-chat__conversation,
+.floating-chat__message,
+.floating-chat__composer input,
+.user-need-field input,
+.user-need-field select,
+.user-need-dialog__close,
+.user-need-dialog__btn {
+  border-radius: var(--luxury-radius-field);
+}
+
+.floating-chat__avatar,
+.user-need-dialog__btn--primary {
+  background: var(--luxury-gradient-teal);
+  color: #ffffff;
+}
+
+.user-need-dialog__btn--ghost {
+  background: var(--color-background-subtle);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+}
+
+/* Footer */
+.rental-footer {
+  background: linear-gradient(180deg, #111c1b 0%, #172422 100%);
+  color: #f8f9fb;
+}
+
+.rental-footer__overlay {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 42%);
+}
+
+.rental-footer__brand {
+  font-family: var(--font-heading);
+  letter-spacing: 0;
+}
+
+.rental-footer__service-box,
+.rental-footer__social {
+  border-radius: var(--luxury-radius-card);
+}
+
+.rental-footer__service-box {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.rental-footer__service-btn {
+  border-radius: var(--luxury-radius-field);
+  background: var(--color-accent-gold);
+  color: #ffffff;
+}
+
+.rental-footer__link:hover,
+.rental-footer__bottom-link:hover,
+.rental-footer__social:hover {
+  color: #ffffff;
+}
+
+@media (max-width: 1120px) {
+  .site-home-hero h1,
+  .room-list-hero h1,
+  .wolf-hero__title {
+    font-size: 46px;
+  }
+
+  .site-home-section-heading h2,
+  .room-list-section-heading h2,
+  .about-panel h2,
+  .favorite-post-heading h1 {
+    font-size: 32px;
+  }
 }
 
 @media (max-width: 992px) {
@@ -272,12 +1334,47 @@ a {
     padding: 56px 0;
   }
 
-  .wolf-card {
-    padding: 20px;
+  .rental-header__container {
+    min-height: 76px;
   }
 
-  .wolf-form-wrap {
+  .rental-mobile-nav {
+    top: 76px;
+  }
+}
+
+@media (max-width: 768px) {
+  .site-home-hero,
+  .room-list-hero {
+    min-height: auto;
+  }
+
+  .site-home-hero h1,
+  .room-list-hero h1,
+  .wolf-hero__title {
+    font-size: 36px;
+  }
+
+  .site-home-section-heading h2,
+  .room-list-section-heading h2,
+  .about-panel h2,
+  .favorite-post-heading h1,
+  .service-price-title,
+  .password-card h1 {
+    font-size: 28px;
+  }
+
+  .rental-detail-page {
+    padding-top: 96px;
+  }
+
+  .login-form,
+  .password-card {
     padding: 24px;
+  }
+
+  .container-service-price {
+    padding: 104px 16px 48px;
   }
 }
 
@@ -286,20 +1383,25 @@ a {
     width: min(var(--wolf-container), calc(100% - 20px));
   }
 
-  .wolf-hero {
-    min-height: 64vh;
+  .site-home-hero h1,
+  .room-list-hero h1,
+  .wolf-hero__title {
+    font-size: 32px;
   }
 
-  .wolf-hero__inner {
-    padding-top: 56px;
-    padding-bottom: 56px;
+  .site-home-hero__description,
+  .room-list-hero__description,
+  .wolf-hero__desc {
+    font-size: 15px;
   }
 
-  .wolf-section {
-    padding: 44px 0;
+  .site-home-btn,
+  .room-list-btn,
+  .wolf-btn {
+    width: 100%;
   }
 
-  .wolf-card {
-    border-radius: 18px;
+  .service-price {
+    padding: 22px 18px;
   }
 }

@@ -1,4 +1,3 @@
-import React from 'react'
 import "./headerListing.css"
 import { Tabs } from 'antd';
 import type { TabsProps } from 'antd';

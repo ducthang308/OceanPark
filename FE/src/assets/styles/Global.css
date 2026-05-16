@@ -1,4 +1,3 @@
-/* Reset CSS cơ bản */
 *,
 *::before,
 *::after {
@@ -7,30 +6,74 @@
   box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
   height: 100%;
-  font-family: sans-serif;
-  place-items: initial;  
-  line-height: 1.5;
+  font-family: var(--font-body);
+  place-items: initial;
+  line-height: 1.7;
   display: block;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   position: relative;
+  color: var(--color-text-primary);
+  background: var(--color-background-subtle);
 }
 
-img, picture, video, canvas, svg {
+html {
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  min-width: 320px;
+}
+
+body,
+button,
+input,
+textarea,
+select {
+  font-family: var(--font-body);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--color-text-primary);
+  letter-spacing: 0;
+}
+
+img,
+picture,
+video,
+canvas,
+svg {
   display: block;
   max-width: 100%;
 }
 
-button, input, textarea, select {
+button,
+input,
+textarea,
+select {
   font: inherit;
   border: none;
   outline: none;
   background: none;
 }
 
-ul, ol {
+button {
+  color: inherit;
+}
+
+ul,
+ol {
   list-style: none;
 }
 
@@ -39,7 +82,12 @@ table {
   border-spacing: 0;
 }
 
-a{
+a {
   text-decoration: none;
-  color: black;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid rgba(11, 139, 127, 0.22);
+  outline-offset: 3px;
 }

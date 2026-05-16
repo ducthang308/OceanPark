@@ -2,6 +2,8 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 
+import "./assets/styles/variables.css";
+import "./assets/styles/Global.css";
 import "./assets/styles/wolf-theme.css";
 
 createRoot(document.getElementById('root')!).render(

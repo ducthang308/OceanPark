@@ -43,6 +43,7 @@ const mapPostToHomeCard = (postId: number): IHomePostCard | null => {
     addressText: detail?.diaChiCuThe || '',
     wardText: detail?.phuong || '',
     categoryLabel: category?.tenDanhMuc || '',
+    categorySlug: category?.slug || '',
     description: post.noiDung,
     coverImage: images[0] || '',
     gallery: images,
@@ -51,20 +52,28 @@ const mapPostToHomeCard = (postId: number): IHomePostCard | null => {
     phone: post.lienHe,
     tags,
     amenities,
+    price: detail?.gia ?? null,
+    area: detail?.dienTich ?? null,
+    likeCount: 0,
     isFeatured: [101, 102, 105].includes(post.id),
     isNew: [104, 101, 102, 103].includes(post.id),
     hasVideo: [102, 104].includes(post.id),
   };
 };
 
+const allHomeMockPosts = postsMock
+  .map((post) => mapPostToHomeCard(post.id))
+  .filter(Boolean) as IHomePostCard[];
+const mockOwnerCount = new Set(postsMock.map((post) => post.idNguoiDung).filter(Boolean)).size;
+
 export const homeMockData: IHomePageData = {
   heroTitle: 'Nền tảng cho thuê nhà, phòng trọ và căn hộ đáng tin cậy tại Đà Nẵng',
   heroSubtitle:
     'Khám phá không gian phù hợp với ngân sách và nhu cầu của bạn, từ phòng trọ tối ưu chi phí đến căn hộ cao cấp đầy đủ tiện nghi.',
   stats: [
-    { label: 'Tin đang hiển thị', value: '73.513+' },
-    { label: 'Chủ nhà đang hoạt động', value: '8.200+' },
-    { label: 'Khu vực được phủ', value: '56+' },
+    { label: 'Tin đang hiển thị', value: String(allHomeMockPosts.length) },
+    { label: 'Chủ nhà đang hoạt động', value: String(mockOwnerCount) },
+    { label: 'Khu vực được phủ', value: '0' },
   ],
   categories: categoriesMock.map((item) => ({
     id: item.id,
@@ -83,6 +92,7 @@ export const homeMockData: IHomePageData = {
     { id: 'cam-le', name: 'Cẩm Lệ', postCount: 286 },
     { id: 'hoa-vang', name: 'Hòa Vang', postCount: 124 },
   ],
+  allPosts: allHomeMockPosts,
   featuredPosts: [101, 102, 105]
     .map(mapPostToHomeCard)
     .filter(Boolean) as IHomePostCard[],

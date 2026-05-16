@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { InputNumber, Image, Tag } from 'antd';
 import { Swiper, SwiperSlide } from 'swiper/react';

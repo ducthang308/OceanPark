@@ -51,6 +51,7 @@ export interface IHomePageData {
   stats: IHomeStat[];
   categories: IHomeCategory[];
   districts: IHomeDistrict[];
+  allPosts: IHomePostCard[];
   featuredPosts: IHomePostCard[];
   newestPosts: IHomePostCard[];
   priceRanges: string[];
