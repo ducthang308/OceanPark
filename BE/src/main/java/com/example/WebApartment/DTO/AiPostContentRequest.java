@@ -16,4 +16,7 @@ public class AiPostContentRequest {
     private String phuong;
     private Integer phongNgu;
     private String lienHe;
+
+    private String tieuDeHienTai;
+    private String noiDungHienTai;
 }

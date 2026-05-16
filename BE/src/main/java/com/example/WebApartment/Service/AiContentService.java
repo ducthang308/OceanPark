@@ -25,31 +25,33 @@ public class AiContentService {
 
     public AiPostContentResponse generatePostContent(AiPostContentRequest req) {
         String prompt = """
-                Bạn là chuyên gia viết bài đăng cho thuê căn hộ tại Việt Nam.
-                Hãy tạo tiêu đề và nội dung mô tả hấp dẫn, tự nhiên, rõ ràng.
-                Không nói quá sự thật. Không dùng emoji quá nhiều.
+                Bạn là chuyên gia viết bài đăng cho thuê căn hộ/phòng trọ tại Việt Nam.
 
-                Thông tin căn hộ:
-                - Loại căn hộ: %s
-                - Giá: %s VNĐ/tháng
-                - Diện tích: %s m2
-                - Địa chỉ: %s
-                - Phường/Khu vực: %s
-                - Số phòng ngủ: %s
-                - Liên hệ: %s
+                Nhiệm vụ:
+                Viết lại bài đăng cho thuê theo phong cách Facebook Marketplace, tự nhiên, dễ đọc, hấp dẫn.
 
-                Trả về đúng format:
+                QUY TẮC BẮT BUỘC:
+                - Viết bằng tiếng Việt.
+                - Nếu người dùng đã nhập tiêu đề/nội dung, hãy viết lại dựa trên nội dung đó.
+                - Không bỏ qua các ý chính người dùng đã nhập.
+                - Không bịa thông tin.
+                - Không ghi những thông tin bị thiếu hoặc bằng 0.
+                - Nếu không có giá hoặc giá bằng 0 thì KHÔNG nhắc đến giá.
+                - Nếu không có diện tích hoặc diện tích bằng 0 thì KHÔNG nhắc đến diện tích.
+                - Nếu không có số điện thoại thì chỉ viết: "Inbox hoặc liên hệ để xem phòng."
+                - Không dùng câu kiểu "Chưa cung cấp", "Liên hệ để biết thêm chi tiết" lặp lại nhiều lần.
+                - Nội dung phải ngắn gọn, xuống dòng rõ, giống bài đăng thật trên Facebook.
+                - Có thể dùng emoji vừa phải.
+                - Không viết đoạn văn dài lê thê.
+                - Không tự thêm điện, nước, wifi, nội thất nếu không có trong dữ liệu.
+
+                Dữ liệu hiện có:
+                %s
+
+                Trả về đúng format, không thêm giải thích:
                 TIEU_DE: ...
                 NOI_DUNG: ...
-                """.formatted(
-                safe(req.getLoaiCanHo()),
-                req.getGia(),
-                req.getDienTich(),
-                safe(req.getDiaChi()),
-                safe(req.getPhuong()),
-                req.getPhongNgu(),
-                safe(req.getLienHe())
-        );
+                """.formatted(buildAvailableInfo(req));
 
         Map<String, Object> body = Map.of(
                 "model", model,
@@ -60,16 +62,77 @@ public class AiContentService {
         headers.setBearerAuth(apiKey);
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        ResponseEntity<Map> response = restTemplate.exchange(
-                "https://api.openai.com/v1/responses",
-                HttpMethod.POST,
-                new HttpEntity<>(body, headers),
-                Map.class
-        );
+        try {
+            ResponseEntity<Map> response = restTemplate.exchange(
+                    "https://api.openai.com/v1/responses",
+                    HttpMethod.POST,
+                    new HttpEntity<>(body, headers),
+                    Map.class
+            );
 
-        String outputText = extractOutputText(response.getBody());
+            String outputText = extractOutputText(response.getBody());
+            return parseOutput(outputText);
 
-        return parseOutput(outputText);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Không thể gọi OpenAI API: " + e.getMessage());
+        }
+    }
+
+    private String buildAvailableInfo(AiPostContentRequest req) {
+        StringBuilder sb = new StringBuilder();
+
+        if (hasText(req.getTieuDeHienTai())) {
+            sb.append("- Tiêu đề người dùng nhập: ")
+                    .append(req.getTieuDeHienTai())
+                    .append("\n");
+        }
+
+        if (hasText(req.getNoiDungHienTai())) {
+            sb.append("- Nội dung người dùng nhập: ")
+                    .append(req.getNoiDungHienTai())
+                    .append("\n");
+        }
+
+        if (hasText(req.getLoaiCanHo())) {
+            sb.append("- Loại căn hộ: ").append(req.getLoaiCanHo()).append("\n");
+        }
+
+        if (req.getGia() != null && req.getGia() > 0) {
+            sb.append("- Giá thuê: ")
+                    .append(String.format("%,.0f", req.getGia()))
+                    .append(" VNĐ/tháng\n");
+        }
+
+        if (req.getDienTich() != null && req.getDienTich() > 0) {
+            sb.append("- Diện tích: ").append(req.getDienTich()).append(" m2\n");
+        }
+
+        if (hasText(req.getDiaChi())) {
+            sb.append("- Địa chỉ: ").append(req.getDiaChi()).append("\n");
+        }
+
+        if (hasText(req.getPhuong())) {
+            sb.append("- Khu vực: ").append(req.getPhuong()).append("\n");
+        }
+
+        if (req.getPhongNgu() != null && req.getPhongNgu() > 0) {
+            sb.append("- Số phòng ngủ: ").append(req.getPhongNgu()).append("\n");
+        }
+
+        if (hasText(req.getLienHe())) {
+            sb.append("- Liên hệ: ").append(req.getLienHe()).append("\n");
+        }
+
+        if (sb.isEmpty()) {
+            sb.append("- Người dùng chưa nhập nhiều thông tin, hãy viết bài ngắn dạng gợi mở.\n");
+        }
+
+        return sb.toString();
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.trim().isBlank();
     }
 
     private String extractOutputText(Map body) {
@@ -98,11 +161,11 @@ public class AiContentService {
     }
 
     private AiPostContentResponse parseOutput(String text) {
-        String title = "Căn hộ cho thuê tiện nghi, giá tốt";
-        String content = text;
+        String title = "Căn hộ cho thuê phù hợp, liên hệ xem phòng";
+        String content = text == null ? "" : text.trim();
 
-        if (text != null && text.contains("TIEU_DE:")) {
-            String[] parts = text.split("NOI_DUNG:");
+        if (content.contains("TIEU_DE:")) {
+            String[] parts = content.split("NOI_DUNG:", 2);
 
             title = parts[0]
                     .replace("TIEU_DE:", "")
@@ -117,9 +180,5 @@ public class AiContentService {
                 .tieuDe(title)
                 .noiDung(content)
                 .build();
-    }
-
-    private String safe(String value) {
-        return value == null ? "Chưa cung cấp" : value;
     }
 }

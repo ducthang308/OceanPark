@@ -337,12 +337,15 @@ const Listing = () => {
       );
 
       const payload = {
-        loaiCanHo: selectedCategory?.tenDanhMuc || "Căn hộ",
-        gia: Number(formData.gia || 0),
-        dienTich: Number(formData.dienTich || 0),
-        diaChi: address.diaChiCuThe || address.diaChi || "",
-        phuong: address.phuong || "",
-        phongNgu: Number(formData.phongNgu || 1),
+        loaiCanHo: selectedCategory?.tenDanhMuc || undefined,
+        gia: formData.gia ? Number(formData.gia) : undefined,
+        dienTich: formData.dienTich ? Number(formData.dienTich) : undefined,
+        diaChi: address.diaChiCuThe || address.diaChi || undefined,
+        phuong: address.phuong || undefined,
+        phongNgu: formData.phongNgu ? Number(formData.phongNgu) : undefined,
+        lienHe: storedUser?.soDienThoai || undefined,
+        tieuDeHienTai: formData.tieuDe || undefined,
+        noiDungHienTai: formData.noiDung || undefined,
       };
 
       console.log("AI PAYLOAD =", payload);

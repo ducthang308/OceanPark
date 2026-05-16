@@ -241,3 +241,33 @@ export const generatePostContentByAI = async (
 
   return res.data;
 };
+
+
+export interface ChatbotRequestDTO {
+  maNguoiDung?: string;
+  message: string;
+}
+
+export interface ChatbotSuggestionDTO {
+  maBaiDang: string;
+  tieuDe: string;
+  gia: number;
+  phuong?: string;
+  diaChi?: string;
+  link?: string;
+}
+
+export interface ChatbotResponseDTO {
+  answer: string;
+  intent: string;
+  suggestions: ChatbotSuggestionDTO[];
+}
+
+export const askChatbot = async (payload: ChatbotRequestDTO) => {
+  const res = await axiosClient.post<ChatbotResponseDTO>(
+    '/api/v1/chatbot/ask',
+    payload
+  );
+
+  return res.data;
+};

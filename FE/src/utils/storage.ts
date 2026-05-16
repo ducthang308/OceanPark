@@ -103,4 +103,5 @@ export const getAuthSession = (): AuthSession | null => {
 
 export const clearAuthSession = () => {
   Object.values(STORAGE_KEYS).forEach((key) => localStorage.removeItem(key));
+  localStorage.removeItem('chatbot_history');
 };
