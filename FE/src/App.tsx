@@ -36,7 +36,8 @@ import ResetPasswordPage from './pages/ForgotPassword/ResetPasswordPage';
 import OAuth2RedirectPage from './pages/Auth/OAuth2RedirectPage.tsx';
 
 import { AUTHENTICATED_ROLE_IDS, LANDLORD_ROLE_IDS, ROLE_ID } from './constants/roles.ts';
-import SepayPaymentPage from './pages/Payment/SepayPaymentPage.tsx';
+import './assets/styles/Global.css';
+import SepayPaymentPage from './pages/SepayPayment/SepayPaymentPage.tsx';
 
 function UserLayout() {
   return (

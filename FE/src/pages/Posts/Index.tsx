@@ -1,8 +1,21 @@
 import React, { useState } from 'react';
-import { Table, Button, Modal, Form, Input, InputNumber, Select, Upload, message, Space } from 'antd';
-import { UploadOutlined } from '@ant-design/icons';
+import {
+  Table,
+  Button,
+  Modal,
+  Form,
+  Input,
+  InputNumber,
+  Select,
+  Upload,
+  message,
+  Space,
+  Alert,
+} from 'antd';
+import { UploadOutlined, RobotOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import './Index.css';
+import { generatePostContentByAI } from '../../services/api/PostManagementService';
 
 interface Post {
   id: number;
@@ -20,147 +33,242 @@ interface Post {
   createdAt: string;
 }
 
-const categories = ["Phòng trọ", "Căn hộ", "Nhà nguyên căn"];
-const statuses = ["Hiển thị", "Chờ duyệt", "Ẩn"];
-const districts = ["Quận 1", "Quận 3", "Quận 10", "Bình Thạnh"];
-const wards = ["Phường 1", "Phường 2", "Phường 3"];
+const categories = ['Phòng trọ', 'Căn hộ', 'Nhà nguyên căn'];
+const statuses = ['Hiển thị', 'Chờ duyệt', 'Ẩn'];
+const districts = ['Quận 1', 'Quận 3', 'Quận 10', 'Bình Thạnh'];
+const wards = ['Phường 1', 'Phường 2', 'Phường 3'];
 
 const Posts: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([
     {
       id: 1,
-      title: "Phòng trọ gần ĐH Bách Khoa",
+      title: 'Phòng trọ gần ĐH Bách Khoa',
       price: 2500000,
       area: 20,
-      location: "123 Lý Thường Kiệt",
-      district: "Quận 10",
-      ward: "Phường 15",
-      category: "Phòng trọ",
-      phone: "0909123456",
-      description: "Phòng sạch sẽ, gần trường, có nội thất cơ bản.",
+      location: '123 Lý Thường Kiệt',
+      district: 'Quận 10',
+      ward: 'Phường 15',
+      category: 'Phòng trọ',
+      phone: '0909123456',
+      description: 'Phòng sạch sẽ, gần trường, có nội thất cơ bản.',
       images: [],
-      status: "Hiển thị",
-      createdAt: "2025-07-24",
+      status: 'Hiển thị',
+      createdAt: '2025-07-24',
     },
   ]);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<Post | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
   const [form] = Form.useForm();
 
   const openModal = (record?: Post) => {
     setEditingPost(record || null);
+
     form.setFieldsValue(
       record || {
-        title: "",
+        title: '',
         price: 0,
         area: 0,
-        location: "",
-        district: "",
-        ward: "",
-        category: "",
-        phone: "",
-        description: "",
+        location: '',
+        district: '',
+        ward: '',
+        category: '',
+        phone: '',
+        description: '',
         images: [],
-        status: "Chờ duyệt",
-      }
+        status: 'Chờ duyệt',
+      },
     );
+
     setIsModalOpen(true);
+  };
+
+  const handleGenerateAIContent = async () => {
+    try {
+      const values = form.getFieldsValue();
+
+      if (!values.category || !values.price || !values.area || !values.location) {
+        message.warning('Vui lòng nhập danh mục, giá, diện tích và địa chỉ trước khi dùng AI');
+        return;
+      }
+
+      setAiLoading(true);
+
+      const res = await generatePostContentByAI({
+        loaiCanHo: values.category,
+        gia: values.price,
+        dienTich: values.area,
+        diaChi: values.location,
+        phuong: values.ward || values.district,
+        phongNgu: undefined,
+        lienHe: values.phone,
+      });
+
+      form.setFieldsValue({
+        title: res.tieuDe,
+        description: res.noiDung,
+      });
+
+      message.success('AI đã gợi ý tiêu đề và nội dung mô tả');
+    } catch (error) {
+      console.error(error);
+      message.error('Không thể tạo nội dung bằng AI');
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
+
       if (editingPost) {
-        setPosts(prev => prev.map(p => p.id === editingPost.id ? { ...p, ...values } : p));
-        message.success("Cập nhật thành công");
+        setPosts((prev) =>
+          prev.map((p) => (p.id === editingPost.id ? { ...p, ...values } : p)),
+        );
+        message.success('Cập nhật thành công');
       } else {
         const newPost: Post = {
           id: posts.length + 1,
           ...values,
-          createdAt: dayjs().format("YYYY-MM-DD"),
+          createdAt: dayjs().format('YYYY-MM-DD'),
         };
-        setPosts(prev => [...prev, newPost]);
-        message.success("Thêm bài đăng thành công");
+
+        setPosts((prev) => [...prev, newPost]);
+        message.success('Thêm bài đăng thành công');
       }
+
       setIsModalOpen(false);
     } catch {
-      message.error("Lỗi khi lưu");
+      message.error('Lỗi khi lưu');
     }
   };
 
   const handleDelete = (id: number) => {
     Modal.confirm({
-      title: "Xóa bài đăng?",
+      title: 'Xóa bài đăng?',
       onOk: () => {
-        setPosts(prev => prev.filter(p => p.id !== id));
-        message.success("Đã xóa");
-      }
+        setPosts((prev) => prev.filter((p) => p.id !== id));
+        message.success('Đã xóa');
+      },
     });
   };
 
   const columns = [
-    { title: "Tiêu đề", dataIndex: "title", key: "title" },
-    { title: "Giá", dataIndex: "price", key: "price", render: (v: number) => v.toLocaleString() + " đ" },
-    { title: "Diện tích", dataIndex: "area", key: "area", render: (v: number) => v + " m²" },
-    { title: "Danh mục", dataIndex: "category", key: "category" },
-    { title: "Quận", dataIndex: "district", key: "district" },
-    { title: "Trạng thái", dataIndex: "status", key: "status" },
-    { title: "Ngày đăng", dataIndex: "createdAt", key: "createdAt" },
+    { title: 'Tiêu đề', dataIndex: 'title', key: 'title' },
     {
-      title: "Hành động",
+      title: 'Giá',
+      dataIndex: 'price',
+      key: 'price',
+      render: (v: number) => `${v.toLocaleString()} đ`,
+    },
+    {
+      title: 'Diện tích',
+      dataIndex: 'area',
+      key: 'area',
+      render: (v: number) => `${v} m²`,
+    },
+    { title: 'Danh mục', dataIndex: 'category', key: 'category' },
+    { title: 'Quận', dataIndex: 'district', key: 'district' },
+    { title: 'Trạng thái', dataIndex: 'status', key: 'status' },
+    { title: 'Ngày đăng', dataIndex: 'createdAt', key: 'createdAt' },
+    {
+      title: 'Hành động',
       render: (_: any, record: Post) => (
         <Space>
-          <Button type="link" onClick={() => openModal(record)}>Sửa</Button>
-          <Button type="link" danger onClick={() => handleDelete(record.id)}>Xóa</Button>
+          <Button type="link" onClick={() => openModal(record)}>
+            Sửa
+          </Button>
+          <Button type="link" danger onClick={() => handleDelete(record.id)}>
+            Xóa
+          </Button>
         </Space>
-      )
-    }
+      ),
+    },
   ];
 
   return (
     <div>
       <h2>Quản lý bài đăng</h2>
+
       <Button type="primary" style={{ marginBottom: 15 }} onClick={() => openModal()}>
         + Thêm bài đăng
       </Button>
+
       <Table columns={columns} dataSource={posts} rowKey="id" />
 
-      <Modal title={editingPost ? "Chỉnh sửa bài đăng" : "Thêm bài đăng"} open={isModalOpen} onOk={handleSave} onCancel={() => setIsModalOpen(false)} width={700}>
+      <Modal
+        title={editingPost ? 'Chỉnh sửa bài đăng' : 'Thêm bài đăng'}
+        open={isModalOpen}
+        onOk={handleSave}
+        onCancel={() => setIsModalOpen(false)}
+        width={760}
+      >
         <Form layout="vertical" form={form}>
-          <Form.Item name="title" label="Tiêu đề" rules={[{ required: true, message: "Nhập tiêu đề" }]}>
+          <Form.Item name="price" label="Giá (VNĐ)" rules={[{ required: true, message: 'Nhập giá' }]}>
+            <InputNumber min={0} style={{ width: '100%' }} />
+          </Form.Item>
+
+          <Form.Item name="area" label="Diện tích (m²)" rules={[{ required: true, message: 'Nhập diện tích' }]}>
+            <InputNumber min={0} style={{ width: '100%' }} />
+          </Form.Item>
+
+          <Form.Item name="location" label="Địa chỉ chi tiết" rules={[{ required: true, message: 'Nhập địa chỉ' }]}>
             <Input />
           </Form.Item>
-          <Form.Item name="price" label="Giá (VNĐ)" rules={[{ required: true, message: "Nhập giá" }]}>
-            <InputNumber min={0} style={{ width: "100%" }} />
+
+          <Form.Item name="district" label="Quận" rules={[{ required: true, message: 'Chọn quận' }]}>
+            <Select options={districts.map((d) => ({ label: d, value: d }))} />
           </Form.Item>
-          <Form.Item name="area" label="Diện tích (m²)" rules={[{ required: true, message: "Nhập diện tích" }]}>
-            <InputNumber min={0} style={{ width: "100%" }} />
+
+          <Form.Item name="ward" label="Phường" rules={[{ required: true, message: 'Chọn phường' }]}>
+            <Select options={wards.map((w) => ({ label: w, value: w }))} />
           </Form.Item>
-          <Form.Item name="location" label="Địa chỉ chi tiết" rules={[{ required: true, message: "Nhập địa chỉ" }]}>
+
+          <Form.Item name="category" label="Danh mục" rules={[{ required: true, message: 'Chọn danh mục' }]}>
+            <Select options={categories.map((c) => ({ label: c, value: c }))} />
+          </Form.Item>
+
+          <Form.Item name="phone" label="Số điện thoại liên hệ" rules={[{ required: true, message: 'Nhập số điện thoại' }]}>
             <Input />
           </Form.Item>
-          <Form.Item name="district" label="Quận" rules={[{ required: true, message: "Chọn quận" }]}>
-            <Select options={districts.map(d => ({ label: d, value: d }))} />
+
+          <div className="market-ai-box">
+            <Alert
+              type="info"
+              showIcon
+              message="Sử dụng AI để viết"
+              description="AI sẽ dựa trên giá, diện tích, địa chỉ và loại căn hộ để tự động gợi ý tiêu đề và nội dung mô tả."
+            />
+
+            <Button
+              type="primary"
+              icon={<RobotOutlined />}
+              loading={aiLoading}
+              onClick={handleGenerateAIContent}
+              className="market-ai-btn"
+            >
+              {aiLoading ? 'AI đang viết...' : 'Sử dụng AI để viết'}
+            </Button>
+          </div>
+
+          <Form.Item name="title" label="Tiêu đề" rules={[{ required: true, message: 'Nhập tiêu đề' }]}>
+            <Input.TextArea rows={3} placeholder="AI có thể tự gợi ý tiêu đề tại đây..." />
           </Form.Item>
-          <Form.Item name="ward" label="Phường" rules={[{ required: true, message: "Chọn phường" }]}>
-            <Select options={wards.map(w => ({ label: w, value: w }))} />
+
+          <Form.Item name="description" label="Nội dung mô tả" rules={[{ required: true, message: 'Nhập nội dung mô tả' }]}>
+            <Input.TextArea rows={7} placeholder="AI có thể tự viết nội dung mô tả tại đây..." />
           </Form.Item>
-          <Form.Item name="category" label="Danh mục" rules={[{ required: true, message: "Chọn danh mục" }]}>
-            <Select options={categories.map(c => ({ label: c, value: c }))} />
-          </Form.Item>
-          <Form.Item name="phone" label="Số điện thoại liên hệ" rules={[{ required: true, message: "Nhập số điện thoại" }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="description" label="Mô tả chi tiết">
-            <Input.TextArea rows={4} />
-          </Form.Item>
+
           <Form.Item name="images" label="Hình ảnh">
             <Upload multiple listType="picture">
               <Button icon={<UploadOutlined />}>Tải ảnh lên</Button>
             </Upload>
           </Form.Item>
+
           <Form.Item name="status" label="Trạng thái">
-            <Select options={statuses.map(s => ({ label: s, value: s }))} />
+            <Select options={statuses.map((s) => ({ label: s, value: s }))} />
           </Form.Item>
         </Form>
       </Modal>

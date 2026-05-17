@@ -17,95 +17,81 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class LichSuTimKiemService {
 
-    private final LichSuTimKiemRepository lichSuRepo;
-    private final NguoiDungRepository nguoiDungRepo;
+    private final LichSuTimKiemRepository lichSuTimKiemRepository;
+    private final NguoiDungRepository nguoiDungRepository;
 
-    // ================= GET ALL =================
     public List<LichSuTimKiemDTO> getAll() {
-        return lichSuRepo.findAll()
+        return lichSuTimKiemRepository.findAll()
                 .stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
 
-    // ================= GET BY ID =================
-    public LichSuTimKiemDTO getById(String ma) {
-        LichSuTimKiem entity = lichSuRepo.findById(ma)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy lịch sử"));
+    public LichSuTimKiemDTO getById(String maLichSuTimKiem) {
+        LichSuTimKiem entity = lichSuTimKiemRepository.findById(maLichSuTimKiem)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy lịch sử tìm kiếm"));
 
         return toDto(entity);
     }
 
-    // ================= CREATE =================
-    public LichSuTimKiemDTO create(LichSuTimKiemDTO dto) {
+    public List<LichSuTimKiemDTO> getByNguoiDung(String maNguoiDung) {
+        return lichSuTimKiemRepository.findByNguoiDung_MaNguoiDung(maNguoiDung)
+                .stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
 
-        NguoiDung nguoiDung = nguoiDungRepo.findById(dto.getMaNguoiDung())
+    public LichSuTimKiemDTO create(LichSuTimKiemDTO dto) {
+        if (dto == null) {
+            throw new RuntimeException("Dữ liệu lịch sử tìm kiếm không hợp lệ");
+        }
+
+        if (dto.getMaNguoiDung() == null || dto.getMaNguoiDung().isBlank()) {
+            throw new RuntimeException("Mã người dùng không được để trống");
+        }
+
+        NguoiDung nguoiDung = nguoiDungRepository.findById(dto.getMaNguoiDung())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
 
-        LichSuTimKiem entity = toEntity(dto, nguoiDung);
-
-        if (entity.getMaLichSuTimKiem() == null) {
-            entity.setMaLichSuTimKiem(UUID.randomUUID().toString());
-        }
-
-        if (entity.getThoiGian() == null) {
-            entity.setThoiGian(LocalDateTime.now());
-        }
-
-        return toDto(lichSuRepo.save(entity));
-    }
-
-    // ================= UPDATE =================
-    public LichSuTimKiemDTO update(String ma, LichSuTimKiemDTO dto) {
-
-        LichSuTimKiem existing = lichSuRepo.findById(ma)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy lịch sử"));
-
-        if (dto.getMaNguoiDung() != null) {
-            NguoiDung nguoiDung = nguoiDungRepo.findById(dto.getMaNguoiDung())
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
-            existing.setNguoiDung(nguoiDung);
-        }
-
-        if (dto.getTuKhoa() != null) existing.setTuKhoa(dto.getTuKhoa());
-        if (dto.getMinPrice() != null) existing.setMinPrice(dto.getMinPrice());
-        if (dto.getMaxPrice() != null) existing.setMaxPrice(dto.getMaxPrice());
-        if (dto.getPhuong() != null) existing.setPhuong(dto.getPhuong());
-
-        return toDto(lichSuRepo.save(existing));
-    }
-
-    // ================= DELETE =================
-    public void delete(String ma) {
-        LichSuTimKiem existing = lichSuRepo.findById(ma)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy lịch sử"));
-
-        lichSuRepo.delete(existing);
-    }
-
-    // ================= MAPPER =================
-
-    private LichSuTimKiemDTO toDto(LichSuTimKiem e) {
-        return LichSuTimKiemDTO.builder()
-                .maLichSuTimKiem(e.getMaLichSuTimKiem())
-                .maNguoiDung(e.getNguoiDung() != null ? e.getNguoiDung().getMaNguoiDung() : null)
-                .tuKhoa(e.getTuKhoa())
-                .minPrice(e.getMinPrice())
-                .maxPrice(e.getMaxPrice())
-                .phuong(e.getPhuong())
-                .thoiGian(e.getThoiGian())
-                .build();
-    }
-
-    private LichSuTimKiem toEntity(LichSuTimKiemDTO dto, NguoiDung nguoiDung) {
-        return LichSuTimKiem.builder()
-                .maLichSuTimKiem(dto.getMaLichSuTimKiem())
+        LichSuTimKiem entity = LichSuTimKiem.builder()
+                .maLichSuTimKiem(generateId())
                 .nguoiDung(nguoiDung)
                 .tuKhoa(dto.getTuKhoa())
                 .minPrice(dto.getMinPrice())
                 .maxPrice(dto.getMaxPrice())
                 .phuong(dto.getPhuong())
-                .thoiGian(dto.getThoiGian())
+                .thoiGian(LocalDateTime.now())
+                .build();
+
+        return toDto(lichSuTimKiemRepository.save(entity));
+    }
+
+    public void delete(String maLichSuTimKiem) {
+        LichSuTimKiem existing = lichSuTimKiemRepository.findById(maLichSuTimKiem)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy lịch sử tìm kiếm"));
+
+        lichSuTimKiemRepository.delete(existing);
+    }
+
+    private String generateId() {
+        return "LSTK" + UUID.randomUUID()
+                .toString()
+                .replace("-", "")
+                .substring(0, 10)
+                .toUpperCase();
+    }
+
+    private LichSuTimKiemDTO toDto(LichSuTimKiem entity) {
+        if (entity == null) return null;
+
+        return LichSuTimKiemDTO.builder()
+                .maLichSuTimKiem(entity.getMaLichSuTimKiem())
+                .maNguoiDung(entity.getNguoiDung() != null ? entity.getNguoiDung().getMaNguoiDung() : null)
+                .tuKhoa(entity.getTuKhoa())
+                .minPrice(entity.getMinPrice())
+                .maxPrice(entity.getMaxPrice())
+                .phuong(entity.getPhuong())
+                .thoiGian(entity.getThoiGian())
                 .build();
     }
 }

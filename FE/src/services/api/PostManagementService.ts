@@ -206,3 +206,68 @@ export const getHoaDonByNguoiDung = async (maNguoiDung: string) => {
   const res = await axiosClient.get<HoaDonDTO[]>(`/api/v1/hoa-don/nguoi-dung/${maNguoiDung}`);
   return res.data;
 };
+
+
+export const getRecommendedPosts = async (maNguoiDung: string) => {
+  const res = await axiosClient.get<BaiDangDTO[]>(
+    `/api/v1/recommendation/${maNguoiDung}`
+  );
+
+  return res.data;
+};
+
+export interface AiPostContentRequest {
+  loaiCanHo?: string;
+  gia?: number;
+  dienTich?: number;
+  diaChi?: string;
+  phuong?: string;
+  phongNgu?: number;
+  lienHe?: string;
+}
+
+export interface AiPostContentResponse {
+  tieuDe: string;
+  noiDung: string;
+}
+
+export const generatePostContentByAI = async (
+  payload: AiPostContentRequest
+) => {
+  const res = await axiosClient.post<AiPostContentResponse>(
+    '/api/v1/ai/generate-post-content',
+    payload
+  );
+
+  return res.data;
+};
+
+
+export interface ChatbotRequestDTO {
+  maNguoiDung?: string;
+  message: string;
+}
+
+export interface ChatbotSuggestionDTO {
+  maBaiDang: string;
+  tieuDe: string;
+  gia: number;
+  phuong?: string;
+  diaChi?: string;
+  link?: string;
+}
+
+export interface ChatbotResponseDTO {
+  answer: string;
+  intent: string;
+  suggestions: ChatbotSuggestionDTO[];
+}
+
+export const askChatbot = async (payload: ChatbotRequestDTO) => {
+  const res = await axiosClient.post<ChatbotResponseDTO>(
+    '/api/v1/chatbot/ask',
+    payload
+  );
+
+  return res.data;
+};

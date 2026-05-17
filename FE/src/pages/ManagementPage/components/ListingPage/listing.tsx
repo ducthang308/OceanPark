@@ -6,9 +6,15 @@ import TextArea from "antd/es/input/TextArea";
 import axios from "axios";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import {
+  ThunderboltOutlined,
+  RobotOutlined,
+} from "@ant-design/icons";
 
 import Image from "../../../../assets/img/co4la.png";
 import VideoIcon from "../../../../assets/img/upload-video.png";
+import { Sparkles, Wand2 } from "lucide-react";
+import { generatePostContentByAI } from "../../../../services/api/PostManagementService";
 
 import { useNavigate } from "react-router-dom";
 import {
@@ -73,7 +79,7 @@ const Listing = () => {
 
   const [categories, setCategories] = useState<DanhMucDTO[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const [aiLoading, setAiLoading] = useState(false);
   const [formData, setFormData] = useState({
     maDanhMuc: "",
     tieuDe: "",
@@ -109,7 +115,7 @@ const Listing = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [isUploading, setIsUploading] = useState(false);
-  
+
   const videoInputRef = useRef<HTMLInputElement | null>(null);
   const [video, setVideo] = useState<UploadedVideo | null>(null);
   const [isUploadingVideo, setIsUploadingVideo] = useState(false);
@@ -157,14 +163,14 @@ const Listing = () => {
     marker.bindPopup("Vị trí bài đăng").openPopup();
 
     setTimeout(() => {
-        map.invalidateSize();
-        }, 0);
+      map.invalidateSize();
+    }, 0);
 
-        const resizeObserver = new ResizeObserver(() => {
-        map.invalidateSize();
-        });
+    const resizeObserver = new ResizeObserver(() => {
+      map.invalidateSize();
+    });
 
-        resizeObserver.observe(mapRef.current);
+    resizeObserver.observe(mapRef.current);
 
     marker.on("dragend", () => {
       const latLng = marker.getLatLng();
@@ -186,11 +192,11 @@ const Listing = () => {
     });
 
     return () => {
-        resizeObserver.disconnect();
-        map.off();
-        map.remove();
-        mapInstanceRef.current = null;
-        markerRef.current = null;
+      resizeObserver.disconnect();
+      map.off();
+      map.remove();
+      mapInstanceRef.current = null;
+      markerRef.current = null;
     };
 
   }, []);
@@ -227,38 +233,38 @@ const Listing = () => {
     setImages((prev) => [...prev, ...fileURLs]);
     setIsUploading(false);
   };
-  
+
   const handleSelectVideo = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     if (file.size > 50 * 1024 * 1024) {
-        message.error("Dung lượng video tối đa 50MB");
-        return;
+      message.error("Dung lượng video tối đa 50MB");
+      return;
     }
 
     if (video?.url) {
-        URL.revokeObjectURL(video.url);
+      URL.revokeObjectURL(video.url);
     }
 
     setVideo({
-        file,
-        url: URL.createObjectURL(file),
+      file,
+      url: URL.createObjectURL(file),
     });
     setIsUploadingVideo(false);
-    };
+  };
 
-    const handleRemoveVideo = () => {
+  const handleRemoveVideo = () => {
     if (video?.url) {
-        URL.revokeObjectURL(video.url);
+      URL.revokeObjectURL(video.url);
     }
 
     setVideo(null);
 
     if (videoInputRef.current) {
-        videoInputRef.current.value = "";
+      videoInputRef.current.value = "";
     }
-    };
+  };
 
   const handleRemove = (id: string) => {
     setImages((prev) => prev.filter((img) => img.id !== id));
@@ -317,6 +323,54 @@ const Listing = () => {
       message.error("Có lỗi khi định vị địa chỉ");
     } finally {
       setIsLocatingByAddress(false);
+    }
+  };
+
+  const handleGenerateAIContent = async () => {
+    console.log("CLICK AI BUTTON");
+
+    try {
+      setAiLoading(true);
+
+      const selectedCategory = categories.find(
+        (item) => item.maDanhMuc === formData.maDanhMuc
+      );
+
+      const payload = {
+        loaiCanHo: selectedCategory?.tenDanhMuc || undefined,
+        gia: formData.gia ? Number(formData.gia) : undefined,
+        dienTich: formData.dienTich ? Number(formData.dienTich) : undefined,
+        diaChi: address.diaChiCuThe || address.diaChi || undefined,
+        phuong: address.phuong || undefined,
+        phongNgu: formData.phongNgu ? Number(formData.phongNgu) : undefined,
+        lienHe: storedUser?.soDienThoai || undefined,
+        tieuDeHienTai: formData.tieuDe || undefined,
+        noiDungHienTai: formData.noiDung || undefined,
+      };
+
+      console.log("AI PAYLOAD =", payload);
+
+      const res = await generatePostContentByAI(payload);
+
+      console.log("AI RESPONSE =", res);
+
+      setFormData((prev) => ({
+        ...prev,
+        tieuDe: res.tieuDe || prev.tieuDe,
+        noiDung: res.noiDung || prev.noiDung,
+      }));
+
+      message.success("AI đã gợi ý nội dung thành công");
+    } catch (error: any) {
+      console.error("AI ERROR =", error);
+      console.error("AI ERROR RESPONSE =", error?.response?.data);
+
+      message.error(
+        error?.response?.data?.message ||
+        "Không thể tạo nội dung bằng AI"
+      );
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -417,9 +471,9 @@ const Listing = () => {
     <div className="container-listing">
       <div className="listing-main-header">
         <div className="listing-header-top">
-          <Button 
-            type="text" 
-            icon={<ArrowLeftOutlined />} 
+          <Button
+            type="text"
+            icon={<ArrowLeftOutlined />}
             onClick={() => navigate(-1)}
             className="listing-back-btn"
           >
@@ -562,129 +616,182 @@ const Listing = () => {
       </div>
 
       <div className="detail-listing">
-        <div className="title-listing">Thông tin mô tả</div>
+        <div className="title-listing">
+          Thông tin mô tả
+        </div>
 
         <div className="form-group-listing">
+
+          {/* AI CONTENT BOX */}
+          <div className="ai-content-box">
+
+            <div className="ai-content-left">
+              <div className="ai-content-icon">
+                <ThunderboltOutlined />
+              </div>
+
+              <div className="ai-content-text">
+                <h3>Sử dụng AI để viết</h3>
+
+                <p>
+                  AI sẽ tự động gợi ý tiêu đề và mô tả bài đăng
+                  dựa trên giá, diện tích, vị trí và loại căn hộ.
+                </p>
+              </div>
+            </div>
+
+            <Button
+              htmlType="button"
+              type="primary"
+              className="ai-generate-btn"
+              loading={aiLoading}
+              icon={<RobotOutlined />}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleGenerateAIContent();
+              }}
+            >
+              {aiLoading ? "AI đang tạo nội dung..." : "Sử dụng AI để viết"}
+            </Button>
+          </div>
+
+          {/* TITLE */}
           <label className="label">
             Tiêu đề <span className="required">(*)</span>
           </label>
+
           <TextArea
             rows={2}
+            placeholder="Ví dụ: Căn hộ mini full nội thất gần biển Mỹ Khê..."
             value={formData.tieuDe}
             onChange={(event) =>
-              setFormData((prev) => ({ ...prev, tieuDe: event.target.value }))
+              setFormData((prev) => ({
+                ...prev,
+                tieuDe: event.target.value,
+              }))
             }
           />
         </div>
 
+        {/* DESCRIPTION */}
         <div className="form-group-listing gap">
           <label className="label">
             Nội dung mô tả <span className="required">(*)</span>
           </label>
+
           <TextArea
             rows={10}
+            placeholder="Mô tả chi tiết căn hộ, tiện ích, vị trí..."
             value={formData.noiDung}
             onChange={(event) =>
-              setFormData((prev) => ({ ...prev, noiDung: event.target.value }))
+              setFormData((prev) => ({
+                ...prev,
+                noiDung: event.target.value,
+              }))
             }
           />
+
+          <div className="ai-helper-text">
+            AI có thể hỗ trợ viết nội dung hấp dẫn và chuyên nghiệp hơn.
+          </div>
         </div>
 
         <div className="detail-listing-grid">
           <div className="form-group-listing gap">
             <label className="label">
               Hình thức thanh toán <span className="required">(*)</span>
-          </label>
-          <Select
-            className="select-listing"
-            placeholder="-- Chọn hình thức thanh toán --"
-            size="large"
-            value={formData.hinhThucThanhToan || undefined}
-            onChange={(value) =>
-              setFormData((prev) => ({ ...prev, hinhThucThanhToan: value }))
-            }
-          >
-            <Option value="Cash">Tiền mặt</Option>
-            <Option value="Transfer">Chuyển khoản</Option>
-          </Select>
-        </div>
+            </label>
+            <Select
+              className="select-listing"
+              placeholder="-- Chọn hình thức thanh toán --"
+              size="large"
+              value={formData.hinhThucThanhToan || undefined}
+              onChange={(value) =>
+                setFormData((prev) => ({ ...prev, hinhThucThanhToan: value }))
+              }
+            >
+              <Option value="Cash">Tiền mặt</Option>
+              <Option value="Transfer">Chuyển khoản</Option>
+            </Select>
+          </div>
 
-        <div className="form-group-listing gap">
-          <label className="label">
-            Giá cho thuê <span className="required">(*)</span>
-          </label>
-          <Input
-            className="input-height"
-            placeholder="Nhập giá thuê"
-            value={formData.gia}
-            onChange={(event) =>
-              setFormData((prev) => ({ ...prev, gia: event.target.value }))
-            }
-          />
-          <span className="listing-span">
-            Nhập đầy đủ số, ví dụ 1 triệu thì nhập là 1000000
-          </span>
-        </div>
+          <div className="form-group-listing gap">
+            <label className="label">
+              Giá cho thuê <span className="required">(*)</span>
+            </label>
+            <Input
+              className="input-height"
+              placeholder="Nhập giá thuê"
+              value={formData.gia}
+              onChange={(event) =>
+                setFormData((prev) => ({ ...prev, gia: event.target.value }))
+              }
+            />
+            <span className="listing-span">
+              Nhập đầy đủ số, ví dụ 1 triệu thì nhập là 1000000
+            </span>
+          </div>
 
-        <div className="form-group-listing gap">
-          <label className="label">
-            Diện tích <span className="required">(*)</span>
-          </label>
-          <Input
-            className="input-height"
-            placeholder="Nhập diện tích"
-            value={formData.dienTich}
-            onChange={(event) =>
-              setFormData((prev) => ({ ...prev, dienTich: event.target.value }))
-            }
-          />
-          <span className="listing-span">
-            Đơn vị tính: m<sup>2</sup>
-          </span>
-        </div>
+          <div className="form-group-listing gap">
+            <label className="label">
+              Diện tích <span className="required">(*)</span>
+            </label>
+            <Input
+              className="input-height"
+              placeholder="Nhập diện tích"
+              value={formData.dienTich}
+              onChange={(event) =>
+                setFormData((prev) => ({ ...prev, dienTich: event.target.value }))
+              }
+            />
+            <span className="listing-span">
+              Đơn vị tính: m<sup>2</sup>
+            </span>
+          </div>
 
-        <div className="form-group-listing gap">
-          <label className="label">
-            Phòng ngủ <span className="required">(*)</span>
-          </label>
-          <Select
-            className="select-listing"
-            placeholder="-- Chọn phòng ngủ --"
-            size="large"
-            value={formData.phongNgu || undefined}
-            onChange={(value) =>
-              setFormData((prev) => ({ ...prev, phongNgu: value }))
-            }
-          >
-            <Option value="1">1 phòng ngủ</Option>
-            <Option value="2">2 phòng ngủ</Option>
-            <Option value="3">3 phòng ngủ</Option>
-          </Select>
-        </div>
+          <div className="form-group-listing gap">
+            <label className="label">
+              Phòng ngủ <span className="required">(*)</span>
+            </label>
+            <Select
+              className="select-listing"
+              placeholder="-- Chọn phòng ngủ --"
+              size="large"
+              value={formData.phongNgu || undefined}
+              onChange={(value) =>
+                setFormData((prev) => ({ ...prev, phongNgu: value }))
+              }
+            >
+              <Option value="1">1 phòng ngủ</Option>
+              <Option value="2">2 phòng ngủ</Option>
+              <Option value="3">3 phòng ngủ</Option>
+            </Select>
+          </div>
 
-        <div className="form-group-listing gap">
-          <label className="label">
-            Hướng căn hộ <span className="required">(*)</span>
-          </label>
-          <Select
-            className="select-listing"
-            placeholder="-- Chọn hướng căn hộ --"
-            size="large"
-            value={formData.huongCanHo || undefined}
-            onChange={(value) =>
-              setFormData((prev) => ({ ...prev, huongCanHo: value }))
-            }
-          >
-            <Option value="Đông">Đông</Option>
-            <Option value="Tây">Tây</Option>
-            <Option value="Nam">Nam</Option>
-            <Option value="Bắc">Bắc</Option>
-            <Option value="Đông Bắc">Đông Bắc</Option>
-            <Option value="Đông Nam">Đông Nam</Option>
-            <Option value="Tây Bắc">Tây Bắc</Option>
-            <Option value="Tây Nam">Tây Nam</Option>
-          </Select>
-        </div>
+          <div className="form-group-listing gap">
+            <label className="label">
+              Hướng căn hộ <span className="required">(*)</span>
+            </label>
+            <Select
+              className="select-listing"
+              placeholder="-- Chọn hướng căn hộ --"
+              size="large"
+              value={formData.huongCanHo || undefined}
+              onChange={(value) =>
+                setFormData((prev) => ({ ...prev, huongCanHo: value }))
+              }
+            >
+              <Option value="Đông">Đông</Option>
+              <Option value="Tây">Tây</Option>
+              <Option value="Nam">Nam</Option>
+              <Option value="Bắc">Bắc</Option>
+              <Option value="Đông Bắc">Đông Bắc</Option>
+              <Option value="Đông Nam">Đông Nam</Option>
+              <Option value="Tây Bắc">Tây Bắc</Option>
+              <Option value="Tây Nam">Tây Nam</Option>
+            </Select>
+          </div>
         </div>
       </div>
 
@@ -780,41 +887,41 @@ const Listing = () => {
         <div className="title-listing">Video</div>
 
         <div className="browse_photos" onClick={() => videoInputRef.current?.click()}>
-            <div className="upload-image">
+          <div className="upload-image">
             <img className="icon-upload-image" src={VideoIcon} alt="upload video icon" />
             <span className="upload-text">
-                {isUploadingVideo
+              {isUploadingVideo
                 ? "Đang đăng video..."
                 : video
-                    ? "Thay đổi video"
-                    : "Tải video từ thiết bị"}
+                  ? "Thay đổi video"
+                  : "Tải video từ thiết bị"}
             </span>
-            </div>
+          </div>
 
-            <input
+          <input
             type="file"
             ref={videoInputRef}
             onChange={handleSelectVideo}
             accept="video/*"
             style={{ display: "none" }}
-            />
+          />
         </div>
 
         <div className="note-span">
-            <span className="listing-span">• Video hiện chỉ lưu preview trên UI</span>
-            <span className="listing-span">• Khi BE có API upload video, có thể dùng lại state video.file</span>
-            <span className="listing-span">• Dung lượng video tối đa 50MB</span>
+          <span className="listing-span">• Video hiện chỉ lưu preview trên UI</span>
+          <span className="listing-span">• Khi BE có API upload video, có thể dùng lại state video.file</span>
+          <span className="listing-span">• Dung lượng video tối đa 50MB</span>
         </div>
 
         {video && (
-            <div className="video-preview">
+          <div className="video-preview">
             <video controls width="100%" src={video.url} />
             <button type="button" onClick={handleRemoveVideo} className="delete-btn">
-                Xóa video
+              Xóa video
             </button>
-            </div>
+          </div>
         )}
-        </div>
+      </div>
 
       <div className="contact-listing">
         <div className="title-listing">Thông tin liên hệ</div>
