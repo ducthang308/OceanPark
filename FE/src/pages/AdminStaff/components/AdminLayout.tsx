@@ -1,9 +1,10 @@
 import React from 'react';
 import {
-  BarChartOutlined,
+  AppstoreOutlined,
   CheckSquareOutlined,
-  CreditCardOutlined,
+  GiftOutlined,
   HomeOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import AdminTopbar from './AdminTopbar';
@@ -11,16 +12,24 @@ import './admin-layout.css';
 
 const pageMeta: Record<string, { title: string; subtitle: string }> = {
   '/admin': {
-    title: 'Dashboard nhân viên',
-    subtitle: 'Theo dõi nhanh bài đăng, thanh toán và hiệu suất vận hành.',
+    title: 'Dashboard admin',
+    subtitle: 'Theo dõi nhanh tài khoản, bài đăng, doanh thu và hoạt động vận hành.',
   },
   '/admin/posts': {
     title: 'Duyệt bài đăng',
     subtitle: 'Kiểm tra nội dung, trạng thái và chất lượng bài đăng trước khi hiển thị.',
   },
-  '/admin/payments': {
-    title: 'Duyệt thanh toán',
-    subtitle: 'Đối soát giao dịch đăng bài, xác nhận và xử lý trường hợp lỗi.',
+  '/admin/categories': {
+    title: 'Quản lý danh mục',
+    subtitle: 'Tạo, cập nhật và xóa các danh mục bài đăng trong hệ thống.',
+  },
+  '/admin/packages': {
+    title: 'Quản lý gói bài đăng',
+    subtitle: 'Thiết lập giá, thời hạn và trạng thái các gói đăng bài.',
+  },
+  '/admin/accounts': {
+    title: 'Quản lý tài khoản',
+    subtitle: 'Quản lý hồ sơ, vai trò và trạng thái hoạt động của tài khoản.',
   },
 };
 
@@ -62,32 +71,40 @@ const AdminLayout: React.FC = () => {
           </NavLink>
 
           <NavLink
-            to="/admin/payments"
+            to="/admin/categories"
             className={({ isActive }) =>
               `admin-layout__nav-link ${isActive ? 'active' : ''}`
             }
           >
-            <CreditCardOutlined />
-            <span>Duyệt thanh toán</span>
+            <AppstoreOutlined />
+            <span>Quản lý danh mục</span>
           </NavLink>
 
           <NavLink
-            to="/postsadmin"
+            to="/admin/packages"
             className={({ isActive }) =>
               `admin-layout__nav-link ${isActive ? 'active' : ''}`
             }
           >
-            <BarChartOutlined />
-            <span>Quản lý cũ</span>
+            <GiftOutlined />
+            <span>Quản lý gói bài đăng</span>
+          </NavLink>
+
+          <NavLink
+            to="/admin/accounts"
+            className={({ isActive }) =>
+              `admin-layout__nav-link ${isActive ? 'active' : ''}`
+            }
+          >
+            <UserOutlined />
+            <span>Quản lý tài khoản</span>
           </NavLink>
         </nav>
 
         <div className="admin-layout__footer-card">
-          <div className="admin-layout__footer-label">Hàng chờ xử lý hôm nay</div>
-          <div className="admin-layout__footer-value">27</div>
-          <div className="admin-layout__footer-subtitle">
-            18 bài đăng • 9 thanh toán
-          </div>
+          <div className="admin-layout__footer-label">Khu vực quản trị</div>
+          <div className="admin-layout__footer-value">5</div>
+          <div className="admin-layout__footer-subtitle">Dashboard • Bài đăng • Danh mục • Gói • Tài khoản</div>
         </div>
       </aside>
 

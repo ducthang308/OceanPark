@@ -25,6 +25,9 @@ import ServicePrice from './components/sections/ServicePrice/servicePrice.tsx';
 import AdminLayout from './pages/AdminStaff/components/AdminLayout.tsx';
 import AdminDashboard from './pages/AdminStaff/Dashboard/AdminDashboard.tsx';
 import AdminPostApproval from './pages/AdminStaff/PostApproval/AdminPostApproval.tsx';
+import AdminCategoryManagement from './pages/AdminStaff/CategoryManagement/AdminCategoryManagement.tsx';
+import AdminPackageManagement from './pages/AdminStaff/PackageManagement/AdminPackageManagement.tsx';
+import AdminAccountManagement from './pages/AdminStaff/AccountManagement/AdminAccountManagement.tsx';
 import AdminPaymentApproval from './pages/AdminStaff/PaymentApproval/AdminPaymentApproval.tsx';
 import PostApprovalDetail from './pages/AdminStaff/PostApproval/PostApprovalDetail.tsx';
 import PaymentDetailPanel from './pages/AdminStaff/PaymentApproval/PaymentDetailPanel.tsx';
@@ -106,6 +109,9 @@ function App() {
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
             <Route path="posts" element={<AdminPostApproval />} />
+            <Route path="categories" element={<AdminCategoryManagement />} />
+            <Route path="packages" element={<AdminPackageManagement />} />
+            <Route path="accounts" element={<AdminAccountManagement />} />
             <Route path="post-approval/:id" element={<PostApprovalDetail />} />
             <Route path="payment-approval/:id" element={<PaymentDetailPanel />} />
             <Route path="payments" element={<AdminPaymentApproval />} />

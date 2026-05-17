@@ -1,5 +1,7 @@
 package com.example.WebApartment.Service;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import com.example.WebApartment.DTO.NguoiDungDTO;
 import com.example.WebApartment.JWT.JwtToken;
 import com.example.WebApartment.Models.NguoiDung;
@@ -11,8 +13,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -23,6 +27,7 @@ public class NguoiDungService {
     private final NguoiDungRepository nguoiDungRepository;
     private final VaiTroRepository vaiTroRepository;
     private final PasswordEncoder passwordEncoder;
+    private final Cloudinary cloudinary;
 
     private final EmailService emailService;
     private final JwtToken jwtToken;
@@ -141,6 +146,37 @@ public class NguoiDungService {
 
     public NguoiDung findBySoDienThoai(String soDienThoai) {
         return nguoiDungRepository.findBySoDienThoai(soDienThoai);
+    }
+
+    public NguoiDungDTO uploadAvatar(String maNguoiDung, MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new RuntimeException("File ảnh không được để trống");
+        }
+
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            throw new RuntimeException("Vui lòng chọn đúng định dạng ảnh");
+        }
+
+        NguoiDung existing = nguoiDungRepository.findById(maNguoiDung)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+
+        try {
+            Map uploadResult = cloudinary.uploader().upload(
+                    file.getBytes(),
+                    ObjectUtils.asMap(
+                            "folder", "web-apartment/avatar",
+                            "resource_type", "image"
+                    )
+            );
+
+            String imageUrl = uploadResult.get("secure_url").toString();
+            existing.setAnhDaiDien(imageUrl);
+
+            return toDto(nguoiDungRepository.save(existing));
+        } catch (Exception e) {
+            throw new RuntimeException("Upload ảnh đại diện thất bại: " + e.getMessage());
+        }
     }
 
     private void validateRegister(NguoiDungDTO dto) {

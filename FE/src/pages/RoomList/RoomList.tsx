@@ -37,7 +37,15 @@ import { useUserNeedDialog } from '../../hooks/useUserNeedDialog';
 import UserNeedDialog from '../../components/common/UserNeedDialog/UserNeedDialog';
 
 const POSTS_PER_PAGE = 3;
-const HIDDEN_POST_STATUSES = new Set(['HIDDEN', 'PENDING', 'CHO_DUYET', 'TU_CHOI', 'DELETED']);
+const HIDDEN_POST_STATUSES = new Set([
+  'HIDDEN',
+  'INACTIVE',
+  'PENDING',
+  'CHO_DUYET',
+  'TU_CHOI',
+  'REJECTED',
+  'DELETED',
+]);
 
 type RoomTab = 'proposal' | 'new' | 'video';
 

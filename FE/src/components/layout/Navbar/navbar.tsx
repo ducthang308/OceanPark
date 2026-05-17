@@ -1,8 +1,8 @@
 import AVT from "../../../assets/img/default-user.svg"
-import { Button } from 'antd';
 import "./navbar.css";
 
 import {
+    CheckCircleOutlined,
     EditOutlined,
     FolderOpenOutlined,
     FileTextOutlined,
@@ -50,7 +50,7 @@ const items: SidebarItem[] = [
     {
         key: '6',
         icon: <FolderOpenOutlined />,
-        label: 'Quản lý gói nạp',
+        label: 'Gói đăng tin',
         allowedRoles: LANDLORD_ROLE_IDS,
     },
     // {
@@ -134,7 +134,7 @@ const navbar = () => {
         <div className="navbar-management">
             <div className="nav-header">
                 <div className="avatar-nav">
-                    <img src={AVT} alt="" className="avatar" />
+                    <img src={user?.anhDaiDien || AVT} alt="" className="avatar" />
                 </div>
                 <div className="info-nav">
                     <div className="fullname">{user?.hoVaTen || 'Tài khoản'}</div>
@@ -142,13 +142,13 @@ const navbar = () => {
                 </div>
             </div>
 
-            {isLandlordRole && <div className="nav-payment">
-                <div className="balance">
-                    <div className="balance-title">Số dư của bạn</div>
-                    <div className="balance-number">0</div>
+            {isLandlordRole && <div className="nav-insight">
+                <div className="nav-insight-icon">
+                    <CheckCircleOutlined />
                 </div>
-                <div className="btn-payment">
-                    <Button type="primary"><i className="fa-regular fa-credit-card"></i> Nạp tiền</Button>
+                <div>
+                    <div className="nav-insight-title">Kênh cho thuê</div>
+                    <div className="nav-insight-text">Theo dõi tin đăng, gói dịch vụ và giao dịch của bạn tại đây.</div>
                 </div>
             </div>}
 

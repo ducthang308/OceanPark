@@ -42,6 +42,6 @@ export const getRoleId = (maVaiTro?: string | null, vaiTro?: string | null): Rol
 
 export const getDefaultPathByRole = (roleId?: string | null) => {
   if (roleId === ROLE_ID.ADMIN) return '/admin';
-  if (roleId === ROLE_ID.NGUOI_CHO_THUE) return '/list-post';
+  if (roleId === ROLE_ID.NGUOI_CHO_THUE) return '/';
   return '/';
 };

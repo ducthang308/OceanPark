@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import axios from 'axios';
 import { message } from 'antd';
 import './AccountManagement.css';
@@ -9,6 +9,7 @@ import {
   getCurrentUser,
   getUserById,
   updateUser,
+  uploadUserAvatar,
   type UserProfileResponse,
 } from '../../services/api/UserService';
 
@@ -103,6 +104,7 @@ const syncStoredAccount = (account: UserProfileResponse) => {
 };
 
 const AccountManagement = () => {
+  const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const [activeTab, setActiveTab] = useState<TabKey>('profile');
   const [user, setUser] = useState<UserProfileResponse | null>(null);
   const [profileForm, setProfileForm] = useState<ProfileFormState>(emptyProfileForm);
@@ -113,6 +115,7 @@ const AccountManagement = () => {
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPhone, setSavingPhone] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [isProfileFormOpen, setIsProfileFormOpen] = useState(false);
 
   const displayName = useMemo(() => user?.hoVaTen?.trim() || 'Tài khoản', [user]);
@@ -223,6 +226,37 @@ const AccountManagement = () => {
     }
   };
 
+  const handleAvatarFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    if (!user) return;
+
+    const file = event.target.files?.[0];
+    event.target.value = '';
+
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      message.warning('Vui lòng chọn đúng file ảnh');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      message.warning('Ảnh đại diện không được vượt quá 5MB');
+      return;
+    }
+
+    setUploadingAvatar(true);
+
+    try {
+      const updatedUser = await uploadUserAvatar(user.maNguoiDung, file);
+      applyUpdatedUser(updatedUser);
+      message.success('Cập nhật ảnh đại diện thành công');
+    } catch (error) {
+      message.error(getApiErrorMessage(error, 'Upload ảnh đại diện thất bại'));
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   const handleUpdatePhone = async () => {
     if (!user) return;
 
@@ -307,7 +341,23 @@ const AccountManagement = () => {
             ) : (
               <i className="fas fa-user"></i>
             )}
+            <button
+              type="button"
+              className="avatar-upload-btn"
+              onClick={() => avatarInputRef.current?.click()}
+              disabled={uploadingAvatar}
+              aria-label="Cập nhật ảnh đại diện"
+            >
+              <i className={`fas ${uploadingAvatar ? 'fa-spinner fa-spin' : 'fa-camera'}`}></i>
+            </button>
           </div>
+          <input
+            ref={avatarInputRef}
+            type="file"
+            accept="image/*"
+            className="avatar-file-input"
+            onChange={handleAvatarFileChange}
+          />
           <div className="user-details">
             <div className="username">{displayName}</div>
             <div className="user-id">ID: {user.maNguoiDung}</div>

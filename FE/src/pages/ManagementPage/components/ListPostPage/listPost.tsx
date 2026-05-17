@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import {
   Button,
   Form,
@@ -13,6 +13,7 @@ import {
 import {
   CameraOutlined,
   EditOutlined,
+  EyeOutlined,
   HomeOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
@@ -82,11 +83,16 @@ const formatDate = (dateStr?: string) => {
 const mapStatusText = (status?: string) => {
   switch (status) {
     case "ACTIVE":
+    case "APPROVED":
       return "ĐANG HIỂN THỊ";
     case "HIDDEN":
+    case "INACTIVE":
       return "ẨN TIN";
     case "PENDING":
       return "CHỜ DUYỆT";
+    case "REJECTED":
+    case "TU_CHOI":
+      return "TỪ CHỐI";
     case "EXPIRED":
       return "HẾT HẠN";
     default:
@@ -102,6 +108,7 @@ const getStatusColor = (status: string) => {
       return "processing";
     case "CHỜ THANH TOÁN":
       return "gold";
+    case "TỪ CHỐI":
     case "HẾT HẠN":
       return "red";
     case "ẨN TIN":
@@ -208,6 +215,8 @@ const ListPost = () => {
         post.postId.toLowerCase().includes(keyword)
     );
   }, [postList, searchValue]);
+  const visiblePostCount = filteredPosts.length;
+  const totalPostCount = postList.length;
 
   const toggleVisibility = async (post: PostItem) => {
     const nextStatus = post.status === "ĐANG HIỂN THỊ" ? "HIDDEN" : "ACTIVE";
@@ -222,6 +231,20 @@ const ListPost = () => {
       message.error("Cập nhật trạng thái thất bại");
     } finally {
       setUpdatingId("");
+    }
+  };
+
+  const openPostDetail = (post: PostItem) => {
+    navigate(`/posts/${post.id}`);
+  };
+
+  const handlePostCardKeyDown = (
+    event: KeyboardEvent<HTMLDivElement>,
+    post: PostItem,
+  ) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openPostDetail(post);
     }
   };
 
@@ -298,13 +321,20 @@ const ListPost = () => {
           </p>
         </div>
 
-        <Input
-          className="search-input-post"
-          placeholder="Tìm theo mã tin hoặc tiêu đề"
-          prefix={<SearchOutlined />}
-          value={searchValue}
-          onChange={(event) => setSearchValue(event.target.value)}
-        />
+        <div className="post-search-panel">
+          <Input
+            className="search-input-post"
+            placeholder="Tìm mã tin, tiêu đề..."
+            prefix={<SearchOutlined />}
+            allowClear
+            value={searchValue}
+            onChange={(event) => setSearchValue(event.target.value)}
+          />
+          <div className="post-search-count">
+            <strong>{visiblePostCount}</strong>
+            <span>/ {totalPostCount} tin</span>
+          </div>
+        </div>
       </div>
 
       <div className="list-container">
@@ -314,7 +344,15 @@ const ListPost = () => {
           </div>
         ) : (
           filteredPosts.map((post) => (
-            <div key={post.id} className="post-card">
+            <div
+              key={post.id}
+              className="post-card"
+              role="button"
+              tabIndex={0}
+              aria-label={`Xem chi tiết ${post.title}`}
+              onClick={() => openPostDetail(post)}
+              onKeyDown={(event) => handlePostCardKeyDown(event, post)}
+            >
               <div className="post-thumbnail">
                 <img
                   src={post.thumbnail?.trim() ? post.thumbnail : cloverImg}
@@ -371,9 +409,23 @@ const ListPost = () => {
 
               <div className="post-actions">
                 <Button
+                  className="detail-btn"
+                  icon={<EyeOutlined />}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    openPostDetail(post);
+                  }}
+                >
+                  Chi tiết
+                </Button>
+
+                <Button
                   className="edit-btn"
                   icon={<EditOutlined />}
-                  onClick={() => openEditModal(post)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    openEditModal(post);
+                  }}
                 >
                   Sửa tin
                 </Button>
@@ -384,11 +436,15 @@ const ListPost = () => {
                   }`}
                   icon={<HomeOutlined />}
                   loading={updatingId === post.id}
-                  onClick={() =>
-                    post.status === "ĐANG HIỂN THỊ"
-                      ? toggleVisibility(post)
-                      : navigate(`/payment/${post.id}`)
-                  }
+                  onClick={(event) => {
+                    event.stopPropagation();
+
+                    if (post.status === "ĐANG HIỂN THỊ") {
+                      toggleVisibility(post);
+                    } else {
+                      navigate(`/payment/${post.id}`);
+                    }
+                  }}
                 >
                   {post.status === "ĐANG HIỂN THỊ" ? "Ẩn tin" : "Mua gói đăng tin"}
                 </Button>
