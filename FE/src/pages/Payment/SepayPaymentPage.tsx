@@ -5,12 +5,18 @@ import type { SepayCreatePaymentResponse } from '../../services/api/PostManageme
 import Navbar from '../../components/layout/Navbar/navbar';
 import './SepayPaymentPage.css';
 
+type SepayPaymentState = SepayCreatePaymentResponse & {
+    loaiHoaDon?: 'DANG_BAI' | 'THUE_CAN_HO';
+    maBaiDang?: string;
+};
+
 const SepayPaymentPage: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const payment = location.state as SepayCreatePaymentResponse | null;
+    const payment = location.state as SepayPaymentState | null;
 
     const [status, setStatus] = useState('PENDING');
+    const isRentalPayment = payment?.loaiHoaDon === 'THUE_CAN_HO';
 
     useEffect(() => {
         if (!payment?.maHoaDon) {
@@ -25,8 +31,13 @@ const SepayPaymentPage: React.FC = () => {
 
                 if (hoaDon.trangThaiThanhToan === 'SUCCESS') {
                     clearInterval(interval);
-                    alert('Thanh toán thành công. Gói đăng bài đã được kích hoạt!');
-                    navigate('/list-post');
+                    const paidRentalInvoice = hoaDon.loaiHoaDon === 'THUE_CAN_HO';
+                    alert(
+                        paidRentalInvoice
+                            ? 'Thanh toán thuê căn hộ thành công!'
+                            : 'Thanh toán thành công. Gói đăng bài đã được kích hoạt!',
+                    );
+                    navigate(paidRentalInvoice ? '/tenant-transactions' : '/list-post');
                 }
 
                 if (hoaDon.trangThaiThanhToan === 'FAILED') {
@@ -51,7 +62,7 @@ const SepayPaymentPage: React.FC = () => {
                 <div className="sepay-page">
                     <div className="sepay-card">
                         <div className="sepay-card__header">
-                            <h2>Thanh toán gói tin thường</h2>
+                            <h2>{isRentalPayment ? 'Thanh toán thuê căn hộ' : 'Thanh toán gói tin thường'}</h2>
 
                             <div className="sepay-price">
                                 {payment.soTien.toLocaleString('vi-VN')}đ
@@ -94,7 +105,9 @@ const SepayPaymentPage: React.FC = () => {
                                 </div>
 
                                 <p className="sepay-note">
-                                    Hệ thống sẽ tự động kích hoạt sau khi nhận được tiền.
+                                    {isRentalPayment
+                                        ? 'Hệ thống sẽ ghi nhận giao dịch thuê căn hộ sau khi nhận được tiền.'
+                                        : 'Hệ thống sẽ tự động kích hoạt sau khi nhận được tiền.'}
                                 </p>
                             </div>
                         </div>

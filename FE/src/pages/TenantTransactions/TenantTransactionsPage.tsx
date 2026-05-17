@@ -9,6 +9,7 @@ import {
   getHoaDonByNguoiDung,
   type HoaDonDTO,
 } from '../../services/api/PostManagementService';
+import { getAuthSession } from '../../utils/storage';
 
 type TransactionRow = {
   id: string;
@@ -146,7 +147,7 @@ const TenantTransactionsPage = () => {
   );
 
   const loadTransactions = useCallback(async () => {
-    const maNguoiDung = localStorage.getItem('userId');
+    const maNguoiDung = getAuthSession()?.user.maNguoiDung || localStorage.getItem('userId');
 
     if (!maNguoiDung) {
       setError('Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.');
@@ -159,11 +160,7 @@ const TenantTransactionsPage = () => {
 
     try {
       const data = await getHoaDonByNguoiDung(maNguoiDung);
-      const rentalInvoices = data.filter(
-        (invoice) => normalizeStatus(invoice.loaiHoaDon) === 'THUE_CAN_HO',
-      );
-
-      setInvoices(sortInvoicesByLatest(rentalInvoices));
+      setInvoices(sortInvoicesByLatest(data));
     } catch (requestError) {
       const errorMessage = getApiErrorMessage(
         requestError,
@@ -294,7 +291,7 @@ const TenantTransactionsPage = () => {
 
           <section className="tenant-transactions-panel">
             <div className="tenant-transactions-panel__title">
-              <h2>Giao dịch thuê căn hộ</h2>
+              <h2>Giao dịch của bạn</h2>
               <span>{rows.length} giao dịch</span>
             </div>
 
@@ -353,7 +350,7 @@ const TenantTransactionsPage = () => {
                   ) : (
                     <tr>
                       <td colSpan={8} className="tenant-transaction-table__empty">
-                        Chưa có giao dịch thuê căn hộ nào.
+                        Chưa có giao dịch nào.
                       </td>
                     </tr>
                   )}
