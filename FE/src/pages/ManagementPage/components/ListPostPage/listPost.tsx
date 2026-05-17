@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import {
   Button,
   Form,
@@ -13,6 +13,7 @@ import {
 import {
   CameraOutlined,
   EditOutlined,
+  EyeOutlined,
   HomeOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
@@ -225,6 +226,20 @@ const ListPost = () => {
     }
   };
 
+  const openPostDetail = (post: PostItem) => {
+    navigate(`/posts/${post.id}`);
+  };
+
+  const handlePostCardKeyDown = (
+    event: KeyboardEvent<HTMLDivElement>,
+    post: PostItem,
+  ) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openPostDetail(post);
+    }
+  };
+
   const openEditModal = (post: PostItem) => {
     setEditingPost(post);
     form.setFieldsValue({
@@ -314,7 +329,15 @@ const ListPost = () => {
           </div>
         ) : (
           filteredPosts.map((post) => (
-            <div key={post.id} className="post-card">
+            <div
+              key={post.id}
+              className="post-card"
+              role="button"
+              tabIndex={0}
+              aria-label={`Xem chi tiết ${post.title}`}
+              onClick={() => openPostDetail(post)}
+              onKeyDown={(event) => handlePostCardKeyDown(event, post)}
+            >
               <div className="post-thumbnail">
                 <img
                   src={post.thumbnail?.trim() ? post.thumbnail : cloverImg}
@@ -371,9 +394,23 @@ const ListPost = () => {
 
               <div className="post-actions">
                 <Button
+                  className="detail-btn"
+                  icon={<EyeOutlined />}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    openPostDetail(post);
+                  }}
+                >
+                  Chi tiết
+                </Button>
+
+                <Button
                   className="edit-btn"
                   icon={<EditOutlined />}
-                  onClick={() => openEditModal(post)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    openEditModal(post);
+                  }}
                 >
                   Sửa tin
                 </Button>
@@ -384,11 +421,15 @@ const ListPost = () => {
                   }`}
                   icon={<HomeOutlined />}
                   loading={updatingId === post.id}
-                  onClick={() =>
-                    post.status === "ĐANG HIỂN THỊ"
-                      ? toggleVisibility(post)
-                      : navigate(`/payment/${post.id}`)
-                  }
+                  onClick={(event) => {
+                    event.stopPropagation();
+
+                    if (post.status === "ĐANG HIỂN THỊ") {
+                      toggleVisibility(post);
+                    } else {
+                      navigate(`/payment/${post.id}`);
+                    }
+                  }}
                 >
                   {post.status === "ĐANG HIỂN THỊ" ? "Ẩn tin" : "Mua gói đăng tin"}
                 </Button>

@@ -124,8 +124,13 @@ const buildApiPostDetail = (
   detail: ChiTietCanHoDTO | null,
   images: HinhAnhBaiDangDTO[],
   categories: DanhMucDTO[],
+  currentUserId?: string,
 ): PostDetailView | null => {
-  if (!post.maBaiDang || !isPublicPost(post)) return null;
+  if (!post.maBaiDang) return null;
+
+  const isOwner = Boolean(currentUserId && post.maNguoiDung === currentUserId);
+
+  if (!isOwner && !isPublicPost(post)) return null;
 
   const category = categories.find((item) => item.maDanhMuc === post.maDanhMuc);
   const sortedImages = [...images].sort((a, b) => (a.thuTu ?? 0) - (b.thuTu ?? 0));
@@ -199,6 +204,7 @@ const PostDetail: React.FC = () => {
           detailResponse,
           imagesResponse,
           categoriesResponse,
+          maNguoiDung,
         );
 
         if (!ignore) {
@@ -223,7 +229,7 @@ const PostDetail: React.FC = () => {
     return () => {
       ignore = true;
     };
-  }, [id]);
+  }, [id, maNguoiDung]);
 
   useEffect(() => {
     let ignore = false;
