@@ -209,6 +209,8 @@ const ListPost = () => {
         post.postId.toLowerCase().includes(keyword)
     );
   }, [postList, searchValue]);
+  const visiblePostCount = filteredPosts.length;
+  const totalPostCount = postList.length;
 
   const toggleVisibility = async (post: PostItem) => {
     const nextStatus = post.status === "ĐANG HIỂN THỊ" ? "HIDDEN" : "ACTIVE";
@@ -313,13 +315,20 @@ const ListPost = () => {
           </p>
         </div>
 
-        <Input
-          className="search-input-post"
-          placeholder="Tìm theo mã tin hoặc tiêu đề"
-          prefix={<SearchOutlined />}
-          value={searchValue}
-          onChange={(event) => setSearchValue(event.target.value)}
-        />
+        <div className="post-search-panel">
+          <Input
+            className="search-input-post"
+            placeholder="Tìm mã tin, tiêu đề..."
+            prefix={<SearchOutlined />}
+            allowClear
+            value={searchValue}
+            onChange={(event) => setSearchValue(event.target.value)}
+          />
+          <div className="post-search-count">
+            <strong>{visiblePostCount}</strong>
+            <span>/ {totalPostCount} tin</span>
+          </div>
+        </div>
       </div>
 
       <div className="list-container">

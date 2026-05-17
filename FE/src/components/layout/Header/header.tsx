@@ -25,6 +25,7 @@ type CurrentUser = {
   maNguoiDung: string;
   hoVaTen: string;
   vaiTro: string;
+  anhDaiDien?: string | null;
   roleId: RoleId | null;
 } | null;
 
@@ -38,6 +39,7 @@ const getUserFromStorage = (): CurrentUser => {
     maNguoiDung: session.user.maNguoiDung,
     hoVaTen: session.user.hoVaTen,
     vaiTro: session.user.vaiTro,
+    anhDaiDien: session.user.anhDaiDien,
     roleId: session.roleId,
   };
 };
@@ -331,7 +333,11 @@ const Header: React.FC = () => {
               {currentUser && (
                 <div className="rental-user-dropdown__profile">
                   <div className="rental-user-dropdown__avatar">
-                    {currentUser.hoVaTen.charAt(0).toUpperCase()}
+                    {currentUser.anhDaiDien ? (
+                      <img src={currentUser.anhDaiDien} alt={currentUser.hoVaTen} />
+                    ) : (
+                      currentUser.hoVaTen.charAt(0).toUpperCase()
+                    )}
                   </div>
                   <div className="rental-user-dropdown__meta">
                     <p className="rental-user-dropdown__name">{currentUser.hoVaTen}</p>

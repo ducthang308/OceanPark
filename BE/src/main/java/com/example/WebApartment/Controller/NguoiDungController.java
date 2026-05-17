@@ -11,6 +11,8 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.MediaType;
 
 import java.util.List;
 import java.util.Map;
@@ -95,6 +97,12 @@ public class NguoiDungController {
     public ResponseEntity<NguoiDungDTO> update(@PathVariable String maNguoiDung,
                                                @RequestBody NguoiDungDTO dto) {
         return ResponseEntity.ok(nguoiDungService.update(maNguoiDung, dto));
+    }
+
+    @PostMapping(value = "/{maNguoiDung}/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<NguoiDungDTO> uploadAvatar(@PathVariable String maNguoiDung,
+                                                     @RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(nguoiDungService.uploadAvatar(maNguoiDung, file));
     }
 
     @DeleteMapping("/{maNguoiDung}")

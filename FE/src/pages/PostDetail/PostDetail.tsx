@@ -20,6 +20,8 @@ import type {
   HinhAnhBaiDangDTO,
 } from '../../services/api/PostManagementService';
 import { homeMockData } from '../../services/mock/home.mock';
+import { getUserById } from '../../services/api/UserService';
+import type { UserProfileResponse } from '../../services/api/UserService';
 import { getAuthSession } from '../../utils/storage';
 
 interface PostDetailView {
@@ -34,6 +36,7 @@ interface PostDetailView {
   coverImage: string;
   gallery: string[];
   postedBy: string;
+  ownerAvatar?: string | null;
   postedAtText: string;
   phone: string;
   tags: string[];
@@ -113,6 +116,7 @@ const findMockPost = (id?: string): PostDetailView | null => {
     id: String(post.id),
     gallery: post.gallery.length > 0 ? post.gallery : [post.coverImage || fallbackRoomImage],
     coverImage: post.coverImage || post.gallery[0] || fallbackRoomImage,
+    ownerAvatar: null,
     isFeatured: Boolean(post.isFeatured),
     isNew: Boolean(post.isNew),
     hasVideo: Boolean(post.hasVideo),
@@ -124,6 +128,7 @@ const buildApiPostDetail = (
   detail: ChiTietCanHoDTO | null,
   images: HinhAnhBaiDangDTO[],
   categories: DanhMucDTO[],
+  owner: UserProfileResponse | null,
   currentUserId?: string,
 ): PostDetailView | null => {
   if (!post.maBaiDang) return null;
@@ -151,9 +156,10 @@ const buildApiPostDetail = (
     description: post.noiDung?.trim() || 'Chưa có mô tả chi tiết.',
     coverImage: gallery[0] || fallbackRoomImage,
     gallery: gallery.length > 0 ? gallery : [fallbackRoomImage],
-    postedBy: 'Chủ nhà',
+    postedBy: owner?.hoVaTen?.trim() || 'Chủ nhà',
+    ownerAvatar: owner?.anhDaiDien || null,
     postedAtText: formatPostedAt(post.ngayDang),
-    phone: post.lienHe?.trim() || 'Đang cập nhật',
+    phone: post.lienHe?.trim() || owner?.soDienThoai?.trim() || 'Đang cập nhật',
     tags: [],
     amenities: [],
     hasVideo: hasVideoAsset(images),
@@ -199,11 +205,15 @@ const PostDetail: React.FC = () => {
           getApartmentDetailByPost(maBaiDang).catch(() => null),
           getPostImages(maBaiDang).catch(() => [] as HinhAnhBaiDangDTO[]),
         ]);
+        const ownerResponse = postResponse.maNguoiDung && maNguoiDung
+          ? await getUserById(postResponse.maNguoiDung).catch(() => null)
+          : null;
         const mappedPost = buildApiPostDetail(
           postResponse,
           detailResponse,
           imagesResponse,
           categoriesResponse,
+          ownerResponse,
           maNguoiDung,
         );
 
@@ -515,7 +525,11 @@ const PostDetail: React.FC = () => {
           <aside className="rental-detail-sidebar">
             <div className="rental-detail-owner-card">
               <div className="rental-detail-owner-avatar">
-                {post.postedBy.charAt(0).toUpperCase() || 'C'}
+                {post.ownerAvatar ? (
+                  <img src={post.ownerAvatar} alt={post.postedBy} />
+                ) : (
+                  post.postedBy.charAt(0).toUpperCase() || 'C'
+                )}
               </div>
 
               <div className="rental-detail-owner-content">

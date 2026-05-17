@@ -4,6 +4,7 @@ import type { LoginResponse } from '../services/types/auth.types';
 
 export type AuthUser = Omit<LoginResponse, 'token'> & {
   maVaiTro?: RoleId;
+  anhDaiDien?: string | null;
 };
 
 export type AuthSession = {
@@ -46,6 +47,7 @@ const readStoredUser = (): AuthUser | null => {
     soDienThoai: '',
     email: localStorage.getItem(STORAGE_KEYS.email) ?? '',
     vaiTro: localStorage.getItem(STORAGE_KEYS.vaiTro) ?? '',
+    anhDaiDien: null,
     maVaiTro: getRoleId(
       localStorage.getItem(STORAGE_KEYS.maVaiTro),
       localStorage.getItem(STORAGE_KEYS.vaiTro),

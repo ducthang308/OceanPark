@@ -85,6 +85,22 @@ export const updateUser = async (
     return response.data;
 };
 
+export const uploadUserAvatar = async (
+    maNguoiDung: string,
+    file: File,
+): Promise<UserProfileResponse> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await axiosClient.post<UserProfileResponse>(
+        `/api/v1/nguoi-dung/${maNguoiDung}/avatar`,
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } },
+    );
+
+    return response.data;
+};
+
 export const changePhoneNumber = async (
     maNguoiDung: string,
     soDienThoai: string,
