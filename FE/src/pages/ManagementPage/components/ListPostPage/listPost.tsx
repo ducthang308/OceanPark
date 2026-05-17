@@ -83,11 +83,16 @@ const formatDate = (dateStr?: string) => {
 const mapStatusText = (status?: string) => {
   switch (status) {
     case "ACTIVE":
+    case "APPROVED":
       return "ĐANG HIỂN THỊ";
     case "HIDDEN":
+    case "INACTIVE":
       return "ẨN TIN";
     case "PENDING":
       return "CHỜ DUYỆT";
+    case "REJECTED":
+    case "TU_CHOI":
+      return "TỪ CHỐI";
     case "EXPIRED":
       return "HẾT HẠN";
     default:
@@ -103,6 +108,7 @@ const getStatusColor = (status: string) => {
       return "processing";
     case "CHỜ THANH TOÁN":
       return "gold";
+    case "TỪ CHỐI":
     case "HẾT HẠN":
       return "red";
     case "ẨN TIN":

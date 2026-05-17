@@ -39,6 +39,18 @@ public class BaiDangController {
         return ResponseEntity.ok(service.update(id, dto));
     }
 
+    @PutMapping("/{id}/approve")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<BaiDangDTO> approve(@PathVariable String id) {
+        return ResponseEntity.ok(service.approve(id));
+    }
+
+    @PutMapping("/{id}/reject")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<BaiDangDTO> reject(@PathVariable String id) {
+        return ResponseEntity.ok(service.reject(id));
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','NGUOI_CHO_THUE')")
     public ResponseEntity<Void> delete(@PathVariable String id) {

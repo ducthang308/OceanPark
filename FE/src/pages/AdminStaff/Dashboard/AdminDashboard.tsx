@@ -1,215 +1,182 @@
-import React from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   CheckCircleOutlined,
   ClockCircleOutlined,
-  CreditCardOutlined,
   DollarOutlined,
   FileTextOutlined,
+  ReloadOutlined,
+  TeamOutlined,
 } from '@ant-design/icons';
+import { message } from 'antd';
 import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Legend,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
-import {
-  adminKpis,
-  adminMonthlyStats,
-  adminPayments,
-  adminPosts,
-} from '../../../services/mock/adminStaff.mock';
+  getDashboardStats,
+  type DashboardStatsDTO,
+} from '../../../services/api/AdminDashboardService';
 import { formatCurrency } from '../../../utils/currency';
+import { formatDate } from '../../../utils/date';
 import './admin-dashboard.css';
 
-const KPI_ICONS: Record<string, React.ReactNode> = {
-  pending_posts: <ClockCircleOutlined />,
-  approved_posts: <CheckCircleOutlined />,
-  pending_payments: <CreditCardOutlined />,
-  revenue: <DollarOutlined />,
-};
+interface StatCard {
+  key: string;
+  label: string;
+  value: number;
+  note: string;
+  unit?: 'VND';
+  tone: string;
+  icon: React.ReactNode;
+}
 
-const KPI_COLORS: Record<string, string> = {
-  pending_posts: 'warning',
-  approved_posts: 'success',
-  pending_payments: 'info',
-  revenue: 'primary',
-};
-
-const CustomTooltip = ({ active, payload, label }: any) => {
-  if (!active || !payload || !payload.length) return null;
-
-  return (
-    <div className="admin-chart-tooltip">
-      <div className="admin-chart-tooltip-title">{label}</div>
-      <div className="admin-chart-tooltip-list">
-        {payload.map((entry: any, index: number) => (
-          <div key={index} className="admin-chart-tooltip-item">
-            <span
-              className="admin-chart-tooltip-dot"
-              style={{ background: entry.color }}
-            />
-            <span>{entry.name}</span>
-            <strong>{entry.value}</strong>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
+const buildStatCards = (stats: DashboardStatsDTO): StatCard[] => [
+  {
+    key: 'totalUsers',
+    label: 'Tổng tài khoản',
+    value: stats.totalUsers,
+    note: 'Tất cả người dùng đã tạo trong hệ thống',
+    tone: 'primary',
+    icon: <TeamOutlined />,
+  },
+  {
+    key: 'totalPosts',
+    label: 'Tổng bài đăng',
+    value: stats.totalPosts,
+    note: 'Bao gồm bài chờ duyệt, đã duyệt và bị từ chối',
+    tone: 'success',
+    icon: <FileTextOutlined />,
+  },
+  {
+    key: 'pendingPosts',
+    label: 'Bài chờ duyệt',
+    value: stats.pendingPosts,
+    note: 'Các bài đang ở trạng thái PENDING',
+    tone: 'warning',
+    icon: <ClockCircleOutlined />,
+  },
+  {
+    key: 'totalRevenue',
+    label: 'Doanh thu',
+    value: stats.totalRevenue,
+    note: 'Tổng hóa đơn thanh toán thành công',
+    unit: 'VND',
+    tone: 'info',
+    icon: <DollarOutlined />,
+  },
+];
 
 const AdminDashboard: React.FC = () => {
-  const pendingPosts = adminPosts
-    .filter((item) => item.trangThai === 'CHO_DUYET')
-    .slice(0, 4);
+  const [stats, setStats] = useState<DashboardStatsDTO | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const pendingPayments = adminPayments
-    .filter((item) => item.trangThai === 'CHO_XAC_NHAN')
-    .slice(0, 4);
+  const loadStats = useCallback(async () => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const data = await getDashboardStats();
+      setStats(data);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Không tải được thống kê dashboard';
+      setError(errorMessage);
+      message.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadStats();
+  }, [loadStats]);
+
+  const statCards = useMemo(() => (stats ? buildStatCards(stats) : []), [stats]);
+  const recentActivity = stats?.recentActivity ?? [];
+
+  if (loading && !stats) {
+    return (
+      <div className="admin-dashboard">
+        <div className="admin-dashboard-state">Đang tải thống kê dashboard...</div>
+      </div>
+    );
+  }
+
+  if (error && !stats) {
+    return (
+      <div className="admin-dashboard">
+        <div className="admin-dashboard-state admin-dashboard-state--error">
+          <p>{error}</p>
+          <button type="button" className="admin-dashboard-retry" onClick={loadStats}>
+            <ReloadOutlined />
+            Tải lại
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="admin-dashboard">
       <section className="admin-grid-cards admin-grid-cards--enhanced">
-        {adminKpis.map((item) => {
-          const tone = KPI_COLORS[item.key] || 'primary';
-
-          return (
-            <div className={`admin-stat-card admin-stat-card--${tone}`} key={item.key}>
-              <div className="admin-stat-top">
-                <div className={`admin-stat-icon admin-stat-icon--${tone}`}>
-                  {KPI_ICONS[item.key] || <FileTextOutlined />}
-                </div>
-                <span className={`admin-stat-chip admin-stat-chip--${tone}`}>
-                  {item.trend}
-                </span>
+        {statCards.map((item) => (
+          <div className={`admin-stat-card admin-stat-card--${item.tone}`} key={item.key}>
+            <div className="admin-stat-top">
+              <div className={`admin-stat-icon admin-stat-icon--${item.tone}`}>
+                {item.icon}
               </div>
-
-              <div className="admin-stat-label">{item.label}</div>
-
-              <div className="admin-stat-value">
-                {item.unit === 'VND'
-                  ? formatCurrency(item.value)
-                  : item.value.toLocaleString('vi-VN')}
-              </div>
-
-              <div className="admin-stat-note">
-                <span>{item.note}</span>
-              </div>
+              <span className={`admin-stat-chip admin-stat-chip--${item.tone}`}>
+                Cập nhật
+              </span>
             </div>
-          );
-        })}
+
+            <div className="admin-stat-label">{item.label}</div>
+
+            <div className="admin-stat-value">
+              {item.unit === 'VND'
+                ? formatCurrency(item.value)
+                : item.value.toLocaleString('vi-VN')}
+            </div>
+
+            <div className="admin-stat-note">
+              <span>{item.note}</span>
+            </div>
+          </div>
+        ))}
       </section>
 
-      <section className="admin-layout-2col admin-layout-2col--dashboard">
-        <div className="admin-panel admin-panel--chart">
-          <div className="admin-panel-head">
-            <div>
-              <h3 className="admin-panel-title">Thống kê 6 tháng gần nhất</h3>
-              <p className="admin-panel-subtitle">
-                Theo dõi bài đã duyệt, bài chờ duyệt và thanh toán đã xác nhận theo từng tháng.
-              </p>
-            </div>
-
-            <div className="admin-panel-badge">6 tháng</div>
+      <section className="admin-panel admin-panel--queue">
+        <div className="admin-panel-head">
+          <div>
+            <h3 className="admin-panel-title">Hoạt động gần đây</h3>
+            <p className="admin-panel-subtitle">
+              Các cập nhật mới nhất trong hệ thống.
+            </p>
           </div>
 
-          <div className="admin-chart-wrap">
-            <ResponsiveContainer width="100%" height={340}>
-              <BarChart data={adminMonthlyStats} barGap={8}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis
-                  dataKey="month"
-                  tickLine={false}
-                  axisLine={false}
-                  tick={{ fill: '#64748b', fontSize: 13 }}
-                />
-                <YAxis
-                  tickLine={false}
-                  axisLine={false}
-                  tick={{ fill: '#64748b', fontSize: 13 }}
-                />
-                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(148, 163, 184, 0.08)' }} />
-                <Legend wrapperStyle={{ paddingTop: 12 }} />
-                <Bar
-                  dataKey="approvedPosts"
-                  fill="#2563eb"
-                  name="Bài đã duyệt"
-                  radius={[10, 10, 0, 0]}
-                />
-                <Bar
-                  dataKey="pendingPosts"
-                  fill="#f59e0b"
-                  name="Bài chờ duyệt"
-                  radius={[10, 10, 0, 0]}
-                />
-                <Bar
-                  dataKey="approvedPayments"
-                  fill="#10b981"
-                  name="Thanh toán xác nhận"
-                  radius={[10, 10, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          <button
+            type="button"
+            className="admin-dashboard-refresh"
+            onClick={loadStats}
+            disabled={loading}
+          >
+            <ReloadOutlined />
+            {loading ? 'Đang tải...' : 'Làm mới'}
+          </button>
         </div>
 
-        <div className="admin-panel admin-panel--queue">
-          <div className="admin-panel-head">
-            <div>
-              <h3 className="admin-panel-title">Cần xử lý ngay</h3>
-              <p className="admin-panel-subtitle">
-                Danh sách bài đăng và giao dịch đang chờ nhân viên xác nhận.
-              </p>
-            </div>
-            <div className="admin-panel-badge admin-panel-badge--danger">
-              {pendingPosts.length + pendingPayments.length} mục
-            </div>
-          </div>
-
-          <div className="admin-queue-section">
-            <div className="admin-queue-title">
-              <ClockCircleOutlined />
-              <span>Bài đăng chờ duyệt</span>
-            </div>
-
-            <div className="admin-mini-list">
-              {pendingPosts.map((post) => (
-                <div key={post.id} className="admin-mini-item admin-mini-item--post">
-                  <div className="admin-mini-item-content">
-                    <strong>{post.tieuDe}</strong>
-                    <div className="admin-subtle">
-                      {post.hoVaTenNguoiChoThue} • {post.phuong}
-                    </div>
-                  </div>
-                  <span className="admin-badge pending">Chờ duyệt</span>
+        <div className="admin-mini-list">
+          {recentActivity.length > 0 ? (
+            recentActivity.map((activity) => (
+              <div key={`${activity.type}-${activity.id}`} className="admin-mini-item admin-mini-item--post">
+                <div className="admin-mini-item-content">
+                  <strong>{activity.description}</strong>
+                  <div className="admin-subtle">{formatDate(activity.timestamp)}</div>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="admin-queue-section">
-            <div className="admin-queue-title">
-              <CreditCardOutlined />
-              <span>Thanh toán chờ xác nhận</span>
-            </div>
-
-            <div className="admin-mini-list">
-              {pendingPayments.map((payment) => (
-                <div key={payment.id} className="admin-mini-item admin-mini-item--payment">
-                  <div className="admin-mini-item-content">
-                    <strong>{payment.maGiaoDich}</strong>
-                    <div className="admin-subtle">
-                      {payment.hoVaTen} • {formatCurrency(payment.soTien)}
-                    </div>
-                  </div>
-                  <span className="admin-badge info">Chờ xác nhận</span>
-                </div>
-              ))}
-            </div>
-          </div>
+                <span className="admin-badge info">
+                  <CheckCircleOutlined />
+                </span>
+              </div>
+            ))
+          ) : (
+            <div className="admin-dashboard-empty">Chưa có hoạt động gần đây.</div>
+          )}
         </div>
       </section>
     </div>

@@ -1,0 +1,32 @@
+.admin-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 18px;
+  border-top: 1px solid #e5e7eb;
+  background: #ffffff;
+}
+
+.admin-pagination__summary {
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.admin-pagination .ant-pagination {
+  margin: 0;
+}
+
+.admin-pagination .ant-pagination-item,
+.admin-pagination .ant-pagination-prev,
+.admin-pagination .ant-pagination-next {
+  border-radius: 6px;
+}
+
+@media (max-width: 640px) {
+  .admin-pagination {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

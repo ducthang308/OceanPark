@@ -41,7 +41,15 @@ interface ListingData {
   stats: IHomeStat[];
 }
 
-const HIDDEN_POST_STATUSES = new Set(['HIDDEN', 'PENDING', 'CHO_DUYET', 'TU_CHOI', 'DELETED']);
+const HIDDEN_POST_STATUSES = new Set([
+  'HIDDEN',
+  'INACTIVE',
+  'PENDING',
+  'CHO_DUYET',
+  'TU_CHOI',
+  'REJECTED',
+  'DELETED',
+]);
 
 export const HOME_STATIC_CONTENT = {
   heroTitle: 'Nền tảng cho thuê nhà, phòng trọ và căn hộ đáng tin cậy tại Đà Nẵng',

@@ -10,4 +10,5 @@ import java.util.Optional;
 public interface BaiDangRepository extends JpaRepository<BaiDang, String> {
     boolean existsByDanhMuc_MaDanhMuc(String maDanhMuc);
     Optional<BaiDang> findTopByOrderByMaBaiDangDesc();
+    long countByTrangThaiIgnoreCase(String trangThai);
 }

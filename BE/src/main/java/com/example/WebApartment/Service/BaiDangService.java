@@ -27,6 +27,9 @@ public class BaiDangService {
 
     private static final String ROLE_NGUOI_CHO_THUE = "3";
     private static final String GOI_ACTIVE = "ACTIVE";
+    private static final String POST_PENDING = "PENDING";
+    private static final String POST_APPROVED = "APPROVED";
+    private static final String POST_REJECTED = "REJECTED";
 
     public List<BaiDangDTO> getAll() {
         return repo.findAll().stream().map(this::toDto).collect(Collectors.toList());
@@ -71,7 +74,7 @@ public class BaiDangService {
                 .tieuDe(dto.getTieuDe())
                 .noiDung(dto.getNoiDung())
                 .ngayDang(LocalDateTime.now())
-                .trangThai("ACTIVE")
+                .trangThai(POST_PENDING)
                 .lienHe(dto.getLienHe())
                 .hinhThucThanhToan(dto.getHinhThucThanhToan())
                 .build();
@@ -96,6 +99,22 @@ public class BaiDangService {
         BaiDang existing = repo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy bài đăng"));
         repo.delete(existing);
+    }
+
+    public BaiDangDTO approve(String id) {
+        BaiDang existing = repo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy bài đăng"));
+
+        existing.setTrangThai(POST_APPROVED);
+        return toDto(repo.save(existing));
+    }
+
+    public BaiDangDTO reject(String id) {
+        BaiDang existing = repo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy bài đăng"));
+
+        existing.setTrangThai(POST_REJECTED);
+        return toDto(repo.save(existing));
     }
 
     private void validateCreate(BaiDangDTO dto) {

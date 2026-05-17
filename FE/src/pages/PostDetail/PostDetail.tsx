@@ -46,7 +46,15 @@ interface PostDetailView {
   isNew: boolean;
 }
 
-const HIDDEN_POST_STATUSES = new Set(['HIDDEN', 'PENDING', 'CHO_DUYET', 'TU_CHOI', 'DELETED']);
+const HIDDEN_POST_STATUSES = new Set([
+  'HIDDEN',
+  'INACTIVE',
+  'PENDING',
+  'CHO_DUYET',
+  'TU_CHOI',
+  'REJECTED',
+  'DELETED',
+]);
 
 const formatCurrency = (value?: number) => {
   if (typeof value !== 'number' || Number.isNaN(value) || value <= 0) {

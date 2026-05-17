@@ -1,6 +1,6 @@
 .admin-layout {
   min-height: 100vh;
-  background: #f3f6fb;
+  background: #f6f7f9;
   display: grid;
   grid-template-columns: 280px 1fr;
 }
@@ -24,8 +24,8 @@
 .admin-layout__brand-badge {
   width: 42px;
   height: 42px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #60a5fa, #2563eb);
+  border-radius: 8px;
+  background: #2563eb;
   display: grid;
   place-items: center;
   font-weight: 700;
@@ -55,7 +55,7 @@
   align-items: center;
   gap: 12px;
   padding: 13px 14px;
-  border-radius: 14px;
+  border-radius: 8px;
   color: rgba(255, 255, 255, 0.82);
   text-decoration: none;
   transition: 0.2s ease;
@@ -71,7 +71,7 @@
 .admin-layout__footer-card {
   margin-top: 28px;
   padding: 16px;
-  border-radius: 18px;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.08);
 }
 
