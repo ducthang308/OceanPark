@@ -150,12 +150,17 @@ public class BaiDangService {
     }
 
     private String generateMaBaiDang() {
-        Optional<BaiDang> last = repo.findTopByOrderByMaBaiDangDesc();
+        List<BaiDang> all = repo.findAll();
 
-        if (last.isEmpty()) return "BD1";
+        int maxNumber = all.stream()
+                .map(BaiDang::getMaBaiDang)
+                .filter(id -> id != null && id.startsWith("BD"))
+                .map(id -> id.replace("BD", ""))
+                .filter(number -> number.matches("\\d+"))
+                .mapToInt(Integer::parseInt)
+                .max()
+                .orElse(0);
 
-        String lastId = last.get().getMaBaiDang();
-        int number = Integer.parseInt(lastId.replace("BD", ""));
-        return "BD" + (number + 1);
+        return "BD" + (maxNumber + 1);
     }
 }

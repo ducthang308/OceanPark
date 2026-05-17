@@ -377,6 +377,8 @@ const Listing = () => {
     const maNguoiDung = localStorage.getItem("userId") || storedUser?.maNguoiDung;
     const phone = storedUser?.soDienThoai || "";
 
+    if (isSubmitting) return;
+
     if (!maNguoiDung) {
       message.error("Vui lòng đăng nhập trước khi đăng tin");
       return;
@@ -948,9 +950,10 @@ const Listing = () => {
           iconPosition="end"
           block
           loading={isSubmitting}
+          disabled={isSubmitting}
           onClick={handleSubmit}
         >
-          Đăng tin
+          {isSubmitting ? "Đang đăng tin..." : "Đăng tin"}
         </Button>
       </div>
     </div>
