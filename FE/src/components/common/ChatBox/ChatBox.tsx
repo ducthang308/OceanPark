@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { askChatbot } from '../../../services/api/PostManagementService';
 import type { ChatbotSuggestionDTO } from '../../../services/api/PostManagementService';
+import { AUTH_SESSION_CLEARED_EVENT } from '../../../utils/storage';
 import './ChatBox.css';
 
 interface ChatMessage {
@@ -9,38 +10,41 @@ interface ChatMessage {
   suggestions?: ChatbotSuggestionDTO[];
 }
 
+const CHATBOT_HISTORY_KEY = 'chatbot_history';
+const CHATBOT_HISTORY_TTL = 3 * 24 * 60 * 60 * 1000;
+const DEFAULT_MESSAGES: ChatMessage[] = [
+  {
+    role: 'BOT',
+    content:
+      'Xin chào! Bạn có thể hỏi mình về thuê căn hộ hoặc tư vấn giá cho thuê.',
+  },
+];
+
+const getInitialMessages = () => {
+  const saved = localStorage.getItem(CHATBOT_HISTORY_KEY);
+
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+
+      if (Date.now() - parsed.createdAt < CHATBOT_HISTORY_TTL) {
+        return parsed.messages;
+      }
+
+      localStorage.removeItem(CHATBOT_HISTORY_KEY);
+    } catch {
+      localStorage.removeItem(CHATBOT_HISTORY_KEY);
+    }
+  }
+
+  return DEFAULT_MESSAGES;
+};
+
 const ChatbotBox: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
-  const CHATBOT_HISTORY_KEY = 'chatbot_history';
-  const CHATBOT_HISTORY_TTL = 3 * 24 * 60 * 60 * 1000;
-
-  const [messages, setMessages] = useState<ChatMessage[]>(() => {
-    const saved = localStorage.getItem(CHATBOT_HISTORY_KEY);
-
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-
-        if (Date.now() - parsed.createdAt < CHATBOT_HISTORY_TTL) {
-          return parsed.messages;
-        }
-
-        localStorage.removeItem(CHATBOT_HISTORY_KEY);
-      } catch {
-        localStorage.removeItem(CHATBOT_HISTORY_KEY);
-      }
-    }
-
-    return [
-      {
-        role: 'BOT',
-        content:
-          'Xin chào! Bạn có thể hỏi mình về thuê căn hộ hoặc tư vấn giá cho thuê.',
-      },
-    ];
-  });
+  const [messages, setMessages] = useState<ChatMessage[]>(getInitialMessages);
 
   useEffect(() => {
     localStorage.setItem(
@@ -51,6 +55,21 @@ const ChatbotBox: React.FC = () => {
       }),
     );
   }, [messages]);
+
+  useEffect(() => {
+    const resetChatHistory = () => {
+      setOpen(false);
+      setMessage('');
+      setLoading(false);
+      setMessages(DEFAULT_MESSAGES);
+    };
+
+    window.addEventListener(AUTH_SESSION_CLEARED_EVENT, resetChatHistory);
+
+    return () => {
+      window.removeEventListener(AUTH_SESSION_CLEARED_EVENT, resetChatHistory);
+    };
+  }, []);
 
   const handleSend = async () => {
     if (!message.trim()) return;

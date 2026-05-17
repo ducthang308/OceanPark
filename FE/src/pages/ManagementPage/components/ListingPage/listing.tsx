@@ -13,7 +13,6 @@ import {
 
 import Image from "../../../../assets/img/co4la.png";
 import VideoIcon from "../../../../assets/img/upload-video.png";
-import { Sparkles, Wand2 } from "lucide-react";
 import { generatePostContentByAI } from "../../../../services/api/PostManagementService";
 
 import { useNavigate } from "react-router-dom";

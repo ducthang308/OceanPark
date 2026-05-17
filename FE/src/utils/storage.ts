@@ -22,6 +22,8 @@ const STORAGE_KEYS = {
   maVaiTro: 'maVaiTro',
 } as const;
 
+export const AUTH_SESSION_CLEARED_EVENT = 'auth-session:cleared';
+
 const readStoredUser = (): AuthUser | null => {
   const rawUser = localStorage.getItem(STORAGE_KEYS.user);
 
@@ -104,4 +106,5 @@ export const getAuthSession = (): AuthSession | null => {
 export const clearAuthSession = () => {
   Object.values(STORAGE_KEYS).forEach((key) => localStorage.removeItem(key));
   localStorage.removeItem('chatbot_history');
+  window.dispatchEvent(new Event(AUTH_SESSION_CLEARED_EVENT));
 };
