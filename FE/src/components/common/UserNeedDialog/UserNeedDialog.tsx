@@ -18,11 +18,8 @@ type UserNeedPreferenceKey =
   | 'dayDuNoiThat'
   | 'coMayLanh'
   | 'coThangMay'
-  | 'coBaoVe24h'
   | 'coMayGiat'
-  | 'khongChungChu'
-  | 'coHamXe'
-  | 'coKeBep'
+  | 'coNhaXe'
   | 'coTuLanh'
   | 'gioGiacTuDo'
   | 'coBanCong'
@@ -38,11 +35,8 @@ const defaultValues: IUserNeedFormValues = {
   dayDuNoiThat: false,
   coMayLanh: false,
   coThangMay: false,
-  coBaoVe24h: false,
   coMayGiat: false,
-  khongChungChu: false,
-  coHamXe: false,
-  coKeBep: false,
+  coNhaXe: false,
   coTuLanh: false,
   gioGiacTuDo: false,
   ganTrungTam: false,
@@ -53,11 +47,8 @@ const preferenceOptions: Array<{ key: UserNeedPreferenceKey; label: string }> = 
   { key: 'dayDuNoiThat', label: 'Đầy đủ nội thất' },
   { key: 'coMayLanh', label: 'Có máy lạnh' },
   { key: 'coThangMay', label: 'Có thang máy' },
-  { key: 'coBaoVe24h', label: 'Có bảo vệ 24/24' },
   { key: 'coMayGiat', label: 'Có máy giặt' },
-  { key: 'khongChungChu', label: 'Không chung chủ' },
-  { key: 'coHamXe', label: 'Có hầm để xe' },
-  { key: 'coKeBep', label: 'Có kệ bếp' },
+  { key: 'coNhaXe', label: 'Có nhà xe' },
   { key: 'coTuLanh', label: 'Có tủ lạnh' },
   { key: 'gioGiacTuDo', label: 'Giờ giấc tự do' },
   { key: 'coBanCong', label: 'Có ban công' },

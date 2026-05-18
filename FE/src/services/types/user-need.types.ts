@@ -30,11 +30,8 @@ export interface IUserNeedFormValues {
   dayDuNoiThat: boolean;
   coMayLanh: boolean;
   coThangMay: boolean;
-  coBaoVe24h: boolean;
   coMayGiat: boolean;
-  khongChungChu: boolean;
-  coHamXe: boolean;
-  coKeBep: boolean;
+  coNhaXe: boolean;
   coTuLanh: boolean;
   gioGiacTuDo: boolean;
   ganTrungTam: boolean;

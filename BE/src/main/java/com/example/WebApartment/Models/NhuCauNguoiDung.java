@@ -27,11 +27,8 @@ public class NhuCauNguoiDung {
     private Boolean dayDuNoiThat;
     private Boolean coMayLanh;
     private Boolean coThangMay;
-    private Boolean coBaoVe24h;
     private Boolean coMayGiat;
-    private Boolean khongChungChu;
-    private Boolean coHamXe;
-    private Boolean coKeBep;
+    private Boolean coNhaXe;
     private Boolean coTuLanh;
     private Boolean gioGiacTuDo;
     private Boolean ganTrungTam;

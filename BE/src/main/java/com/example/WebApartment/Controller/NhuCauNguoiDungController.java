@@ -4,6 +4,7 @@ import com.example.WebApartment.DTO.NhuCauNguoiDungDTO;
 import com.example.WebApartment.Service.NhuCauNguoiDungService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,12 +18,14 @@ public class NhuCauNguoiDungController {
 
     // ================= GET ALL =================
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN','NGUOI_THUE','NGUOI_CHO_THUE')")
     public ResponseEntity<List<NhuCauNguoiDungDTO>> getAll() {
         return ResponseEntity.ok(nhuCauNguoiDungService.getAll());
     }
 
     // ================= GET BY ID =================
     @GetMapping("/{maNhuCauNguoiDung}")
+    @PreAuthorize("hasAnyRole('ADMIN','NGUOI_THUE','NGUOI_CHO_THUE')")
     public ResponseEntity<NhuCauNguoiDungDTO> getById(
             @PathVariable String maNhuCauNguoiDung) {
         return ResponseEntity.ok(
@@ -32,6 +35,7 @@ public class NhuCauNguoiDungController {
 
     // ================= CREATE =================
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN','NGUOI_THUE','NGUOI_CHO_THUE')")
     public ResponseEntity<NhuCauNguoiDungDTO> create(
             @RequestBody NhuCauNguoiDungDTO dto) {
         return ResponseEntity.status(201)
@@ -40,6 +44,7 @@ public class NhuCauNguoiDungController {
 
     // ================= UPDATE =================
     @PutMapping("/{maNhuCauNguoiDung}")
+    @PreAuthorize("hasAnyRole('ADMIN','NGUOI_THUE','NGUOI_CHO_THUE')")
     public ResponseEntity<NhuCauNguoiDungDTO> update(
             @PathVariable String maNhuCauNguoiDung,
             @RequestBody NhuCauNguoiDungDTO dto) {
@@ -51,6 +56,7 @@ public class NhuCauNguoiDungController {
 
     // ================= DELETE =================
     @DeleteMapping("/{maNhuCauNguoiDung}")
+    @PreAuthorize("hasAnyRole('ADMIN','NGUOI_THUE','NGUOI_CHO_THUE')")
     public ResponseEntity<Void> delete(
             @PathVariable String maNhuCauNguoiDung) {
 
