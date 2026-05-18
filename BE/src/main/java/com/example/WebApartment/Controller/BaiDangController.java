@@ -21,6 +21,11 @@ public class BaiDangController {
         return ResponseEntity.ok(service.getAll());
     }
 
+    @PutMapping("/{id}/view")
+    public ResponseEntity<BaiDangDTO> increaseView(@PathVariable String id) {
+        return ResponseEntity.ok(service.increaseView(id));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<BaiDangDTO> getById(@PathVariable String id) {
         return ResponseEntity.ok(service.getById(id));

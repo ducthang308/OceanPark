@@ -32,13 +32,27 @@ public class BaiDangService {
     private static final String POST_REJECTED = "REJECTED";
 
     public List<BaiDangDTO> getAll() {
-        return repo.findAll().stream().map(this::toDto).collect(Collectors.toList());
+        return repo.findByTrangThai("ACTIVE")
+                .stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
     }
 
     public BaiDangDTO getById(String id) {
         BaiDang entity = repo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy bài đăng"));
+
         return toDto(entity);
+    }
+
+    public BaiDangDTO increaseView(String id) {
+        BaiDang entity = repo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy bài đăng"));
+
+        Long current = entity.getLuotXem() == null ? 0L : entity.getLuotXem();
+        entity.setLuotXem(current + 1);
+
+        return toDto(repo.save(entity));
     }
 
     public BaiDangDTO create(BaiDangDTO dto) {

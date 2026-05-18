@@ -21,4 +21,5 @@ public class BaiDangDTO {
     private String trangThai;
     private String lienHe;
     private String hinhThucThanhToan;
+    private Long luotXem;
 }

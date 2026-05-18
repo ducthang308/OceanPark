@@ -1,22 +1,20 @@
 package com.example.WebApartment.DTO;
 
 import lombok.*;
+import java.util.List;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class DashboardStatsDTO {
-
-    // Doanh thu từ người cho thuê thanh toán gói đăng bài
+public class LandlordDashboardDTO {
     private Double totalRevenue;
-
-    // Tổng số tài khoản trong web
-    private Long totalUsers;
-
-    // Thống kê bài đăng
     private Long totalPosts;
     private Long activePosts;
     private Long rentedPosts;
+    private Long totalViews;
+    private Long totalLikes;
+
+    private List<LandlordPostStatsDTO> posts;
 }

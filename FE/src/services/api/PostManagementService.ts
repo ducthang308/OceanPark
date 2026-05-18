@@ -62,6 +62,11 @@ export const getPostById = async (maBaiDang: string) => {
   return res.data;
 };
 
+export const increasePostView = async (maBaiDang: string) => {
+  const res = await axiosClient.put(`/api/v1/bai-dang/${maBaiDang}/view`);
+  return res.data;
+};
+
 export const createPost = async (payload: BaiDangDTO) => {
   const res = await axiosClient.post<BaiDangDTO>("/api/v1/bai-dang", payload);
   return res.data;
