@@ -7,11 +7,35 @@ export interface ActivityDTO {
   timestamp: string;
 }
 
+export interface MonthlyDashboardPointDTO {
+  label: string;
+  approvedPosts: number;
+  pendingPosts: number;
+  confirmedPayments: number;
+  revenue: number;
+}
+
+export interface DashboardQueueItemDTO {
+  id: string;
+  type: 'post' | 'payment' | string;
+  title: string;
+  meta: string;
+  status: string;
+  createdAt: string;
+}
+
 export interface DashboardStatsDTO {
   totalUsers: number;
   totalPosts: number;
   pendingPosts: number;
+  approvedPosts?: number;
+  rejectedPosts?: number;
+  pendingPayments?: number;
+  confirmedPayments?: number;
   totalRevenue: number;
+  monthRevenue?: number;
+  monthlyStats?: MonthlyDashboardPointDTO[];
+  queueItems?: DashboardQueueItemDTO[];
   recentActivity?: ActivityDTO[];
 }
 

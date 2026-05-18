@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeftOutlined,
@@ -12,7 +12,8 @@ import {
   MailOutlined,
   WalletOutlined,
 } from '@ant-design/icons';
-import { adminPayments } from '../../../services/mock/adminStaff.mock';
+import { getInvoiceById, type HoaDonDTO } from '../../../services/api/AdminPaymentService';
+import { getUserById, type UserProfileResponse } from '../../../services/api/UserService';
 import { formatCurrency } from '../../../utils/currency';
 import { formatDate } from '../../../utils/date';
 import './admin-payment-detail.css';
@@ -24,21 +25,85 @@ const paymentStatusMap: Record<string, { text: string; className: string }> = {
   HOAN_TIEN: { text: 'Hoàn tiền', className: 'pending' },
 };
 
+const getUIStatus = (status: string): string => {
+  if (!status) return 'CHO_XAC_NHAN';
+  const clean = status.toUpperCase();
+  if (clean === 'DA_THANH_TOAN' || clean === 'PAID' || clean === 'SUCCESS') {
+    return 'DA_THANH_TOAN';
+  }
+  if (clean === 'THAT_BAI' || clean === 'FAILED' || clean === 'CANCELLED') {
+    return 'THAT_BAI';
+  }
+  if (clean === 'HOAN_TIEN' || clean === 'REFUNDED') {
+    return 'HOAN_TIEN';
+  }
+  return 'CHO_XAC_NHAN';
+};
+
+const getLoaiHoaDonLabel = (type: string): string => {
+  if (!type) return 'Dịch vụ';
+  const clean = type.toUpperCase();
+  if (clean === 'DANG_BAI') return 'Thanh toán phí đăng tin';
+  if (clean === 'THUE_CAN_HO') return 'Đặt cọc thuê căn hộ';
+  if (clean === 'MUA_GOI') return 'Mua gói bài đăng';
+  return `Thanh toán ${type}`;
+};
+
 const PaymentDetailPanel: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams();
 
-  const payment = adminPayments.find((item) => String(item.id) === String(id));
+  const [payment, setPayment] = useState<HoaDonDTO | null>(null);
+  const [user, setUser] = useState<UserProfileResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  if (!payment) {
+  useEffect(() => {
+    if (!id) return;
+    const loadDetail = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const invoiceData = await getInvoiceById(id);
+        setPayment(invoiceData);
+
+        if (invoiceData.maNguoiDung) {
+          try {
+            const userData = await getUserById(invoiceData.maNguoiDung);
+            setUser(userData);
+          } catch (userErr) {
+            console.error('Failed to load user info', userErr);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load invoice detail', err);
+        setError('Không tìm thấy thông tin giao dịch này trên hệ thống.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    void loadDetail();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="payment-detail-page">
+        <div style={{ display: 'grid', placeItems: 'center', minHeight: '300px', fontSize: '16px', fontWeight: 600, color: '#64748b' }}>
+          Đang tải chi tiết giao dịch...
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !payment) {
     return (
       <div className="payment-detail-page">
         <div className="payment-detail-notfound">
           <h2>Không tìm thấy giao dịch</h2>
-          <p>Giao dịch này không tồn tại hoặc đã bị xóa khỏi dữ liệu mock.</p>
+          <p>{error || 'Giao dịch này không tồn tại hoặc đã bị xóa.'}</p>
           <button
             className="admin-btn ghost"
-            onClick={() => navigate('/admin-staff/payment-approval')}
+            onClick={() => navigate('/admin/payments')}
           >
             Quay lại danh sách
           </button>
@@ -47,33 +112,40 @@ const PaymentDetailPanel: React.FC = () => {
     );
   }
 
-  const badge = paymentStatusMap[payment.trangThai] || {
-    text: 'Không xác định',
+  const uiStatus = getUIStatus(payment.trangThaiThanhToan);
+  const badge = paymentStatusMap[uiStatus] || {
+    text: payment.trangThaiThanhToan || 'Không xác định',
     className: 'info',
   };
 
   return (
     <div className="payment-detail-page">
-      <section className="payment-detail-hero">
-        <div className="payment-detail-hero__left">
-          <button
-            className="payment-detail-back"
-            onClick={() => navigate('/admin-staff/payment-approval')}
-          >
-            <ArrowLeftOutlined />
-            <span>Quay lại danh sách</span>
-          </button>
+      <button
+        className="payment-detail-back"
+        style={{ marginBottom: '1.5rem' }}
+        onClick={() => navigate('/admin/payments')}
+      >
+        <ArrowLeftOutlined />
+        <span>Quay lại danh sách</span>
+      </button>
 
-          <div className="payment-detail-kicker">Chi tiết giao dịch</div>
-          <h1 className="payment-detail-title">{payment.maGiaoDich}</h1>
-          <p className="payment-detail-desc">
-            Xem đầy đủ thông tin giao dịch, người thanh toán, mục đích và trạng thái xử lý.
+      <section className="payment-detail-hero" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '2rem', flexWrap: 'wrap', marginBottom: '2rem', paddingBottom: '1.5rem', borderBottom: '1px solid #e2e8f0' }}>
+        <div className="payment-detail-hero__left" style={{ flex: '1', minWidth: '280px' }}>
+          <div className="payment-detail-kicker" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#1e3a8a', fontWeight: 600, letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Chi tiết giao dịch</div>
+          
+          <div className="payment-detail-title-row" style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+            <h1 className="payment-detail-title" style={{ fontSize: '2.5rem', fontWeight: 800, color: '#0f172a', margin: 0, lineHeight: 1 }}>{payment.maHoaDon}</h1>
+            <span className={`admin-badge ${badge.className}`} style={{ fontSize: '0.8rem', padding: '0.35rem 0.95rem' }}>{badge.text}</span>
+          </div>
+
+          <p className="payment-detail-desc" style={{ margin: '1rem 0 0 0', color: '#64748b', fontSize: '0.925rem', lineHeight: '1.5', maxWidth: '600px' }}>
+            Xem đầy đủ thông tin giao dịch, người thanh toán, mục đích và trạng thái xử lý tự động.
           </p>
         </div>
 
-        <div className="payment-detail-hero__right">
-          <div className="payment-detail-amount">{formatCurrency(payment.soTien)}</div>
-          <span className={`admin-badge ${badge.className}`}>{badge.text}</span>
+        <div className="payment-detail-hero__right" style={{ textAlign: 'right', background: 'white', padding: '1.25rem 2rem', borderRadius: '12px', border: '1px dashed #cbd5e1', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.02)', display: 'inline-block', minWidth: '240px' }}>
+          <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 600, letterSpacing: '0.05em', marginBottom: '0.35rem' }}>Số tiền giao dịch</div>
+          <div className="payment-detail-amount" style={{ fontSize: '2.25rem', fontWeight: 800, color: '#0f172a', margin: 0, letterSpacing: '-0.02em' }}>{formatCurrency(payment.soTien)}</div>
         </div>
       </section>
 
@@ -88,17 +160,17 @@ const PaymentDetailPanel: React.FC = () => {
             <div className="payment-detail-grid">
               <div className="payment-detail-item">
                 <span>Mã giao dịch</span>
-                <strong>{payment.maGiaoDich}</strong>
+                <strong>{payment.maHoaDon}</strong>
               </div>
 
               <div className="payment-detail-item">
                 <span>Phương thức thanh toán</span>
-                <strong>{payment.tenPhuongThucThanhToan}</strong>
+                <strong>Chuyển khoản cổng thanh toán tự động</strong>
               </div>
 
               <div className="payment-detail-item">
                 <span>Mục đích thanh toán</span>
-                <strong>{payment.tenMucDich}</strong>
+                <strong>{getLoaiHoaDonLabel(payment.loaiHoaDon)}</strong>
               </div>
 
               <div className="payment-detail-item">
@@ -108,7 +180,7 @@ const PaymentDetailPanel: React.FC = () => {
 
               <div className="payment-detail-item payment-detail-item--full">
                 <span>Nội dung</span>
-                <strong>{payment.noiDung}</strong>
+                <strong>{payment.noiDungChuyenKhoan || 'Không có nội dung'}</strong>
               </div>
             </div>
           </div>
@@ -122,82 +194,17 @@ const PaymentDetailPanel: React.FC = () => {
             <div className="payment-detail-grid">
               <div className="payment-detail-item">
                 <span>Họ và tên</span>
-                <strong>{payment.hoVaTen}</strong>
+                <strong>{user?.hoVaTen || 'Khách vãng lai'}</strong>
               </div>
 
               <div className="payment-detail-item">
                 <span>Email</span>
-                <strong>{payment.email}</strong>
+                <strong>{user?.email || 'N/A'}</strong>
               </div>
 
-              {'soDienThoai' in payment && payment.soDienThoai && (
-                <div className="payment-detail-item">
-                  <span>Số điện thoại</span>
-                  <strong>{payment.soDienThoai}</strong>
-                </div>
-              )}
-
-       
-              </div>
-          </div>
-
-          <div className="payment-detail-card">
-            <div className="payment-detail-card__head">
-              <h3>Tiến trình xử lý</h3>
-              <CalendarOutlined />
-            </div>
-
-            <div className="payment-timeline">
-              <div className="payment-timeline-item">
-                <div className="payment-timeline-item__icon is-done">
-                  <FileTextOutlined />
-                </div>
-                <div>
-                  <strong>Giao dịch được tạo</strong>
-                  <p>{formatDate(payment.ngayTao)}</p>
-                </div>
-              </div>
-
-              <div className="payment-timeline-item">
-                <div
-                  className={`payment-timeline-item__icon ${
-                    payment.trangThai === 'CHO_XAC_NHAN' ? 'is-current' : 'is-done'
-                  }`}
-                >
-                  <ClockCircleOutlined />
-                </div>
-                <div>
-                  <strong>Chờ xác nhận</strong>
-                  <p>Đang chờ nhân viên kiểm tra đối soát giao dịch.</p>
-                </div>
-              </div>
-
-              <div className="payment-timeline-item">
-                <div
-                  className={`payment-timeline-item__icon ${
-                    payment.trangThai === 'DA_THANH_TOAN'
-                      ? 'is-success'
-                      : payment.trangThai === 'THAT_BAI'
-                      ? 'is-danger'
-                      : payment.trangThai === 'HOAN_TIEN'
-                      ? 'is-pending'
-                      : ''
-                  }`}
-                >
-                  {payment.trangThai === 'DA_THANH_TOAN' ? (
-                    <CheckCircleOutlined />
-                  ) : payment.trangThai === 'THAT_BAI' ? (
-                    <ExclamationCircleOutlined />
-                  ) : payment.trangThai === 'HOAN_TIEN' ? (
-                    <BankOutlined />
-                  ) : (
-                    <WalletOutlined />
-                  )}
-                </div>
-                <div>
-                  <strong>Trạng thái cuối</strong>
-                  <p>{badge.text}</p>
-                </div>
+              <div className="payment-detail-item">
+                <span>Số điện thoại</span>
+                <strong>{user?.soDienThoai || 'N/A'}</strong>
               </div>
             </div>
           </div>
@@ -206,26 +213,27 @@ const PaymentDetailPanel: React.FC = () => {
         <aside className="payment-detail-side">
           <div className="payment-detail-card">
             <div className="payment-detail-card__head">
-              <h3>Thao tác nhanh</h3>
+              <h3>Trạng thái xử lý</h3>
               <WalletOutlined />
             </div>
 
-            <div className="payment-detail-actions">
-              <button className="admin-btn success">Xác nhận thanh toán</button>
-              <button className="admin-btn danger">Đánh dấu thất bại</button>
-              <button className="admin-btn ghost">Hoàn tiền</button>
+            <div className="payment-detail-auto-info" style={{ color: '#0b9370', fontWeight: 600, fontSize: '14.5px', display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 0' }}>
+              <CheckCircleOutlined />
+              <span>Giao dịch đối soát tự động</span>
             </div>
+            <p style={{ color: '#64748b', fontSize: '13px', margin: '4px 0 0 0', lineHeight: '1.4' }}>
+              Giao dịch này được ghi nhận và đồng bộ tự động từ cổng thanh toán. Không cần xử lý thủ công.
+            </p>
           </div>
 
           <div className="payment-detail-card">
             <div className="payment-detail-card__head">
-              <h3>Ghi chú xử lý</h3>
+              <h3>Ghi chú hệ thống</h3>
               <FileTextOutlined />
             </div>
 
             <div className="payment-detail-note">
-              Kiểm tra thông tin giao dịch, đối chiếu phương thức thanh toán và xác nhận thủ công
-              nếu cần. Có thể mở rộng phần này thành textarea hoặc lịch sử xử lý sau.
+              Thông tin giao dịch được đối chiếu tự động với phương thức thanh toán và cập nhật trạng thái ngay khi nhận được tín hiệu Webhook từ cổng thanh toán.
             </div>
           </div>
         </aside>

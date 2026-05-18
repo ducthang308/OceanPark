@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   CheckCircleOutlined,
@@ -8,7 +8,9 @@ import {
   SearchOutlined,
   WalletOutlined,
 } from '@ant-design/icons';
-import { adminPayments } from '../../../services/mock/adminStaff.mock';
+import { getAllInvoices, type HoaDonDTO } from '../../../services/api/AdminPaymentService';
+import { getAllUsers, type AdminUserDTO } from '../../../services/api/AdminAccountService';
+import AdminPagination from '../components/AdminPagination';
 import { formatCurrency } from '../../../utils/currency';
 import { formatDate } from '../../../utils/date';
 import './admin-payment-approval.css';
@@ -20,57 +22,138 @@ const paymentStatusMap: Record<string, { text: string; className: string }> = {
   HOAN_TIEN: { text: 'Hoàn tiền', className: 'pending' },
 };
 
+const getUIStatus = (status: string): string => {
+  if (!status) return 'CHO_XAC_NHAN';
+  const clean = status.toUpperCase();
+  if (clean === 'DA_THANH_TOAN' || clean === 'PAID' || clean === 'SUCCESS') {
+    return 'DA_THANH_TOAN';
+  }
+  if (clean === 'THAT_BAI' || clean === 'FAILED' || clean === 'CANCELLED') {
+    return 'THAT_BAI';
+  }
+  if (clean === 'HOAN_TIEN' || clean === 'REFUNDED') {
+    return 'HOAN_TIEN';
+  }
+  return 'CHO_XAC_NHAN';
+};
+
+const getLoaiHoaDonLabel = (type: string): string => {
+  if (!type) return 'Dịch vụ';
+  const clean = type.toUpperCase();
+  if (clean === 'DANG_BAI') return 'Thanh toán phí đăng tin';
+  if (clean === 'THUE_CAN_HO') return 'Đặt cọc thuê căn hộ';
+  if (clean === 'MUA_GOI') return 'Mua gói bài đăng';
+  return `Thanh toán ${type}`;
+};
+
 const AdminPaymentApproval: React.FC = () => {
   const navigate = useNavigate();
 
+  const [payments, setPayments] = useState<HoaDonDTO[]>([]);
+  const [users, setUsers] = useState<Record<string, AdminUserDTO>>({});
   const [status, setStatus] = useState('ALL');
   const [keyword, setKeyword] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const [invoicesData, usersData] = await Promise.all([
+          getAllInvoices(),
+          getAllUsers(),
+        ]);
+        setPayments(invoicesData);
+
+        const userMap: Record<string, AdminUserDTO> = {};
+        usersData.forEach((u) => {
+          if (u.maNguoiDung) {
+            userMap[u.maNguoiDung] = u;
+          }
+        });
+        setUsers(userMap);
+      } catch (err) {
+        console.error('Failed to load transaction data', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    void loadData();
+  }, []);
+
+  // Reset pagination on filter change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [keyword, status]);
 
   const filteredPayments = useMemo(() => {
-    return adminPayments.filter((item) => {
+    return payments.filter((item) => {
+      const user = item.maNguoiDung ? users[item.maNguoiDung] : null;
+      const userName = user?.hoVaTen || 'Khách vãng lai';
+      const userEmail = user?.email || 'N/A';
+      const loaiLabel = getLoaiHoaDonLabel(item.loaiHoaDon);
+
       const matchKeyword = [
-        item.maGiaoDich,
-        item.hoVaTen,
-        item.email,
-        item.tenPhuongThucThanhToan,
-        item.noiDung,
+        item.maHoaDon,
+        userName,
+        userEmail,
+        loaiLabel,
+        item.noiDungChuyenKhoan || '',
       ]
         .join(' ')
         .toLowerCase()
         .includes(keyword.toLowerCase().trim());
 
-      const matchStatus = status === 'ALL' ? true : item.trangThai === status;
+      const uiStatus = getUIStatus(item.trangThaiThanhToan);
+      const matchStatus = status === 'ALL' ? true : uiStatus === status;
       return matchKeyword && matchStatus;
     });
-  }, [keyword, status]);
+  }, [payments, users, keyword, status]);
 
-  const totalPayments = adminPayments.length;
-  const pendingCount = adminPayments.filter((i) => i.trangThai === 'CHO_XAC_NHAN').length;
-  const successCount = adminPayments.filter((i) => i.trangThai === 'DA_THANH_TOAN').length;
-  const failedCount = adminPayments.filter((i) => i.trangThai === 'THAT_BAI').length;
+  const paginatedPayments = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return filteredPayments.slice(startIndex, startIndex + pageSize);
+  }, [filteredPayments, currentPage, pageSize]);
 
-  const totalRevenue = adminPayments
-    .filter((i) => i.trangThai === 'DA_THANH_TOAN')
+  const totalPayments = payments.length;
+  const pendingCount = payments.filter((i) => getUIStatus(i.trangThaiThanhToan) === 'CHO_XAC_NHAN').length;
+  const successCount = payments.filter((i) => getUIStatus(i.trangThaiThanhToan) === 'DA_THANH_TOAN').length;
+  const failedCount = payments.filter((i) => getUIStatus(i.trangThaiThanhToan) === 'THAT_BAI').length;
+
+  const totalRevenue = payments
+    .filter((i) => getUIStatus(i.trangThaiThanhToan) === 'DA_THANH_TOAN')
     .reduce((sum, item) => sum + item.soTien, 0);
 
-  const handleViewDetail = (id: number | string) => {
-    navigate(`/admin-staff/payment-approval/${id}`);
+  const handleViewDetail = (id: string) => {
+    navigate(`/admin/payment-approval/${id}`);
   };
+
+  if (loading) {
+    return (
+      <div className="payment-approval-page">
+        <div style={{ display: 'grid', placeItems: 'center', minHeight: '300px', fontSize: '16px', fontWeight: 600, color: '#64748b' }}>
+          Đang tải danh sách giao dịch...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="payment-approval-page">
       <section className="payment-approval-hero">
         <div>
-          <div className="payment-approval-kicker">Đối soát giao dịch</div>
-          <h2 className="payment-approval-title">Kiểm tra và xác nhận thanh toán</h2>
+          <div className="payment-approval-kicker">Lịch sử giao dịch</div>
+          <h2 className="payment-approval-title">Quản lý và theo dõi thanh toán</h2>
           <p className="payment-approval-desc">
-            Theo dõi giao dịch đăng bài, rà soát thanh toán lỗi và xử lý các trường hợp
-            cần xác nhận thủ công.
+            Theo dõi tất cả giao dịch thanh toán, hóa đơn đăng bài và lịch sử nạp tiền tự động trên hệ thống.
           </p>
         </div>
 
         <div className="payment-approval-hero-actions">
-          <button className="admin-btn ghost">Đối soát thủ công</button>
           <button className="admin-btn primary">Xuất báo cáo</button>
         </div>
       </section>
@@ -85,7 +168,7 @@ const AdminPaymentApproval: React.FC = () => {
           </div>
           <div className="payment-summary-card__label">Tổng giao dịch</div>
           <div className="payment-summary-card__value">{totalPayments}</div>
-          <div className="payment-summary-card__note">Toàn bộ giao dịch mock trong hệ thống</div>
+          <div className="payment-summary-card__note">Toàn bộ giao dịch trên hệ thống</div>
         </div>
 
         <div className="payment-summary-card payment-summary-card--cyan">
@@ -97,7 +180,7 @@ const AdminPaymentApproval: React.FC = () => {
           </div>
           <div className="payment-summary-card__label">Chờ xác nhận</div>
           <div className="payment-summary-card__value">{pendingCount}</div>
-          <div className="payment-summary-card__note">Cần nhân viên xử lý sớm</div>
+          <div className="payment-summary-card__note">Các giao dịch đang xử lý</div>
         </div>
 
         <div className="payment-summary-card payment-summary-card--green">
@@ -121,7 +204,7 @@ const AdminPaymentApproval: React.FC = () => {
           </div>
           <div className="payment-summary-card__label">Thất bại</div>
           <div className="payment-summary-card__value">{failedCount}</div>
-          <div className="payment-summary-card__note">Cần rà soát nguyên nhân lỗi</div>
+          <div className="payment-summary-card__note">Giao dịch bị từ chối hoặc lỗi</div>
         </div>
       </section>
 
@@ -134,7 +217,7 @@ const AdminPaymentApproval: React.FC = () => {
                   <SearchOutlined className="payment-search-box__icon" />
                   <input
                     className="admin-input payment-search-box__input"
-                    placeholder="Tìm theo mã GD, khách hàng, phương thức..."
+                    placeholder="Tìm theo mã GD, khách hàng, nội dung..."
                     value={keyword}
                     onChange={(e) => setKeyword(e.target.value)}
                   />
@@ -160,71 +243,105 @@ const AdminPaymentApproval: React.FC = () => {
           </div>
 
           <div className="payment-list-card">
-            <div className="payment-table-card__head">
+            <div className="payment-table-card__head" style={{ marginBottom: '1rem', borderBottom: 'none' }}>
               <div>
                 <h3>Danh sách giao dịch</h3>
-                <p>Nhấn vào một giao dịch để chuyển sang trang chi tiết riêng.</p>
+                <p>Nhấp vào một dòng giao dịch bất kỳ để xem thông tin chi tiết.</p>
               </div>
             </div>
 
-            <div className="payment-list">
-              {filteredPayments.map((item) => {
-                const badge = paymentStatusMap[item.trangThai];
+            <div className="payment-table-container" style={{ overflowX: 'auto', padding: '0 1.5rem 1.5rem 1.5rem', minHeight: '580px', position: 'relative' }}>
+              <table className="payment-table" style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
+                    <th style={{ padding: '12px 8px', color: '#475569', fontSize: '0.85rem', fontWeight: 600, width: '14%' }}>Mã giao dịch</th>
+                    <th style={{ padding: '12px 8px', color: '#475569', fontSize: '0.85rem', fontWeight: 600, width: '22%' }}>Khách hàng</th>
+                    <th style={{ padding: '12px 8px', color: '#475569', fontSize: '0.85rem', fontWeight: 600, width: '20%' }}>Mục đích</th>
+                    <th style={{ padding: '12px 8px', color: '#475569', fontSize: '0.85rem', fontWeight: 600, width: '14%' }}>Số tiền</th>
+                    <th style={{ padding: '12px 8px', color: '#475569', fontSize: '0.85rem', fontWeight: 600, width: '12%' }}>Thời gian</th>
+                    <th style={{ padding: '12px 8px', color: '#475569', fontSize: '0.85rem', fontWeight: 600, width: '10%' }}>Trạng thái</th>
+                    <th style={{ padding: '12px 8px', color: '#475569', fontSize: '0.85rem', fontWeight: 600, width: '8%', textAlign: 'center' }}>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedPayments.map((item) => {
+                    const uiStatus = getUIStatus(item.trangThaiThanhToan);
+                    const badge = paymentStatusMap[uiStatus] || { text: item.trangThaiThanhToan || 'Lỗi', className: 'danger' };
+                    const user = item.maNguoiDung ? users[item.maNguoiDung] : null;
+                    const userName = user?.hoVaTen || 'Khách vãng lai';
+                    const userEmail = user?.email || 'N/A';
 
-                return (
-                  <div key={item.id} className="payment-list-item">
-                    <div className="payment-list-item__main">
-                      <div className="payment-cell-main">
-                        <div className="payment-cell-icon">
-                          <WalletOutlined />
-                        </div>
-
-                        <div>
-                          <div className="payment-transaction-code">{item.maGiaoDich}</div>
-                          <div className="admin-meta-text">{item.tenPhuongThucThanhToan}</div>
-                        </div>
-                      </div>
-
-                      <div className="payment-list-item__content">
-                        <div className="payment-customer">
-                          <strong>{item.hoVaTen}</strong>
-                          <div className="admin-meta-text">{item.email}</div>
-                        </div>
-
-                        <div className="payment-purpose">
-                          <strong>{item.tenMucDich}</strong>
-                          <div className="admin-meta-text">{item.noiDung}</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="payment-list-item__side">
-                      <div className="payment-amount">{formatCurrency(item.soTien)}</div>
-                      <div className="payment-created-at">{formatDate(item.ngayTao)}</div>
-                      <span className={`admin-badge ${badge.className}`}>{badge.text}</span>
-
-                      <div className="admin-actions payment-actions">
-                        <button
-                          className="admin-btn ghost"
-                          onClick={() => handleViewDetail(item.id)}
-                        >
-                          Chi tiết
-                        </button>
-
-                        <button className="admin-btn success">Xác nhận</button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+                    return (
+                      <tr 
+                        key={item.maHoaDon} 
+                        className="payment-table-row" 
+                        style={{ borderBottom: '1px solid #f1f5f9', transition: 'background-color 0.2s ease', cursor: 'pointer' }}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f8fafc')}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                        onClick={() => handleViewDetail(item.maHoaDon)}
+                      >
+                        <td style={{ padding: '16px 8px', verticalAlign: 'middle' }}>
+                          <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.9rem' }}>{item.maHoaDon}</div>
+                          <div style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: '2px' }}>Tự động cổng thanh toán</div>
+                        </td>
+                        <td style={{ padding: '16px 8px', verticalAlign: 'middle', wordBreak: 'break-word' }}>
+                          <div style={{ fontWeight: 600, color: '#334155', fontSize: '0.9rem' }}>{userName}</div>
+                          <div style={{ color: '#64748b', fontSize: '0.75rem', marginTop: '2px' }}>{userEmail}</div>
+                        </td>
+                        <td style={{ padding: '16px 8px', verticalAlign: 'middle' }}>
+                          <div style={{ fontWeight: 600, color: '#334155', fontSize: '0.9rem' }}>{getLoaiHoaDonLabel(item.loaiHoaDon)}</div>
+                          <div style={{ color: '#64748b', fontSize: '0.75rem', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {item.noiDungChuyenKhoan || 'Không có nội dung'}
+                          </div>
+                        </td>
+                        <td style={{ padding: '16px 8px', verticalAlign: 'middle', fontWeight: 700, color: '#0f172a', fontSize: '1rem' }}>
+                          {formatCurrency(item.soTien)}
+                        </td>
+                        <td style={{ padding: '16px 8px', verticalAlign: 'middle', color: '#64748b', fontSize: '0.8rem' }}>
+                          {formatDate(item.ngayTao)}
+                        </td>
+                        <td style={{ padding: '16px 8px', verticalAlign: 'middle' }}>
+                          <span className={`admin-badge ${badge.className}`} style={{ display: 'inline-block' }}>{badge.text}</span>
+                        </td>
+                        <td style={{ padding: '16px 8px', verticalAlign: 'middle', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+                          <button
+                            className="admin-btn ghost"
+                            style={{ padding: '6px 12px', fontSize: '0.8rem', borderRadius: '4px' }}
+                            onClick={() => handleViewDetail(item.maHoaDon)}
+                          >
+                            Chi tiết
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
 
               {!filteredPayments.length && (
-                <div className="payment-list-empty">
-                  <h4>Không có giao dịch phù hợp</h4>
-                  <p>Thử đổi từ khóa tìm kiếm hoặc bộ lọc trạng thái.</p>
+                <div className="payment-list-empty" style={{ display: 'grid', placeItems: 'center', height: '400px', color: '#64748b', textAlign: 'center', width: '100%' }}>
+                  <div>
+                    <h4 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#475569', marginBottom: '8px' }}>Không có giao dịch phù hợp</h4>
+                    <p style={{ fontSize: '0.9rem', color: '#94a3b8' }}>Thử đổi từ khóa tìm kiếm hoặc bộ lọc trạng thái.</p>
+                  </div>
                 </div>
               )}
             </div>
+
+            {filteredPayments.length > 0 && (
+              <div style={{ margin: '0 1.5rem 1.5rem 1.5rem', borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
+                <AdminPagination
+                  current={currentPage}
+                  pageSize={pageSize}
+                  total={filteredPayments.length}
+                  itemLabel="giao dịch"
+                  onChange={(page, size) => {
+                    setCurrentPage(page);
+                    setPageSize(size);
+                  }}
+                />
+              </div>
+            )}
           </div>
         </div>
       </section>
