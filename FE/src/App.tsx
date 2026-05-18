@@ -77,6 +77,7 @@ function App() {
           <Route path="/posts" element={<RoomList />} />
           <Route path="/danh-muc/:slug" element={<RoomList />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<LoginPage />} />
           <Route path="/oauth2/redirect" element={<OAuth2RedirectPage />} />
           <Route path="/oauth2/success" element={<OAuth2RedirectPage />} />
           <Route path="/blog" element={<BlogAboutUs />} />

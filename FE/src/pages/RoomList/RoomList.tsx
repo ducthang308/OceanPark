@@ -258,6 +258,7 @@ const RoomList: React.FC = () => {
   const activePriceRangeId = searchParams.get('price') || '';
   const activeAreaRangeId = searchParams.get('area') || '';
   const activeWard = searchParams.get('ward')?.trim() || '';
+  const activeKeyword = searchParams.get('q')?.trim() || '';
   const directMinPrice = Number(searchParams.get('minPrice') || '');
   const directMaxPrice = Number(searchParams.get('maxPrice') || '');
   const directMinArea = Number(searchParams.get('minArea') || '');
@@ -375,6 +376,7 @@ const RoomList: React.FC = () => {
     setCurrentPage(1);
   }, [
     slug,
+    activeKeyword,
     activeDistrict,
     activeWard,
     activePriceRangeId,
@@ -446,6 +448,28 @@ const RoomList: React.FC = () => {
     );
   }, [activeWard, districtFilteredPosts]);
 
+  const keywordFilteredPosts = useMemo(() => {
+    const keyword = normalizeText(activeKeyword);
+
+    if (!keyword) return wardFilteredPosts;
+
+    return wardFilteredPosts.filter((post) => {
+      const searchableText = normalizeText(
+        [
+          post.title,
+          post.description,
+          post.addressText,
+          post.wardText,
+          post.categoryLabel,
+          post.priceText,
+          post.areaText,
+        ].join(' '),
+      );
+
+      return searchableText.includes(keyword);
+    });
+  }, [activeKeyword, wardFilteredPosts]);
+
   const priceRange = useMemo(
     () => findRangeOption(PRICE_RANGE_OPTIONS, activePriceRangeId),
     [activePriceRangeId],
@@ -457,7 +481,7 @@ const RoomList: React.FC = () => {
 
   const filteredPosts = useMemo(
     () =>
-      wardFilteredPosts.filter(
+      keywordFilteredPosts.filter(
         (post) =>
           isNumberInRange(post.price, priceRange) &&
           isNumberInRange(post.area, areaRange) &&
@@ -465,7 +489,7 @@ const RoomList: React.FC = () => {
           (!directMaxPrice || (typeof post.price === 'number' && post.price <= directMaxPrice)) &&
           (!directMinArea || (typeof post.area === 'number' && post.area >= directMinArea)),
       ),
-    [areaRange, directMaxPrice, directMinArea, directMinPrice, priceRange, wardFilteredPosts],
+    [areaRange, directMaxPrice, directMinArea, directMinPrice, keywordFilteredPosts, priceRange],
   );
 
   const visibleFeaturedPosts = useMemo(() => {
@@ -585,6 +609,17 @@ const RoomList: React.FC = () => {
 
   const getLikeCount = (post: RoomPostCard) => post.likeCount ?? 0;
   const currentCategorySlug = activeCategory?.slug || slug;
+  const listingEyebrow = activeKeyword
+    ? 'Từ khóa đang tìm'
+    : activeCategory
+      ? 'Danh mục đang xem'
+      : 'Gợi ý dành cho bạn';
+  const listingTitle = activeKeyword
+    ? `Kết quả tìm kiếm: ${activeKeyword}`
+    : activeCategory?.label || 'Tin nổi bật theo nhu cầu tìm kiếm';
+  const emptyDescription = activeKeyword
+    ? `Không tìm thấy bài đăng phù hợp với "${activeKeyword}". Thử đổi từ khóa hoặc bỏ bớt bộ lọc.`
+    : 'Thử chọn danh mục hoặc khu vực khác để xem thêm tin đăng.';
 
   return (
     <>
@@ -669,8 +704,8 @@ const RoomList: React.FC = () => {
             <div className="room-list-content__main">
               <div className="room-list-tabs-header">
                 <div className="room-list-section-heading room-list-section-heading--compact">
-                  <span>{activeCategory ? 'Danh mục đang xem' : 'Gợi ý dành cho bạn'}</span>
-                  <h2>{activeCategory?.label || 'Tin nổi bật theo nhu cầu tìm kiếm'}</h2>
+                  <span>{listingEyebrow}</span>
+                  <h2>{listingTitle}</h2>
                 </div>
 
                 <div className="room-list-tabs">
@@ -796,7 +831,7 @@ const RoomList: React.FC = () => {
                 ) : (
                   <div className="room-list-state">
                     <h3>Chưa có bài đăng phù hợp</h3>
-                    <p>Thử chọn danh mục hoặc khu vực khác để xem thêm tin đăng.</p>
+                    <p>{emptyDescription}</p>
                   </div>
                 )}
               </div>

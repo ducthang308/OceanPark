@@ -3,7 +3,6 @@ import './Register.css';
 import { register } from '../../services/api/UserService.ts';
 import { ROLE_ID } from '../../constants/roles.ts';
 import type { RoleId } from '../../constants/roles.ts';
-import { useNavigate } from 'react-router-dom';
 
 type RegisterFormData = {
     hoVaTen: string;
@@ -14,7 +13,11 @@ type RegisterFormData = {
     maVaiTro: RoleId;
 };
 
-const RegisterForm = () => {
+type RegisterFormProps = {
+    onRegisterSuccess?: (phoneNumber: string) => void;
+};
+
+const RegisterForm = ({ onRegisterSuccess }: RegisterFormProps) => {
     const [formData, setFormData] = useState<RegisterFormData>({
         hoVaTen: '',
         email: '',
@@ -23,8 +26,6 @@ const RegisterForm = () => {
         retypeMatKhau: '',
         maVaiTro: ROLE_ID.NGUOI_THUE,
     });
-
-    const navigate = useNavigate();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -57,7 +58,7 @@ const RegisterForm = () => {
 
             console.log('User mới:', res);
 
-            navigate('/login');
+            onRegisterSuccess?.(formData.soDienThoai);
         } catch (err: any) {
             alert(err.message || 'Đăng ký thất bại');
             console.error(err);

@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, NavLink, useLocation } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import './header.css';
-import { useNavigate } from 'react-router-dom';
 import { LANDLORD_ROLE_IDS, ROLE_ID } from '../../../constants/roles';
 import type { RoleId } from '../../../constants/roles';
 import { clearAuthSession, getAuthSession } from '../../../utils/storage';
@@ -51,9 +50,13 @@ const Header: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [favoriteTotal, setFavoriteTotal] = useState(0);
 
   const userMenuRef = useRef<HTMLDivElement | null>(null);
+  const searchRef = useRef<HTMLDivElement | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   // Lấy thông tin user thật từ localStorage
   const [currentUser, setCurrentUser] = useState<CurrentUser>(getUserFromStorage);
@@ -209,13 +212,23 @@ const Header: React.FC = () => {
   useEffect(() => {
     setIsMobileMenuOpen(false);
     setIsUserMenuOpen(false);
+    setIsSearchOpen(false);
   }, [location.pathname, location.search]);
+
+  useEffect(() => {
+    const currentKeyword = new URLSearchParams(location.search).get('q') || '';
+    setSearchQuery(currentKeyword);
+  }, [location.search]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (!userMenuRef.current) return;
       if (!userMenuRef.current.contains(event.target as Node)) {
         setIsUserMenuOpen(false);
+      }
+
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setIsSearchOpen(false);
       }
     };
 
@@ -228,6 +241,7 @@ const Header: React.FC = () => {
       if (event.key === 'Escape') {
         setIsMobileMenuOpen(false);
         setIsUserMenuOpen(false);
+        setIsSearchOpen(false);
       }
     };
 
@@ -235,11 +249,36 @@ const Header: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  useEffect(() => {
+    if (!isSearchOpen) return;
+
+    const focusTimer = window.setTimeout(() => {
+      searchInputRef.current?.focus();
+    }, 0);
+
+    return () => window.clearTimeout(focusTimer);
+  }, [isSearchOpen]);
+
   const handleLogout = () => {
     clearAuthSession();
     setCurrentUser(null);
     setIsUserMenuOpen(false);
     navigate('/login');
+  };
+
+  const handleSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const keyword = searchQuery.trim();
+
+    setIsSearchOpen(false);
+
+    if (!keyword) {
+      navigate('/posts');
+      return;
+    }
+
+    navigate(`/posts?q=${encodeURIComponent(keyword)}`);
   };
 
   const headerClassName = [
@@ -272,21 +311,51 @@ const Header: React.FC = () => {
         </nav>
 
         <div className="rental-header__actions">
-          <button
-            type="button"
-            className="rental-header__icon-button"
-            aria-label="Tìm kiếm"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                d="M10.5 4a6.5 6.5 0 1 0 0 13a6.5 6.5 0 0 0 0-13Zm0 0l9.5 9.5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
+          <div className="rental-header__search" ref={searchRef}>
+            <button
+              type="button"
+              className={`rental-header__icon-button rental-header__icon-button--search ${
+                isSearchOpen ? 'is-open' : ''
+              }`}
+              aria-label="Tìm kiếm"
+              aria-expanded={isSearchOpen}
+              onClick={() => setIsSearchOpen((prev) => !prev)}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M10.5 4a6.5 6.5 0 1 0 0 13a6.5 6.5 0 0 0 0-13Zm0 0l9.5 9.5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </button>
+
+            <form
+              className={`rental-header-search ${isSearchOpen ? 'is-open' : ''}`}
+              onSubmit={handleSearchSubmit}
+            >
+              <input
+                ref={searchInputRef}
+                type="search"
+                value={searchQuery}
+                placeholder="Tìm theo tiêu đề, phường, địa chỉ..."
+                onChange={(event) => setSearchQuery(event.target.value)}
               />
-            </svg>
-          </button>
+              <button type="submit" aria-label="Tìm kiếm">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M10.5 4a6.5 6.5 0 1 0 0 13a6.5 6.5 0 0 0 0-13Zm0 0l9.5 9.5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </button>
+            </form>
+          </div>
 
           <button
             type="button"
