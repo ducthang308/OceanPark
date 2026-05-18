@@ -17,4 +17,8 @@ public interface BaiDangYeuThichRepository extends JpaRepository<BaiDangYeuThich
     List<BaiDangYeuThich> findByBaiDang_MaBaiDang(String maBaiDang);
 
     void deleteByNguoiDung_MaNguoiDungAndBaiDang_MaBaiDang(String maNguoiDung, String maBaiDang);
+
+    long countByBaiDang_MaBaiDang(String maBaiDang);
+
+    long countByBaiDang_NguoiDung_MaNguoiDung(String maNguoiDung);
 }

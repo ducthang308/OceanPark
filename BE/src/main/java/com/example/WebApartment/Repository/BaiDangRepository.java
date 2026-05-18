@@ -15,4 +15,13 @@ public interface BaiDangRepository extends JpaRepository<BaiDang, String> {
     long countByTrangThaiIgnoreCase(String trangThai);
 
     List<BaiDang> findByTrangThai(String trangThai);
+
+    long countByNguoiDung_MaNguoiDung(String maNguoiDung);
+
+    long countByNguoiDung_MaNguoiDungAndTrangThaiIgnoreCase(
+            String maNguoiDung,
+            String trangThai
+    );
+
+    List<BaiDang> findByNguoiDung_MaNguoiDung(String maNguoiDung);
 }

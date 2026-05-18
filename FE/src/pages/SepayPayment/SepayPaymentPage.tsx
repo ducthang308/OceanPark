@@ -44,7 +44,7 @@ const SepayPaymentPage: React.FC = () => {
 
                     if (hoaDon.loaiHoaDon === 'THUE_CAN_HO') {
                         alert('Thanh toán thuê căn hộ thành công!');
-                        navigate('/payment-history');
+                        navigate('/tenant-transactions');
                         return;
                     }
 

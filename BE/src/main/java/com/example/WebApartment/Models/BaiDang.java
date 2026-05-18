@@ -46,4 +46,7 @@ public class BaiDang {
 
     @Column(name = "hinhThucThanhToan")
     private String hinhThucThanhToan;
+
+    @Column(name = "luotXem")
+    private Long luotXem = 0L;
 }

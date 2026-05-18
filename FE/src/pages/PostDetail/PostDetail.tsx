@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createSepayPayment } from '../../services/api/PostManagementService';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import './PostDetail.css';
@@ -11,6 +11,7 @@ import {
   getFavoritePostsByUser,
   getPostById,
   getPostImages,
+  increasePostView,
   removeFavoritePost,
 } from '../../services/api/PostManagementService';
 import type {
@@ -187,8 +188,35 @@ const PostDetail: React.FC = () => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [favoriteCount, setFavoriteCount] = useState(0);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
+  const viewedRef = useRef(false);
 
   const maNguoiDung = getAuthSession()?.user.maNguoiDung || '';
+
+  useEffect(() => {
+    if (!id || viewedRef.current) return;
+
+    const key = `viewed_post_${id}`;
+    const viewedTime = localStorage.getItem(key);
+    const THIRTY_MINUTES = 30 * 60 * 1000;
+
+    if (
+      viewedTime &&
+      Date.now() - Number(viewedTime) < THIRTY_MINUTES
+    ) {
+      viewedRef.current = true;
+      return;
+    }
+
+    viewedRef.current = true;
+
+    increasePostView(id)
+      .then(() => {
+        localStorage.setItem(key, Date.now().toString());
+      })
+      .catch((error) => {
+        console.error('Không thể tăng lượt xem:', error);
+      });
+  }, [id]);
 
   useEffect(() => {
     let ignore = false;
