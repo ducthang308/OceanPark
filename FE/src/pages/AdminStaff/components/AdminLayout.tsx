@@ -1,19 +1,22 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   AppstoreOutlined,
+  BarChartOutlined,
   CheckSquareOutlined,
+  CreditCardOutlined,
   GiftOutlined,
   HomeOutlined,
   UserOutlined,
 } from '@ant-design/icons';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import AdminTopbar from './AdminTopbar';
+import { getDashboardStats } from '../../../services/api/AdminDashboardService';
 import './admin-layout.css';
 
 const pageMeta: Record<string, { title: string; subtitle: string }> = {
   '/admin': {
-    title: 'Dashboard admin',
-    subtitle: 'Theo dõi nhanh tài khoản, bài đăng, doanh thu và hoạt động vận hành.',
+    title: 'Dashboard nhân viên',
+    subtitle: 'Theo dõi nhanh bài đăng, thanh toán và hiệu suất vận hành.',
   },
   '/admin/posts': {
     title: 'Duyệt bài đăng',
@@ -27,6 +30,10 @@ const pageMeta: Record<string, { title: string; subtitle: string }> = {
     title: 'Quản lý gói bài đăng',
     subtitle: 'Thiết lập giá, thời hạn và trạng thái các gói đăng bài.',
   },
+  '/admin/payments': {
+    title: 'Quản lý thanh toán',
+    subtitle: 'Danh sách các giao dịch, hóa đơn và lịch sử thanh toán trên hệ thống.',
+  },
   '/admin/accounts': {
     title: 'Quản lý tài khoản',
     subtitle: 'Quản lý hồ sơ, vai trò và trạng thái hoạt động của tài khoản.',
@@ -36,6 +43,34 @@ const pageMeta: Record<string, { title: string; subtitle: string }> = {
 const AdminLayout: React.FC = () => {
   const location = useLocation();
   const meta = pageMeta[location.pathname] || pageMeta['/admin'];
+  const [queueSummary, setQueueSummary] = useState({ posts: 0, payments: 0 });
+
+  useEffect(() => {
+    let ignore = false;
+
+    const loadQueueSummary = async () => {
+      try {
+        const stats = await getDashboardStats();
+
+        if (!ignore) {
+          setQueueSummary({
+            posts: stats.pendingPosts ?? 0,
+            payments: stats.pendingPayments ?? 0,
+          });
+        }
+      } catch {
+        if (!ignore) setQueueSummary({ posts: 0, payments: 0 });
+      }
+    };
+
+    void loadQueueSummary();
+
+    return () => {
+      ignore = true;
+    };
+  }, [location.pathname]);
+
+  const queueTotal = queueSummary.posts + queueSummary.payments;
 
   return (
     <div className="admin-layout">
@@ -71,6 +106,16 @@ const AdminLayout: React.FC = () => {
           </NavLink>
 
           <NavLink
+            to="/admin/payments"
+            className={({ isActive }) =>
+              `admin-layout__nav-link ${isActive ? 'active' : ''}`
+            }
+          >
+            <CreditCardOutlined />
+            <span>Quản lý thanh toán</span>
+          </NavLink>
+
+          <NavLink
             to="/admin/categories"
             className={({ isActive }) =>
               `admin-layout__nav-link ${isActive ? 'active' : ''}`
@@ -102,9 +147,14 @@ const AdminLayout: React.FC = () => {
         </nav>
 
         <div className="admin-layout__footer-card">
-          <div className="admin-layout__footer-label">Khu vực quản trị</div>
-          <div className="admin-layout__footer-value">5</div>
-          <div className="admin-layout__footer-subtitle">Dashboard • Bài đăng • Danh mục • Gói • Tài khoản</div>
+          <div className="admin-layout__footer-label">Hàng chờ xử lý hôm nay</div>
+          <div className="admin-layout__footer-value">
+            {queueTotal.toLocaleString('vi-VN')}
+          </div>
+          <div className="admin-layout__footer-subtitle">
+            {queueSummary.posts.toLocaleString('vi-VN')} bài đăng •{' '}
+            {queueSummary.payments.toLocaleString('vi-VN')} thanh toán
+          </div>
         </div>
       </aside>
 

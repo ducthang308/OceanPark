@@ -41,12 +41,24 @@ public class WebSecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(requests -> requests
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(
                                 String.format("%s/nguoi-dung/register", apiPrefix),
                                 String.format("%s/nguoi-dung/login", apiPrefix),
                                 String.format("%s/sepay/webhook", apiPrefix),
                                 String.format("%s/nguoi-dung/forgot-password", apiPrefix),
                                 String.format("%s/nguoi-dung/reset-password", apiPrefix)
+                        ).permitAll()
+                        .requestMatchers(HttpMethod.GET,
+                                String.format("%s/bai-dang", apiPrefix),
+                                String.format("%s/bai-dang/**", apiPrefix),
+                                String.format("%s/danhmuc", apiPrefix),
+                                String.format("%s/danhmuc/**", apiPrefix),
+                                String.format("%s/chi-tiet-can-ho", apiPrefix),
+                                String.format("%s/chi-tiet-can-ho/**", apiPrefix),
+                                String.format("%s/hinh-anh-bai-dang", apiPrefix),
+                                String.format("%s/hinh-anh-bai-dang/**", apiPrefix),
+                                String.format("%s/bai-dang-yeu-thich/bai-dang/*/count", apiPrefix)
                         ).permitAll()
                         .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/error").permitAll()

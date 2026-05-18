@@ -70,6 +70,15 @@ public class NhuCauNguoiDungService {
         if (dto.getLoaiCanHo() != null) existing.setLoaiCanHo(dto.getLoaiCanHo());
         if (dto.getCoBanCong() != null) existing.setCoBanCong(dto.getCoBanCong());
         if (dto.getDayDuNoiThat() != null) existing.setDayDuNoiThat(dto.getDayDuNoiThat());
+        if (dto.getCoMayLanh() != null) existing.setCoMayLanh(dto.getCoMayLanh());
+        if (dto.getCoThangMay() != null) existing.setCoThangMay(dto.getCoThangMay());
+        if (dto.getCoBaoVe24h() != null) existing.setCoBaoVe24h(dto.getCoBaoVe24h());
+        if (dto.getCoMayGiat() != null) existing.setCoMayGiat(dto.getCoMayGiat());
+        if (dto.getKhongChungChu() != null) existing.setKhongChungChu(dto.getKhongChungChu());
+        if (dto.getCoHamXe() != null) existing.setCoHamXe(dto.getCoHamXe());
+        if (dto.getCoKeBep() != null) existing.setCoKeBep(dto.getCoKeBep());
+        if (dto.getCoTuLanh() != null) existing.setCoTuLanh(dto.getCoTuLanh());
+        if (dto.getGioGiacTuDo() != null) existing.setGioGiacTuDo(dto.getGioGiacTuDo());
         if (dto.getGanTrungTam() != null) existing.setGanTrungTam(dto.getGanTrungTam());
         if (dto.getGanBien() != null) existing.setGanBien(dto.getGanBien());
 
@@ -108,6 +117,15 @@ public class NhuCauNguoiDungService {
                 .loaiCanHo(entity.getLoaiCanHo())
                 .coBanCong(entity.getCoBanCong())
                 .dayDuNoiThat(entity.getDayDuNoiThat())
+                .coMayLanh(entity.getCoMayLanh())
+                .coThangMay(entity.getCoThangMay())
+                .coBaoVe24h(entity.getCoBaoVe24h())
+                .coMayGiat(entity.getCoMayGiat())
+                .khongChungChu(entity.getKhongChungChu())
+                .coHamXe(entity.getCoHamXe())
+                .coKeBep(entity.getCoKeBep())
+                .coTuLanh(entity.getCoTuLanh())
+                .gioGiacTuDo(entity.getGioGiacTuDo())
                 .ganTrungTam(entity.getGanTrungTam())
                 .ganBien(entity.getGanBien())
                 .ngayTao(entity.getNgayTao())
@@ -126,6 +144,15 @@ public class NhuCauNguoiDungService {
                 .loaiCanHo(dto.getLoaiCanHo())
                 .coBanCong(dto.getCoBanCong())
                 .dayDuNoiThat(dto.getDayDuNoiThat())
+                .coMayLanh(dto.getCoMayLanh())
+                .coThangMay(dto.getCoThangMay())
+                .coBaoVe24h(dto.getCoBaoVe24h())
+                .coMayGiat(dto.getCoMayGiat())
+                .khongChungChu(dto.getKhongChungChu())
+                .coHamXe(dto.getCoHamXe())
+                .coKeBep(dto.getCoKeBep())
+                .coTuLanh(dto.getCoTuLanh())
+                .gioGiacTuDo(dto.getGioGiacTuDo())
                 .ganTrungTam(dto.getGanTrungTam())
                 .ganBien(dto.getGanBien())
                 .ngayTao(dto.getNgayTao())

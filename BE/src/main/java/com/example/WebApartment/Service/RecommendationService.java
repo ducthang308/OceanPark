@@ -11,7 +11,9 @@ import com.example.WebApartment.Repository.NhuCauNguoiDungRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.text.Normalizer;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -131,16 +133,107 @@ public class RecommendationService {
         }
 
         // ===== Ban công =====
-        if (Boolean.TRUE.equals(nhuCau.getCoBanCong())) {
+        if (Boolean.TRUE.equals(nhuCau.getCoBanCong())
+                && containsAny(baiDang, "ban công", "ban cong")) {
             score += 10;
         }
 
         // ===== Nội thất =====
-        if (Boolean.TRUE.equals(nhuCau.getDayDuNoiThat())) {
+        if (Boolean.TRUE.equals(nhuCau.getDayDuNoiThat())
+                && containsAny(baiDang, "đầy đủ nội thất", "day du noi that", "full nội thất", "full noi that")) {
             score += 10;
         }
 
+        score += calculatePreferenceScore(baiDang, nhuCau);
+
         return score;
+    }
+
+    private int calculatePreferenceScore(BaiDang baiDang, NhuCauNguoiDung nhuCau) {
+        int score = 0;
+
+        if (Boolean.TRUE.equals(nhuCau.getCoMayLanh())
+                && containsAny(baiDang, "máy lạnh", "may lanh", "điều hòa", "dieu hoa")) {
+            score += 5;
+        }
+
+        if (Boolean.TRUE.equals(nhuCau.getCoThangMay())
+                && containsAny(baiDang, "thang máy", "thang may")) {
+            score += 5;
+        }
+
+        if (Boolean.TRUE.equals(nhuCau.getCoBaoVe24h())
+                && containsAny(baiDang, "bảo vệ", "bao ve", "an ninh", "24/24", "24h")) {
+            score += 5;
+        }
+
+        if (Boolean.TRUE.equals(nhuCau.getCoMayGiat())
+                && containsAny(baiDang, "máy giặt", "may giat")) {
+            score += 5;
+        }
+
+        if (Boolean.TRUE.equals(nhuCau.getKhongChungChu())
+                && containsAny(baiDang, "không chung chủ", "khong chung chu")) {
+            score += 5;
+        }
+
+        if (Boolean.TRUE.equals(nhuCau.getCoHamXe())
+                && containsAny(baiDang, "hầm xe", "ham xe", "để xe", "de xe", "bãi xe", "bai xe")) {
+            score += 5;
+        }
+
+        if (Boolean.TRUE.equals(nhuCau.getCoKeBep())
+                && containsAny(baiDang, "kệ bếp", "ke bep", "bếp", "bep")) {
+            score += 5;
+        }
+
+        if (Boolean.TRUE.equals(nhuCau.getCoTuLanh())
+                && containsAny(baiDang, "tủ lạnh", "tu lanh")) {
+            score += 5;
+        }
+
+        if (Boolean.TRUE.equals(nhuCau.getGioGiacTuDo())
+                && containsAny(baiDang, "giờ giấc tự do", "gio giac tu do", "tự do giờ giấc", "tu do gio giac")) {
+            score += 5;
+        }
+
+        if (Boolean.TRUE.equals(nhuCau.getGanTrungTam())
+                && containsAny(baiDang, "trung tâm", "trung tam", "hải châu", "hai chau")) {
+            score += 5;
+        }
+
+        if (Boolean.TRUE.equals(nhuCau.getGanBien())
+                && containsAny(baiDang, "gần biển", "gan bien", "biển", "bien", "mỹ khê", "my khe")) {
+            score += 5;
+        }
+
+        return score;
+    }
+
+    private boolean containsAny(BaiDang baiDang, String... keywords) {
+        String searchableText = normalizeSearchText(
+                (baiDang.getTieuDe() != null ? baiDang.getTieuDe() : "")
+                        + " "
+                        + (baiDang.getNoiDung() != null ? baiDang.getNoiDung() : "")
+        );
+
+        for (String keyword : keywords) {
+            if (searchableText.contains(normalizeSearchText(keyword))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private String normalizeSearchText(String value) {
+        String withoutMarks = Normalizer.normalize(value, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "");
+
+        return withoutMarks
+                .replace('đ', 'd')
+                .replace('Đ', 'D')
+                .toLowerCase(Locale.ROOT);
     }
 
     private BaiDangDTO toDto(BaiDang e) {

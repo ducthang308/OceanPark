@@ -125,6 +125,76 @@
   color: #dc2626;
 }
 
+.admin-topbar--dashboard {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  margin-bottom: 32px;
+  box-shadow: none;
+}
+
+.admin-topbar--dashboard .admin-topbar__title {
+  font-size: 26px;
+  font-weight: 750;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.admin-topbar--dashboard .admin-topbar__subtitle {
+  margin-top: 6px;
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 400;
+}
+
+.admin-topbar--dashboard .admin-topbar__userbox {
+  gap: 14px;
+  min-width: 280px;
+  padding: 12px 20px;
+  border-radius: 20px;
+  background: #ffffff;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.04);
+  transition: all 0.2s ease;
+}
+
+.admin-topbar--dashboard .admin-topbar__userbox:hover {
+  border-color: #e2e8f0;
+  background: #ffffff;
+  box-shadow: 0 12px 35px rgba(15, 23, 42, 0.06);
+}
+
+.admin-topbar--dashboard .admin-topbar__avatar {
+  background: linear-gradient(135deg, #0c9a81, #10b981);
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  font-weight: 750;
+}
+
+.admin-topbar--dashboard .admin-topbar__user-name {
+  color: #0f172a;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.admin-topbar--dashboard .admin-topbar__user-role {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.admin-topbar--dashboard .admin-topbar__caret {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.admin-topbar--dashboard .admin-topbar__dropdown {
+  border: 1px solid #f1f5f9;
+  border-radius: 16px;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+}
+
 @keyframes adminTopbarFadeIn {
   from {
     opacity: 0;

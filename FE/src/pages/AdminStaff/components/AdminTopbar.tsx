@@ -7,9 +7,10 @@ import { clearAuthSession } from '../../../utils/storage';
 interface Props {
   title: string;
   subtitle: string;
+  dashboard?: boolean;
 }
 
-const AdminTopbar: React.FC<Props> = ({ title, subtitle }) => {
+const AdminTopbar: React.FC<Props> = ({ title, subtitle, dashboard = false }) => {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -19,7 +20,7 @@ const AdminTopbar: React.FC<Props> = ({ title, subtitle }) => {
   };
 
   return (
-    <div className="admin-topbar">
+    <div className={`admin-topbar ${dashboard ? 'admin-topbar--dashboard' : ''}`}>
       <div className="admin-topbar__left">
         <h1 className="admin-topbar__title">{title}</h1>
         <div className="admin-topbar__subtitle">{subtitle}</div>

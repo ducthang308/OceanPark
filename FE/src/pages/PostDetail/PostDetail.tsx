@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createSepayPayment } from '../../services/api/PostManagementService';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import './PostDetail.css';
 import fallbackRoomImage from '../../assets/img/co4la.png';
 import {
@@ -179,6 +179,7 @@ const buildApiPostDetail = (
 const PostDetail: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [post, setPost] = useState<PostDetailView | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -285,7 +286,14 @@ const PostDetail: React.FC = () => {
     if (!post?.id) return;
 
     if (!maNguoiDung) {
-      navigate('/login');
+      navigate('/login', {
+        state: {
+          from: {
+            pathname: location.pathname,
+            search: location.search,
+          },
+        },
+      });
       return;
     }
 
@@ -340,7 +348,14 @@ const PostDetail: React.FC = () => {
 
       if (!maNguoiDung) {
         alert('Vui lòng đăng nhập trước khi thuê căn hộ');
-        navigate('/login');
+        navigate('/login', {
+          state: {
+            from: {
+              pathname: location.pathname,
+              search: location.search,
+            },
+          },
+        });
         return;
       }
 

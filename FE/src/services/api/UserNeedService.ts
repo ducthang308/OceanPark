@@ -10,6 +10,15 @@ export interface NhuCauNguoiDungDTO {
   loaiCanHo: string | null;
   coBanCong: boolean;
   dayDuNoiThat: boolean;
+  coMayLanh: boolean;
+  coThangMay: boolean;
+  coBaoVe24h: boolean;
+  coMayGiat: boolean;
+  khongChungChu: boolean;
+  coHamXe: boolean;
+  coKeBep: boolean;
+  coTuLanh: boolean;
+  gioGiacTuDo: boolean;
   ganTrungTam: boolean;
   ganBien: boolean;
   ngayTao?: string | null;
@@ -26,6 +35,15 @@ const toDto = (
   loaiCanHo: values.loaiCanHo || null,
   coBanCong: values.coBanCong,
   dayDuNoiThat: values.dayDuNoiThat,
+  coMayLanh: values.coMayLanh,
+  coThangMay: values.coThangMay,
+  coBaoVe24h: values.coBaoVe24h,
+  coMayGiat: values.coMayGiat,
+  khongChungChu: values.khongChungChu,
+  coHamXe: values.coHamXe,
+  coKeBep: values.coKeBep,
+  coTuLanh: values.coTuLanh,
+  gioGiacTuDo: values.gioGiacTuDo,
   ganTrungTam: values.ganTrungTam,
   ganBien: values.ganBien,
 });

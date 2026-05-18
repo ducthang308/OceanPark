@@ -1,6 +1,6 @@
 import './RoomList.css';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import fallbackRoomImage from '../../assets/img/co4la.png';
 import {
   addFavoritePost,
@@ -22,7 +22,6 @@ import {
   AREA_RANGE_OPTIONS,
   DEFAULT_HOME_CATEGORIES,
   DISTRICT_OPTIONS,
-  HOME_DEFAULT_STATS,
   HOME_STATIC_CONTENT,
   PRICE_RANGE_OPTIONS,
   createListingPath,
@@ -34,6 +33,8 @@ import {
 } from '../../services/api/HomeService';
 
 import { useUserNeedDialog } from '../../hooks/useUserNeedDialog';
+import { useAuth } from '../../hooks/useAuth';
+import { LANDLORD_ROLE_IDS } from '../../constants/roles';
 import UserNeedDialog from '../../components/common/UserNeedDialog/UserNeedDialog';
 
 const POSTS_PER_PAGE = 3;
@@ -54,6 +55,12 @@ interface RoomCategory {
   label: string;
   slug: string;
   description: string;
+}
+
+interface RoomWardOption {
+  id: string;
+  name: string;
+  postCount: number;
 }
 
 interface RoomPostCard {
@@ -123,6 +130,11 @@ const defaultCategories: RoomCategory[] = DEFAULT_HOME_CATEGORIES.map((category)
   slug: category.slug,
   description: category.description,
 }));
+
+const getWardKey = (wardText: string) =>
+  normalizeText(wardText || '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'phuong';
 
 const mapCategoryDto = (category: DanhMucDTO): RoomCategory => {
   const label = category.tenDanhMuc || category.maDanhMuc || 'Danh mục';
@@ -214,8 +226,10 @@ const buildPostCard = (
 
 const RoomList: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { slug } = useParams<{ slug?: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { isAuthenticated, roleId, user } = useAuth();
   const [activeTab, setActiveTab] = useState<RoomTab>('proposal');
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [favoriteActionIds, setFavoriteActionIds] = useState<string[]>([]);
@@ -226,7 +240,8 @@ const RoomList: React.FC = () => {
   const [postsError, setPostsError] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
 
-  const maNguoiDung = localStorage.getItem('userId');
+  const maNguoiDung = user?.maNguoiDung ?? null;
+  const canViewServicePrice = Boolean(roleId && LANDLORD_ROLE_IDS.includes(roleId));
 
   const {
     open,
@@ -242,6 +257,8 @@ const RoomList: React.FC = () => {
     : 'all';
   const activePriceRangeId = searchParams.get('price') || '';
   const activeAreaRangeId = searchParams.get('area') || '';
+  const activeWard = searchParams.get('ward')?.trim() || '';
+  const activeKeyword = searchParams.get('q')?.trim() || '';
   const directMinPrice = Number(searchParams.get('minPrice') || '');
   const directMaxPrice = Number(searchParams.get('maxPrice') || '');
   const directMinArea = Number(searchParams.get('minArea') || '');
@@ -357,7 +374,17 @@ const RoomList: React.FC = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [slug, activeDistrict, activePriceRangeId, activeAreaRangeId, directMinPrice, directMaxPrice, directMinArea]);
+  }, [
+    slug,
+    activeKeyword,
+    activeDistrict,
+    activeWard,
+    activePriceRangeId,
+    activeAreaRangeId,
+    directMinPrice,
+    directMaxPrice,
+    directMinArea,
+  ]);
 
   const activeCategory = useMemo(
     () => categoryOptions.find((category) => category.slug === slug),
@@ -369,24 +396,33 @@ const RoomList: React.FC = () => {
     return postList.filter((post) => post.categorySlug === slug);
   }, [postList, slug]);
 
-  const districtOptions = useMemo(
-    () =>
-      DISTRICT_OPTIONS.map((district) => {
-        if (district.id === 'all') {
-          return {
-            ...district,
-            postCount: categoryFilteredPosts.length,
-          };
-        }
+  const wardOptions = useMemo<RoomWardOption[]>(() => {
+    const wardMap = new Map<string, RoomWardOption>();
 
-        return {
-          ...district,
-          postCount: categoryFilteredPosts.filter((post) => post.districtId === district.id)
-            .length,
-        };
-      }),
-    [categoryFilteredPosts],
-  );
+    categoryFilteredPosts.forEach((post) => {
+      const wardName = post.wardText?.trim();
+
+      if (!wardName || normalizeText(wardName).includes('dang cap nhat')) return;
+
+      const key = getWardKey(wardName);
+      const current = wardMap.get(key);
+
+      if (current) {
+        current.postCount += 1;
+      } else {
+        wardMap.set(key, {
+          id: key,
+          name: wardName,
+          postCount: 1,
+        });
+      }
+    });
+
+    return [
+      { id: 'all', name: 'Tất cả', postCount: categoryFilteredPosts.length },
+      ...Array.from(wardMap.values()).sort((a, b) => b.postCount - a.postCount),
+    ];
+  }, [categoryFilteredPosts]);
 
   const districtFilteredPosts = useMemo(() => {
     if (activeDistrict === 'all') return categoryFilteredPosts;
@@ -402,6 +438,38 @@ const RoomList: React.FC = () => {
     );
   }, [activeDistrict, categoryFilteredPosts]);
 
+  const wardFilteredPosts = useMemo(() => {
+    if (!activeWard) return districtFilteredPosts;
+
+    const normalizedWard = normalizeText(activeWard);
+
+    return districtFilteredPosts.filter((post) =>
+      normalizeText(`${post.wardText} ${post.addressText}`).includes(normalizedWard),
+    );
+  }, [activeWard, districtFilteredPosts]);
+
+  const keywordFilteredPosts = useMemo(() => {
+    const keyword = normalizeText(activeKeyword);
+
+    if (!keyword) return wardFilteredPosts;
+
+    return wardFilteredPosts.filter((post) => {
+      const searchableText = normalizeText(
+        [
+          post.title,
+          post.description,
+          post.addressText,
+          post.wardText,
+          post.categoryLabel,
+          post.priceText,
+          post.areaText,
+        ].join(' '),
+      );
+
+      return searchableText.includes(keyword);
+    });
+  }, [activeKeyword, wardFilteredPosts]);
+
   const priceRange = useMemo(
     () => findRangeOption(PRICE_RANGE_OPTIONS, activePriceRangeId),
     [activePriceRangeId],
@@ -413,7 +481,7 @@ const RoomList: React.FC = () => {
 
   const filteredPosts = useMemo(
     () =>
-      districtFilteredPosts.filter(
+      keywordFilteredPosts.filter(
         (post) =>
           isNumberInRange(post.price, priceRange) &&
           isNumberInRange(post.area, areaRange) &&
@@ -421,7 +489,7 @@ const RoomList: React.FC = () => {
           (!directMaxPrice || (typeof post.price === 'number' && post.price <= directMaxPrice)) &&
           (!directMinArea || (typeof post.area === 'number' && post.area >= directMinArea)),
       ),
-    [areaRange, directMaxPrice, directMinArea, directMinPrice, districtFilteredPosts, priceRange],
+    [areaRange, directMaxPrice, directMinArea, directMinPrice, keywordFilteredPosts, priceRange],
   );
 
   const visibleFeaturedPosts = useMemo(() => {
@@ -445,19 +513,6 @@ const RoomList: React.FC = () => {
     [postList],
   );
 
-  const heroStats = useMemo(
-    () =>
-      HOME_DEFAULT_STATS.map((item, index) =>
-        index === 0
-          ? {
-              ...item,
-              value: postsLoading ? '...' : String(postList.length),
-            }
-          : item,
-      ),
-    [postList.length, postsLoading],
-  );
-
   const totalPages = Math.ceil(visibleFeaturedPosts.length / POSTS_PER_PAGE);
   const paginatedPosts = visibleFeaturedPosts.slice(
     (currentPage - 1) * POSTS_PER_PAGE,
@@ -475,13 +530,16 @@ const RoomList: React.FC = () => {
     setCurrentPage(1);
   };
 
-  const updateSearchFilter = (key: 'district' | 'price' | 'area', value: string) => {
+  const updateSearchFilter = (key: 'district' | 'ward' | 'price' | 'area', value: string) => {
     const nextParams = new URLSearchParams(searchParams);
 
     if (!value || value === 'all') {
       nextParams.delete(key);
     } else {
       nextParams.set(key, value);
+
+      if (key === 'ward') nextParams.delete('district');
+      if (key === 'district') nextParams.delete('ward');
     }
 
     setSearchParams(nextParams);
@@ -489,8 +547,15 @@ const RoomList: React.FC = () => {
   };
 
   const toggleFavorite = async (postId: string) => {
-    if (!maNguoiDung) {
-      navigate('/login');
+    if (!isAuthenticated || !maNguoiDung) {
+      navigate('/login', {
+        state: {
+          from: {
+            pathname: location.pathname,
+            search: location.search,
+          },
+        },
+      });
       return;
     }
 
@@ -544,6 +609,17 @@ const RoomList: React.FC = () => {
 
   const getLikeCount = (post: RoomPostCard) => post.likeCount ?? 0;
   const currentCategorySlug = activeCategory?.slug || slug;
+  const listingEyebrow = activeKeyword
+    ? 'Từ khóa đang tìm'
+    : activeCategory
+      ? 'Danh mục đang xem'
+      : 'Gợi ý dành cho bạn';
+  const listingTitle = activeKeyword
+    ? `Kết quả tìm kiếm: ${activeKeyword}`
+    : activeCategory?.label || 'Tin nổi bật theo nhu cầu tìm kiếm';
+  const emptyDescription = activeKeyword
+    ? `Không tìm thấy bài đăng phù hợp với "${activeKeyword}". Thử đổi từ khóa hoặc bỏ bớt bộ lọc.`
+    : 'Thử chọn danh mục hoặc khu vực khác để xem thêm tin đăng.';
 
   return (
     <>
@@ -560,19 +636,13 @@ const RoomList: React.FC = () => {
                 <Link to="/danh-muc/phong-tro" className="room-list-btn room-list-btn--primary">
                   Khám phá tin thuê
                 </Link>
-                <Link to="/service-price" className="room-list-btn room-list-btn--ghost">
-                  Xem bảng giá
-                </Link>
+                {canViewServicePrice && (
+                  <Link to="/service-price" className="room-list-btn room-list-btn--ghost">
+                    Xem bảng giá
+                  </Link>
+                )}
               </div>
 
-              <div className="room-list-hero__stats">
-                {heroStats.map((item) => (
-                  <div key={item.label} className="room-list-stat-card">
-                    <strong>{item.value}</strong>
-                    <span>{item.label}</span>
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
         </section>
@@ -606,21 +676,24 @@ const RoomList: React.FC = () => {
         <section className="room-list-districts">
           <div className="room-list-section-heading room-list-section-heading--center">
             <span>Khu vực phổ biến</span>
-            <h2>Tìm kiếm theo quận tại Đà Nẵng</h2>
+            <h2>Tìm kiếm theo phường tại Đà Nẵng</h2>
           </div>
 
           <div className="room-list-districts__chips">
-            {districtOptions.map((district) => (
+            {wardOptions.map((ward) => (
               <button
-                key={district.id}
+                key={ward.id}
                 type="button"
                 className={`room-list-district-chip ${
-                  activeDistrict === district.id ? 'is-active' : ''
+                  (!activeWard && ward.id === 'all') ||
+                  normalizeText(activeWard) === normalizeText(ward.name)
+                    ? 'is-active'
+                    : ''
                 }`}
-                onClick={() => updateSearchFilter('district', district.id)}
+                onClick={() => updateSearchFilter('ward', ward.id === 'all' ? 'all' : ward.name)}
               >
-                <span>{district.name}</span>
-                <small>{district.postCount} tin</small>
+                <span>{ward.name}</span>
+                <small>{ward.postCount} tin</small>
               </button>
             ))}
           </div>
@@ -631,8 +704,8 @@ const RoomList: React.FC = () => {
             <div className="room-list-content__main">
               <div className="room-list-tabs-header">
                 <div className="room-list-section-heading room-list-section-heading--compact">
-                  <span>{activeCategory ? 'Danh mục đang xem' : 'Gợi ý dành cho bạn'}</span>
-                  <h2>{activeCategory?.label || 'Tin nổi bật theo nhu cầu tìm kiếm'}</h2>
+                  <span>{listingEyebrow}</span>
+                  <h2>{listingTitle}</h2>
                 </div>
 
                 <div className="room-list-tabs">
@@ -758,7 +831,7 @@ const RoomList: React.FC = () => {
                 ) : (
                   <div className="room-list-state">
                     <h3>Chưa có bài đăng phù hợp</h3>
-                    <p>Thử chọn danh mục hoặc khu vực khác để xem thêm tin đăng.</p>
+                    <p>{emptyDescription}</p>
                   </div>
                 )}
               </div>

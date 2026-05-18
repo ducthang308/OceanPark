@@ -159,10 +159,11 @@
 /* Toolbar & bộ lọc */
 .payment-toolbar-card {
   background: white;
-  border-radius: var(--radius-lg);
-  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  padding: 1.25rem 1.75rem;
   margin-bottom: 1.5rem;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.03), 0 8px 16px -6px rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(226, 232, 240, 0.6);
 }
 
 .admin-toolbar {
@@ -170,12 +171,13 @@
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  gap: 1rem;
+  gap: 1.25rem;
 }
 
 .payment-toolbar-left {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 1rem;
   flex: 2;
 }
@@ -183,74 +185,118 @@
 .payment-search-box {
   display: flex;
   align-items: center;
-  background: var(--gray-100);
-  border-radius: 2rem;
-  padding: 0.25rem 1rem;
-  border: 1px solid var(--gray-200);
-  transition: var(--transition);
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 0.25rem 1.15rem;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.01);
 }
 
 .payment-search-box:focus-within {
-  border-color: var(--primary);
+  border-color: #1e3a8a; /* Deep navy matching layout theme */
   background: white;
-  box-shadow: 0 0 0 3px rgba(45, 106, 79, 0.1);
+  box-shadow: 0 0 0 4px rgba(30, 58, 138, 0.08), inset 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
 .payment-search-box__icon {
-  color: var(--gray-400);
-  margin-right: 0.5rem;
+  color: #94a3b8;
+  margin-right: 0.65rem;
+  font-size: 0.95rem;
+  transition: color 0.2s ease;
+}
+
+.payment-search-box:focus-within .payment-search-box__icon {
+  color: #1e3a8a;
 }
 
 .payment-search-box__input {
   border: none;
   background: transparent;
-  padding: 0.5rem 0;
-  font-size: 0.875rem;
-  width: 240px;
+  padding: 0.6rem 0;
+  font-size: 0.9rem;
+  width: 280px;
   outline: none;
   font-family: inherit;
+  color: #334155;
+}
+
+.payment-search-box__input::placeholder {
+  color: #94a3b8;
 }
 
 .payment-filter-select {
-  background: white;
-  border: 1px solid var(--gray-200);
-  border-radius: 2rem;
-  padding: 0 1rem;
-  font-size: 0.875rem;
-  height: 40px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0 2.5rem 0 1.15rem;
+  font-size: 0.9rem;
+  height: 42px;
   cursor: pointer;
-  background-color: white;
+  outline: none;
+  color: #334155;
   font-family: inherit;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* Custom gorgeous SVG select arrow */
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1.25rem;
+}
+
+.payment-filter-select:hover {
+  border-color: #cbd5e1;
+  background-color: #f1f5f9;
+}
+
+.payment-filter-select:focus {
+  border-color: #1e3a8a;
+  background-color: white;
+  box-shadow: 0 0 0 4px rgba(30, 58, 138, 0.08);
 }
 
 .payment-toolbar-result {
-  font-size: 0.875rem;
-  color: var(--gray-600);
+  font-size: 0.85rem;
+  color: #475569;
+  background: #f1f5f9;
+  padding: 0.5rem 1.15rem;
+  border-radius: 9999px;
+  font-weight: 500;
+  border: 1px solid #e2e8f0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 /* Danh sách giao dịch dạng card */
 .payment-list-card {
   background: white;
-  border-radius: var(--radius-lg);
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.03), 0 8px 16px -6px rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(226, 232, 240, 0.6);
 }
 
 .payment-table-card__head {
-  padding: 1.5rem 1.5rem 0.5rem 1.5rem;
-  border-bottom: 1px solid var(--gray-200);
+  padding: 1.75rem 1.75rem 0.5rem 1.75rem;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .payment-table-card__head h3 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin-bottom: 0.25rem;
-  color: var(--gray-800);
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+  color: #1e293b;
+  letter-spacing: -0.02em;
 }
 
 .payment-table-card__head p {
-  font-size: 0.875rem;
-  color: var(--gray-500);
+  font-size: 0.9rem;
+  color: #64748b;
 }
 
 .payment-list {
@@ -349,29 +395,35 @@
 .admin-badge {
   display: inline-flex;
   align-items: center;
-  padding: 0.25rem 0.75rem;
-  border-radius: 999px;
+  padding: 0.3rem 0.85rem;
+  border-radius: 6px;
   font-size: 0.75rem;
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1.25;
   white-space: nowrap;
+  letter-spacing: 0.01em;
+  border: 1px solid transparent;
 }
 
 .admin-badge.success {
-  background: #e8f5e9;
-  color: #2e7d32;
+  background: #ecfdf5;
+  color: #059669;
+  border-color: #a7f3d0;
 }
 .admin-badge.danger {
-  background: #ffebee;
-  color: #c62828;
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fecaca;
 }
 .admin-badge.info {
-  background: #e3f2fd;
-  color: #1565c0;
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #bfdbfe;
 }
 .admin-badge.pending {
-  background: #fff3e0;
-  color: #ef6c00;
+  background: #fffbeb;
+  color: #d97706;
+  border-color: #fef3c7;
 }
 
 .admin-actions {

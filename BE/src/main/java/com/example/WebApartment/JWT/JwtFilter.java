@@ -101,6 +101,10 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     private boolean isByPassToken(@NotNull HttpServletRequest request) {
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod()) || isPublicGetRequest(request)) {
+            return true;
+        }
+
         final List<Pair<String, String>> byPassTokens = Arrays.asList(
                 Pair.of(String.format("%s/nguoi-dung/login", apiPrefix), "POST"),
                 Pair.of(String.format("%s/nguoi-dung/register", apiPrefix), "POST"),
@@ -118,5 +122,24 @@ public class JwtFilter extends OncePerRequestFilter {
         }
 
         return false;
+    }
+
+    private boolean isPublicGetRequest(@NotNull HttpServletRequest request) {
+        if (!"GET".equalsIgnoreCase(request.getMethod())) {
+            return false;
+        }
+
+        String path = request.getServletPath();
+        String favoriteCountPrefix = String.format("%s/bai-dang-yeu-thich/bai-dang/", apiPrefix);
+
+        return isPathOrChild(path, String.format("%s/bai-dang", apiPrefix))
+                || isPathOrChild(path, String.format("%s/danhmuc", apiPrefix))
+                || isPathOrChild(path, String.format("%s/chi-tiet-can-ho", apiPrefix))
+                || isPathOrChild(path, String.format("%s/hinh-anh-bai-dang", apiPrefix))
+                || (path.startsWith(favoriteCountPrefix) && path.endsWith("/count"));
+    }
+
+    private boolean isPathOrChild(String path, String publicPath) {
+        return path.equals(publicPath) || path.startsWith(publicPath + "/");
     }
 }

@@ -17,21 +17,18 @@ public class ChiTietCanHoController {
     private final ChiTietCanHoService service;
 
     // ===== GET ALL =====
-    @PreAuthorize("hasAnyRole('ADMIN','NGUOI_CHO_THUE','NGUOI_THUE')")
     @GetMapping
     public ResponseEntity<List<ChiTietCanHoDTO>> getAll() {
         return ResponseEntity.ok(service.getAll());
     }
 
     // ===== GET BY ID =====
-    @PreAuthorize("hasAnyRole('ADMIN','NGUOI_CHO_THUE','NGUOI_THUE')")
     @GetMapping("/{maChiTietCanHo}")
     public ResponseEntity<ChiTietCanHoDTO> getById(@PathVariable String maChiTietCanHo) {
         return ResponseEntity.ok(service.getById(maChiTietCanHo));
     }
 
     // ===== GET BY BAI DANG =====
-    @PreAuthorize("hasAnyRole('ADMIN','NGUOI_CHO_THUE','NGUOI_THUE')")
     @GetMapping("/bai-dang/{maBaiDang}")
     public ResponseEntity<ChiTietCanHoDTO> getByMaBaiDang(@PathVariable String maBaiDang) {
         return ResponseEntity.ok(service.getByMaBaiDang(maBaiDang));

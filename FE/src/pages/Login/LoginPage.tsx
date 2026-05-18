@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import './LoginPage.css';
 import Register from '../Register/Register.tsx';
 
@@ -10,10 +10,17 @@ import { getDefaultPathByRole } from '../../constants/roles.ts';
 const LoginPage = () => {
     const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
-    const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
+    const [activeTab, setActiveTab] = useState<'login' | 'register'>(
+        () => (window.location.pathname === '/register' ? 'register' : 'login'),
+    );
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const navigate = useNavigate();
+    const location = useLocation();
+
+    useEffect(() => {
+        setActiveTab(location.pathname === '/register' ? 'register' : 'login');
+    }, [location.pathname]);
 
     const handleGoogleLogin = () => {
         window.location.href = 'http://localhost:8082/oauth2/authorization/google';
@@ -26,13 +33,32 @@ const LoginPage = () => {
 
         try {
             const response = await login(phone, password);
-            navigate(getDefaultPathByRole(response.maVaiTro), { replace: true });
+            const from = (location.state as { from?: { pathname?: string; search?: string } } | null)?.from;
+            const redirectPath = from?.pathname && from.pathname !== '/login'
+                ? `${from.pathname}${from.search ?? ''}`
+                : getDefaultPathByRole(response.maVaiTro);
+
+            navigate(redirectPath, { replace: true });
         } catch (err: any) {
             setError(err.message || 'Đăng nhập thất bại');
         } finally {
             setLoading(false);
         }
 
+    };
+
+    const handleTabChange = (tab: 'login' | 'register') => {
+        setError('');
+        setActiveTab(tab);
+        navigate(tab === 'register' ? '/register' : '/login');
+    };
+
+    const handleRegisterSuccess = (phoneNumber: string) => {
+        setPhone(phoneNumber);
+        setPassword('');
+        setError('');
+        setActiveTab('login');
+        navigate('/login', { replace: true });
     };
 
     return (
@@ -52,13 +78,13 @@ const LoginPage = () => {
                     <div className="login-tabs">
                         <span
                             className={activeTab === 'login' ? 'active-tab' : 'inactive-tab'}
-                            onClick={() => setActiveTab('login')}
+                            onClick={() => handleTabChange('login')}
                         >
                             Đăng nhập
                         </span>
                         <span
                             className={activeTab === 'register' ? 'active-tab' : 'inactive-tab'}
-                            onClick={() => setActiveTab('register')}
+                            onClick={() => handleTabChange('register')}
                         >
                             Đăng ký tài khoản
                         </span>
@@ -116,7 +142,7 @@ const LoginPage = () => {
                             </div>
                         </>
                     ) : (
-                        <Register />
+                        <Register onRegisterSuccess={handleRegisterSuccess} />
                     )}
                 </div>
             </div>
