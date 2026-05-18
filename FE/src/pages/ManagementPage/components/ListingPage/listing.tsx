@@ -24,6 +24,10 @@ import {
   type DanhMucDTO,
 } from "../../../../services/api/PostManagementService";
 
+import { Drawer, Alert, Spin } from "antd";
+import { analyzeRentPrice } from "../../../../services/api/PostManagementService";
+import type { RentPriceAnalysisResponse } from "../../../../services/api/PostManagementService";
+
 interface UploadedImage {
   id: string;
   file: File;
@@ -75,6 +79,9 @@ const getStoredUser = (): StoredUser | null => {
 const Listing = () => {
   const storedUser = getStoredUser();
   const navigate = useNavigate();
+  const [priceAnalysisOpen, setPriceAnalysisOpen] = useState(false);
+  const [priceAnalysisLoading, setPriceAnalysisLoading] = useState(false);
+  const [priceAnalysis, setPriceAnalysis] = useState<RentPriceAnalysisResponse | null>(null);
 
   const [categories, setCategories] = useState<DanhMucDTO[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -370,6 +377,46 @@ const Listing = () => {
       );
     } finally {
       setAiLoading(false);
+    }
+  };
+
+  const handleAnalyzeRentPrice = async () => {
+    const gia = Number(formData.gia);
+    const dienTich = Number(formData.dienTich);
+    const phongNgu = Number(formData.phongNgu);
+
+    if (!formData.gia || !formData.dienTich || !formData.phongNgu || !address.phuong) {
+      message.warning("Vui lòng nhập giá, diện tích, phòng ngủ và phường trước khi phân tích");
+      return;
+    }
+
+    try {
+      setPriceAnalysisOpen(true);
+      setPriceAnalysisLoading(true);
+
+      const selectedCategory = categories.find(
+        (item) => item.maDanhMuc === formData.maDanhMuc
+      );
+
+      const result = await analyzeRentPrice({
+        loaiCanHo: selectedCategory?.tenDanhMuc || "Căn hộ",
+        giaDeXuat: gia,
+        dienTich,
+        phuong: address.phuong,
+        diaChi: fullAddress,
+        phongNgu,
+        coBanCong: false,
+        dayDuNoiThat: false,
+        ganTrungTam: false,
+        ganBien: false,
+      });
+
+      setPriceAnalysis(result);
+    } catch (error) {
+      console.error(error);
+      message.error("Không thể phân tích giá thuê");
+    } finally {
+      setPriceAnalysisLoading(false);
     }
   };
 
@@ -944,6 +991,17 @@ const Listing = () => {
 
       <div className="button-listing">
         <Button
+          type="default"
+          className="ai-price-analysis-btn"
+          block
+          icon={<ThunderboltOutlined />}
+          onClick={handleAnalyzeRentPrice}
+          disabled={isSubmitting}
+        >
+          AI phân tích giá thuê
+        </Button>
+
+        <Button
           type="primary"
           className="continue-btn"
           icon={<ArrowRightOutlined />}
@@ -956,6 +1014,80 @@ const Listing = () => {
           {isSubmitting ? "Đang đăng tin..." : "Đăng tin"}
         </Button>
       </div>
+      <Drawer
+        title="AI phân tích giá thuê"
+        placement="right"
+        width={420}
+        open={priceAnalysisOpen}
+        onClose={() => setPriceAnalysisOpen(false)}
+      >
+        {priceAnalysisLoading ? (
+          <div className="price-analysis-loading">
+            <Spin />
+            <p>AI đang phân tích giá thuê...</p>
+          </div>
+        ) : priceAnalysis ? (
+          <div className="price-analysis-result">
+            <Alert
+              type={
+                priceAnalysis.mucDoHopLy === "HOP_LY"
+                  ? "success"
+                  : priceAnalysis.mucDoHopLy === "CAO_HON_THI_TRUONG"
+                    ? "warning"
+                    : "info"
+              }
+              message={
+                priceAnalysis.mucDoHopLy === "HOP_LY"
+                  ? "Giá thuê hợp lý"
+                  : priceAnalysis.mucDoHopLy === "CAO_HON_THI_TRUONG"
+                    ? "Giá đang cao hơn thị trường"
+                    : "Giá đang thấp hơn thị trường"
+              }
+              showIcon
+            />
+
+            <div className="price-analysis-card">
+              <span>Khoảng giá tham khảo</span>
+              <strong>
+                {priceAnalysis.giaThap.toLocaleString("vi-VN")}đ -{" "}
+                {priceAnalysis.giaCao.toLocaleString("vi-VN")}đ/tháng
+              </strong>
+            </div>
+
+            <div className="price-analysis-card highlight">
+              <span>Giá khuyến nghị</span>
+              <strong>
+                {priceAnalysis.giaKhuyenNghi.toLocaleString("vi-VN")}đ/tháng
+              </strong>
+            </div>
+
+            <div className="price-analysis-section">
+              <h4>Nhận xét</h4>
+              <p>{priceAnalysis.nhanXet}</p>
+            </div>
+
+            <div className="price-analysis-section">
+              <h4>Chiến lược cho thuê</h4>
+              <p>{priceAnalysis.chienLuoc}</p>
+            </div>
+
+            <Button
+              type="primary"
+              block
+              onClick={() =>
+                setFormData((prev) => ({
+                  ...prev,
+                  gia: String(priceAnalysis.giaKhuyenNghi),
+                }))
+              }
+            >
+              Áp dụng giá khuyến nghị
+            </Button>
+          </div>
+        ) : (
+          <p>Nhập thông tin căn hộ rồi bấm phân tích để AI đánh giá giá thuê.</p>
+        )}
+      </Drawer>
     </div>
   );
 };

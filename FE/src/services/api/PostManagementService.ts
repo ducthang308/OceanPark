@@ -276,3 +276,43 @@ export const askChatbot = async (payload: ChatbotRequestDTO) => {
 
   return res.data;
 };
+
+export interface RentPriceAnalysisRequest {
+  loaiCanHo?: string;
+  giaDeXuat?: number;
+  dienTich?: number;
+  phuong?: string;
+  diaChi?: string;
+  phongNgu?: number;
+
+  coBanCong?: boolean;
+  dayDuNoiThat?: boolean;
+  coMayLanh?: boolean;
+  coThangMay?: boolean;
+  coMayGiat?: boolean;
+  coNhaXe?: boolean;
+  coTuLanh?: boolean;
+  gioGiacTuDo?: boolean;
+  ganTrungTam?: boolean;
+  ganBien?: boolean;
+}
+
+export interface RentPriceAnalysisResponse {
+  mucDoHopLy: string;
+  giaThap: number;
+  giaCao: number;
+  giaKhuyenNghi: number;
+  nhanXet: string;
+  chienLuoc: string;
+}
+
+export const analyzeRentPrice = async (
+  payload: RentPriceAnalysisRequest
+) => {
+  const res = await axiosClient.post<RentPriceAnalysisResponse>(
+    '/api/v1/ai/rent-price-analysis',
+    payload
+  );
+
+  return res.data;
+};

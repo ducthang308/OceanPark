@@ -456,9 +456,25 @@ textarea.ant-input {
 }
 
 .button-listing {
-  width: 100%;
-  max-width: 880px;
-  margin-top: 10px;
+  display: flex;
+  flex-direction: row;
+  gap: 14px;
+  margin-top: 28px;
+}
+
+.ai-price-analysis-btn {
+  height: 54px !important;
+  border-radius: 12px !important;
+  font-weight: 700 !important;
+  color: #4f46e5 !important;
+  border: 1px solid #c7d2fe !important;
+  background: #eef2ff !important;
+}
+
+.ai-price-analysis-btn:hover {
+  color: #fff !important;
+  background: linear-gradient(135deg, #2563eb, #7c3aed) !important;
+  border-color: transparent !important;
 }
 
 .continue-btn {
@@ -580,4 +596,61 @@ textarea.ant-input {
   .contact-listing {
     padding: 24px 20px;
   }
+}
+
+
+.price-analysis-loading {
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  color: #64748b;
+}
+
+.price-analysis-result {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.price-analysis-card {
+  padding: 16px;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+}
+
+.price-analysis-card span {
+  display: block;
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
+.price-analysis-card strong {
+  font-size: 20px;
+  color: #111827;
+}
+
+.price-analysis-card.highlight {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+}
+
+.price-analysis-card.highlight strong {
+  color: #4f46e5;
+}
+
+.price-analysis-section h4 {
+  margin: 0 0 8px;
+  font-size: 15px;
+  color: #111827;
+}
+
+.price-analysis-section p {
+  margin: 0;
+  line-height: 1.6;
+  color: #475569;
 }
