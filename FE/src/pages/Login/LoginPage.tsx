@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import './LoginPage.css';
 import Register from '../Register/Register.tsx';
 
@@ -14,6 +14,7 @@ const LoginPage = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const navigate = useNavigate();
+    const location = useLocation();
 
     const handleGoogleLogin = () => {
         window.location.href = 'http://localhost:8082/oauth2/authorization/google';
@@ -26,7 +27,12 @@ const LoginPage = () => {
 
         try {
             const response = await login(phone, password);
-            navigate(getDefaultPathByRole(response.maVaiTro), { replace: true });
+            const from = (location.state as { from?: { pathname?: string; search?: string } } | null)?.from;
+            const redirectPath = from?.pathname && from.pathname !== '/login'
+                ? `${from.pathname}${from.search ?? ''}`
+                : getDefaultPathByRole(response.maVaiTro);
+
+            navigate(redirectPath, { replace: true });
         } catch (err: any) {
             setError(err.message || 'Đăng nhập thất bại');
         } finally {

@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react';
-import { getAuthSession } from '../utils/storage';
+import {
+  AUTH_SESSION_CHANGED_EVENT,
+  AUTH_SESSION_CLEARED_EVENT,
+  getAuthSession,
+} from '../utils/storage';
 
 export const useAuth = () => {
   const [session, setSession] = useState(() => getAuthSession());
@@ -8,9 +12,13 @@ export const useAuth = () => {
     const syncSession = () => setSession(getAuthSession());
 
     window.addEventListener('storage', syncSession);
+    window.addEventListener(AUTH_SESSION_CHANGED_EVENT, syncSession);
+    window.addEventListener(AUTH_SESSION_CLEARED_EVENT, syncSession);
 
     return () => {
       window.removeEventListener('storage', syncSession);
+      window.removeEventListener(AUTH_SESSION_CHANGED_EVENT, syncSession);
+      window.removeEventListener(AUTH_SESSION_CLEARED_EVENT, syncSession);
     };
   }, []);
 

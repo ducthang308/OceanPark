@@ -24,6 +24,7 @@ const STORAGE_KEYS = {
 } as const;
 
 export const AUTH_SESSION_CLEARED_EVENT = 'auth-session:cleared';
+export const AUTH_SESSION_CHANGED_EVENT = 'auth-session:changed';
 
 const readStoredUser = (): AuthUser | null => {
   const rawUser = localStorage.getItem(STORAGE_KEYS.user);
@@ -76,6 +77,8 @@ export const saveAuthSession = (loginResponse: LoginResponse): AuthSession => {
     localStorage.removeItem(STORAGE_KEYS.maVaiTro);
   }
 
+  window.dispatchEvent(new Event(AUTH_SESSION_CHANGED_EVENT));
+
   return {
     token,
     user,
@@ -109,4 +112,5 @@ export const clearAuthSession = () => {
   Object.values(STORAGE_KEYS).forEach((key) => localStorage.removeItem(key));
   localStorage.removeItem('chatbot_history');
   window.dispatchEvent(new Event(AUTH_SESSION_CLEARED_EVENT));
+  window.dispatchEvent(new Event(AUTH_SESSION_CHANGED_EVENT));
 };

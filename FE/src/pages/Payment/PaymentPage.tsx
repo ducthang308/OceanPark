@@ -8,7 +8,7 @@ import {
   createSepayPayment,
   getApartmentDetailByPost,
 } from '../../services/api/PostManagementService';
-import { ROLE_ID } from '../../constants/roles';
+import { LANDLORD_ROLE_IDS, ROLE_ID } from '../../constants/roles';
 import { getAuthSession } from '../../utils/storage';
 
 const getPaymentErrorMessage = (error: unknown) => {
@@ -36,6 +36,16 @@ const PaymentPage: React.FC = () => {
   const isTenantRentalPayment = Boolean(
     paymentTarget && session?.roleId === ROLE_ID.NGUOI_THUE,
   );
+  const canPayPostingPackage = Boolean(
+    session?.roleId && LANDLORD_ROLE_IDS.includes(session.roleId),
+  );
+  const shouldBlockPaymentPage = !isTenantRentalPayment && !canPayPostingPackage;
+
+  useEffect(() => {
+    if (shouldBlockPaymentPage) {
+      navigate('/', { replace: true });
+    }
+  }, [navigate, shouldBlockPaymentPage]);
 
   useEffect(() => {
     let ignore = false;
@@ -82,6 +92,12 @@ const PaymentPage: React.FC = () => {
         return;
       }
 
+      if (!isTenantRentalPayment && !canPayPostingPackage) {
+        alert('Bảng giá đăng tin chỉ dành cho người cho thuê');
+        navigate('/');
+        return;
+      }
+
       const loaiHoaDon = isTenantRentalPayment ? 'THUE_CAN_HO' : 'DANG_BAI';
       let soTien = 50000;
       let ghiChu = paymentTarget
@@ -119,6 +135,8 @@ const PaymentPage: React.FC = () => {
       setLoading(false);
     }
   };
+
+  if (shouldBlockPaymentPage) return null;
 
   return (
     <div className="payment-layout">

@@ -80,7 +80,6 @@ function App() {
           <Route path="/oauth2/redirect" element={<OAuth2RedirectPage />} />
           <Route path="/oauth2/success" element={<OAuth2RedirectPage />} />
           <Route path="/blog" element={<BlogAboutUs />} />
-          <Route path="/service-price" element={<ServicePrice />} />
           <Route path="/posts/:id" element={<PostDetail />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
@@ -97,6 +96,7 @@ function App() {
           </Route>
 
           <Route element={<ProtectedRoute allowedRoles={LANDLORD_ROLE_IDS} />}>
+            <Route path="/service-price" element={<ServicePrice />} />
             <Route path="/history" element={<History />} />
             <Route path="/recharge/:method" element={<TopUpPage />} />
             <Route path="/listing" element={<Listing />} />

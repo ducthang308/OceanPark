@@ -22,7 +22,6 @@ public class DanhMucController {
     }
 
     @GetMapping("/{ma}")
-    @PreAuthorize("hasAnyRole('ADMIN','NGUOI_CHO_THUE','NGUOI_THUE')")
     public ResponseEntity<DanhMucDTO> getById(@PathVariable String ma) {
         return ResponseEntity.ok(service.getById(ma));
     }

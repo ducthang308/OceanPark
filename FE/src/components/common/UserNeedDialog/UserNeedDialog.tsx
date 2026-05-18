@@ -1,4 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import {
+  DEFAULT_HOME_CATEGORIES,
+  WARD_OPTIONS,
+} from '../../../services/api/HomeService';
 import type { IUserNeedFormValues } from '../../../services/types/user-need.types';
 import './UserNeedDialog.css';
 
@@ -10,6 +14,21 @@ interface UserNeedDialogProps {
   onSubmit: (values: IUserNeedFormValues) => Promise<void> | void;
 }
 
+type UserNeedPreferenceKey =
+  | 'dayDuNoiThat'
+  | 'coMayLanh'
+  | 'coThangMay'
+  | 'coBaoVe24h'
+  | 'coMayGiat'
+  | 'khongChungChu'
+  | 'coHamXe'
+  | 'coKeBep'
+  | 'coTuLanh'
+  | 'gioGiacTuDo'
+  | 'coBanCong'
+  | 'ganTrungTam'
+  | 'ganBien';
+
 const defaultValues: IUserNeedFormValues = {
   minPrice: null,
   maxPrice: null,
@@ -17,9 +36,34 @@ const defaultValues: IUserNeedFormValues = {
   loaiCanHo: '',
   coBanCong: false,
   dayDuNoiThat: false,
+  coMayLanh: false,
+  coThangMay: false,
+  coBaoVe24h: false,
+  coMayGiat: false,
+  khongChungChu: false,
+  coHamXe: false,
+  coKeBep: false,
+  coTuLanh: false,
+  gioGiacTuDo: false,
   ganTrungTam: false,
   ganBien: false,
 };
+
+const preferenceOptions: Array<{ key: UserNeedPreferenceKey; label: string }> = [
+  { key: 'dayDuNoiThat', label: 'Đầy đủ nội thất' },
+  { key: 'coMayLanh', label: 'Có máy lạnh' },
+  { key: 'coThangMay', label: 'Có thang máy' },
+  { key: 'coBaoVe24h', label: 'Có bảo vệ 24/24' },
+  { key: 'coMayGiat', label: 'Có máy giặt' },
+  { key: 'khongChungChu', label: 'Không chung chủ' },
+  { key: 'coHamXe', label: 'Có hầm để xe' },
+  { key: 'coKeBep', label: 'Có kệ bếp' },
+  { key: 'coTuLanh', label: 'Có tủ lạnh' },
+  { key: 'gioGiacTuDo', label: 'Giờ giấc tự do' },
+  { key: 'coBanCong', label: 'Có ban công' },
+  { key: 'ganTrungTam', label: 'Gần trung tâm' },
+  { key: 'ganBien', label: 'Gần biển' },
+];
 
 const UserNeedDialog: React.FC<UserNeedDialogProps> = ({
   open,
@@ -40,10 +84,6 @@ const UserNeedDialog: React.FC<UserNeedDialogProps> = ({
       maxPrice: initialValues?.maxPrice ?? null,
       phuong: initialValues?.phuong ?? '',
       loaiCanHo: initialValues?.loaiCanHo ?? '',
-      coBanCong: initialValues?.coBanCong ?? false,
-      dayDuNoiThat: initialValues?.dayDuNoiThat ?? false,
-      ganTrungTam: initialValues?.ganTrungTam ?? false,
-      ganBien: initialValues?.ganBien ?? false,
     });
   }, [open, initialValues]);
 
@@ -63,6 +103,12 @@ const UserNeedDialog: React.FC<UserNeedDialogProps> = ({
     event.preventDefault();
     await onSubmit(formValues);
   };
+
+  const hasSelectedWardOption =
+    !formValues.phuong || WARD_OPTIONS.some((ward) => ward.name === formValues.phuong);
+  const hasSelectedCategoryOption =
+    !formValues.loaiCanHo ||
+    DEFAULT_HOME_CATEGORIES.some((category) => category.label === formValues.loaiCanHo);
 
   return (
     <div className="user-need-dialog">
@@ -124,12 +170,20 @@ const UserNeedDialog: React.FC<UserNeedDialogProps> = ({
 
             <div className="user-need-field">
               <label>Phường / khu vực ưu tiên</label>
-              <input
-                type="text"
-                placeholder="Ví dụ: Hải Châu"
+              <select
                 value={formValues.phuong}
                 onChange={(e) => handleChange('phuong', e.target.value)}
-              />
+              >
+                <option value="">Chọn phường</option>
+                {!hasSelectedWardOption && (
+                  <option value={formValues.phuong}>{formValues.phuong}</option>
+                )}
+                {WARD_OPTIONS.map((ward) => (
+                  <option key={ward.name} value={ward.name}>
+                    {ward.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="user-need-field">
@@ -139,53 +193,29 @@ const UserNeedDialog: React.FC<UserNeedDialogProps> = ({
                 onChange={(e) => handleChange('loaiCanHo', e.target.value)}
               >
                 <option value="">Chọn loại hình</option>
-                <option value="Phòng trọ">Phòng trọ</option>
-                <option value="Căn hộ cao cấp">Căn hộ cao cấp</option>
-                <option value="Căn hộ chung cư">Căn hộ chung cư</option>
-                <option value="Nhà nguyên căn">Nhà nguyên căn</option>
-                <option value="Căn hộ ở ghép">Căn hộ ở ghép</option>
-                <option value="Căn hộ mini">Căn hộ mini</option>
-                <option value="Mặt bằng cho thuê">Mặt bằng cho thuê</option>
+                {!hasSelectedCategoryOption && (
+                  <option value={formValues.loaiCanHo}>{formValues.loaiCanHo}</option>
+                )}
+                {DEFAULT_HOME_CATEGORIES.map((category) => (
+                  <option key={category.id} value={category.label}>
+                    {category.label}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
 
           <div className="user-need-dialog__options">
-            <label className="user-need-check">
-              <input
-                type="checkbox"
-                checked={formValues.coBanCong}
-                onChange={(e) => handleChange('coBanCong', e.target.checked)}
-              />
-              <span>Có ban công</span>
-            </label>
-
-            <label className="user-need-check">
-              <input
-                type="checkbox"
-                checked={formValues.dayDuNoiThat}
-                onChange={(e) => handleChange('dayDuNoiThat', e.target.checked)}
-              />
-              <span>Đầy đủ nội thất</span>
-            </label>
-
-            <label className="user-need-check">
-              <input
-                type="checkbox"
-                checked={formValues.ganTrungTam}
-                onChange={(e) => handleChange('ganTrungTam', e.target.checked)}
-              />
-              <span>Gần trung tâm</span>
-            </label>
-
-            <label className="user-need-check">
-              <input
-                type="checkbox"
-                checked={formValues.ganBien}
-                onChange={(e) => handleChange('ganBien', e.target.checked)}
-              />
-              <span>Gần biển</span>
-            </label>
+            {preferenceOptions.map((option) => (
+              <label className="user-need-check" key={option.key}>
+                <input
+                  type="checkbox"
+                  checked={formValues[option.key]}
+                  onChange={(e) => handleChange(option.key, e.target.checked)}
+                />
+                <span>{option.label}</span>
+              </label>
+            ))}
           </div>
 
           <div className="user-need-dialog__actions">

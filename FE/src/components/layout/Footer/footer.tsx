@@ -1,6 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import './footer.css';
+import { LANDLORD_ROLE_IDS } from '../../../constants/roles';
+import { useAuth } from '../../../hooks/useAuth';
 
 type FooterLink = {
   label: string;
@@ -8,6 +10,9 @@ type FooterLink = {
 };
 
 const Footer: React.FC = () => {
+  const { roleId } = useAuth();
+  const canViewServicePrice = Boolean(roleId && LANDLORD_ROLE_IDS.includes(roleId));
+
   const propertyLinks: FooterLink[] = [
     { label: 'Phòng trọ', to: '/danh-muc/phong-tro' },
     { label: 'Căn hộ cao cấp', to: '/danh-muc/can-ho-cao-cap' },
@@ -20,7 +25,7 @@ const Footer: React.FC = () => {
   const supportLinks: FooterLink[] = [
     { label: 'Giới thiệu', to: '/about' },
     { label: 'Blog về chúng tôi', to: '/blog' },
-    { label: 'Bảng giá dịch vụ', to: '/service-price' },
+    ...(canViewServicePrice ? [{ label: 'Bảng giá dịch vụ', to: '/service-price' }] : []),
     { label: 'Liên hệ', to: '/contact' },
     { label: 'Câu hỏi thường gặp', to: '/faqs' },
     { label: 'Điều khoản sử dụng', to: '/terms' },
@@ -105,9 +110,11 @@ const Footer: React.FC = () => {
                 Quản lý bài đăng, thanh toán dịch vụ và theo dõi hiệu quả tiếp cận
                 ngay trên tài khoản của bạn.
               </p>
-              <Link to="/service-price" className="rental-footer__service-btn">
-                Xem bảng giá
-              </Link>
+              {canViewServicePrice && (
+                <Link to="/service-price" className="rental-footer__service-btn">
+                  Xem bảng giá
+                </Link>
+              )}
             </div>
           </div>
         </div>

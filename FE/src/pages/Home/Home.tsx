@@ -1,6 +1,6 @@
 import './Home.css';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   BankOutlined,
   BellOutlined,
@@ -19,10 +19,13 @@ import {
   createDefaultHomePageData,
   createListingPath,
   getHomePageData,
+  normalizeText,
 } from '../../services/api/HomeService';
-import type { IHomeCategory, IHomeDistrict, IHomePageData, IHomePostCard } from '../../services/types/home.types';
+import type { IHomeCategory, IHomePageData, IHomePostCard } from '../../services/types/home.types';
 
 import { useUserNeedDialog } from '../../hooks/useUserNeedDialog';
+import { useAuth } from '../../hooks/useAuth';
+import { LANDLORD_ROLE_IDS } from '../../constants/roles';
 import UserNeedDialog from '../../components/common/UserNeedDialog/UserNeedDialog';
 
 type FeaturedTab = 'featured' | 'newest' | 'budget' | 'large';
@@ -32,6 +35,14 @@ interface SearchFilters {
   minPrice: string;
   maxPrice: string;
   minArea: string;
+}
+
+interface HomeWard {
+  id: string;
+  name: string;
+  postCount: number;
+  averagePrice: string;
+  badge: string;
 }
 
 const categoryIconMap: Record<string, React.ReactNode> = {
@@ -73,18 +84,56 @@ const getUniquePosts = (posts: IHomePostCard[]) =>
 const getCategoryCount = (category: IHomeCategory, posts: IHomePostCard[]) =>
   posts.filter((post) => post.categorySlug === category.slug).length;
 
-const getDistrictMeta = (district: IHomeDistrict, posts: IHomePostCard[], index: number) => {
-  const districtPosts = posts.filter((post) => post.districtId === district.id);
-  const prices = districtPosts
-    .map((post) => post.price)
-    .filter((price): price is number => typeof price === 'number' && price > 0);
-  const averagePrice = prices.length ? prices.reduce((sum, price) => sum + price, 0) / prices.length : null;
-  const hasNewPost = districtPosts.some((post) => post.isNew);
+const getWardKey = (wardText: string) =>
+  normalizeText(wardText || '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'phuong';
 
-  return {
-    averagePrice: formatCompactCurrency(averagePrice),
-    badge: district.postCount > 0 && index === 0 ? 'Nhiều tin' : hasNewPost ? 'Có tin mới' : '',
-  };
+const buildPopularWards = (posts: IHomePostCard[]): HomeWard[] => {
+  const wardMap = new Map<string, { name: string; posts: IHomePostCard[] }>();
+
+  posts.forEach((post) => {
+    const wardName = post.wardText?.trim();
+
+    if (!wardName || normalizeText(wardName).includes('dang cap nhat')) return;
+
+    const key = getWardKey(wardName);
+    const current = wardMap.get(key);
+
+    if (current) {
+      current.posts.push(post);
+    } else {
+      wardMap.set(key, {
+        name: wardName,
+        posts: [post],
+      });
+    }
+  });
+
+  return Array.from(wardMap.entries())
+    .map(([id, item]) => {
+      const prices = item.posts
+        .map((post) => post.price)
+        .filter((price): price is number => typeof price === 'number' && price > 0);
+      const averagePrice = prices.length
+        ? prices.reduce((sum, price) => sum + price, 0) / prices.length
+        : null;
+      const hasNewPost = item.posts.some((post) => post.isNew);
+
+      return {
+        id,
+        name: item.name,
+        postCount: item.posts.length,
+        averagePrice: formatCompactCurrency(averagePrice),
+        badge: hasNewPost ? 'Có tin mới' : '',
+      };
+    })
+    .sort((a, b) => b.postCount - a.postCount)
+    .slice(0, 6)
+    .map((ward, index) => ({
+      ...ward,
+      badge: index === 0 ? 'Nhiều tin' : ward.badge,
+    }));
 };
 
 const dataSourceCards = [
@@ -104,18 +153,31 @@ const dataSourceCards = [
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { isAuthenticated, roleId, user } = useAuth();
   const [homeData, setHomeData] = useState<IHomePageData>(() => createDefaultHomePageData());
   const [homeLoading, setHomeLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<FeaturedTab>('featured');
   const [savedPostIds, setSavedPostIds] = useState<Array<string | number>>([]);
   const [notifyEnabled, setNotifyEnabled] = useState(false);
+  const [showPriceRangeError, setShowPriceRangeError] = useState(false);
   const [searchFilters, setSearchFilters] = useState<SearchFilters>({
     categorySlug: '',
-    minPrice: '',
+    minPrice: '0',
     maxPrice: '',
     minArea: '',
   });
-  const maNguoiDung = localStorage.getItem('userId');
+  const maNguoiDung = user?.maNguoiDung ?? null;
+  const canViewServicePrice = Boolean(roleId && LANDLORD_ROLE_IDS.includes(roleId));
+  const minPriceValue = Number(searchFilters.minPrice);
+  const maxPriceValue = Number(searchFilters.maxPrice);
+  const hasMinPriceValue =
+    searchFilters.minPrice.trim() !== '' && Number.isFinite(minPriceValue);
+  const hasMaxPriceValue =
+    searchFilters.maxPrice.trim() !== '' && Number.isFinite(maxPriceValue);
+  const hasPriceRangeError =
+    hasMinPriceValue && hasMaxPriceValue && minPriceValue >= maxPriceValue;
+  const shouldShowPriceRangeError = showPriceRangeError && hasPriceRangeError;
 
   const {
     open,
@@ -175,10 +237,7 @@ const Home: React.FC = () => {
     return homeData.featuredPosts.slice(0, 3);
   }, [activeTab, allHomePosts, homeData.featuredPosts]);
   const newestPosts = homeData.newestPosts.slice(0, 3);
-  const popularDistricts = [...homeData.districts]
-    .filter((district) => district.id !== 'all')
-    .sort((a, b) => b.postCount - a.postCount)
-    .slice(0, 6);
+  const popularWards = useMemo(() => buildPopularWards(allHomePosts), [allHomePosts]);
   const stats = useMemo(
     () =>
       homeData.stats.map((item, index) =>
@@ -201,6 +260,10 @@ const Home: React.FC = () => {
   );
 
   const updateSearchFilter = (key: keyof SearchFilters, value: string) => {
+    if (key === 'minPrice' || key === 'maxPrice') {
+      setShowPriceRangeError(false);
+    }
+
     setSearchFilters((current) => ({
       ...current,
       [key]: value,
@@ -209,17 +272,24 @@ const Home: React.FC = () => {
 
   const handleSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setShowPriceRangeError(true);
+
+    if (hasPriceRangeError) return;
+
+    setShowPriceRangeError(false);
 
     const path = searchFilters.categorySlug
       ? `/danh-muc/${searchFilters.categorySlug}`
       : '/posts';
     const params = new URLSearchParams();
-    const minPrice = Number(searchFilters.minPrice);
-    const maxPrice = Number(searchFilters.maxPrice);
     const minArea = Number(searchFilters.minArea);
 
-    if (Number.isFinite(minPrice) && minPrice > 0) params.set('minPrice', String(minPrice * 1_000_000));
-    if (Number.isFinite(maxPrice) && maxPrice > 0) params.set('maxPrice', String(maxPrice * 1_000_000));
+    if (Number.isFinite(minPriceValue) && minPriceValue > 0) {
+      params.set('minPrice', String(minPriceValue * 1_000_000));
+    }
+    if (Number.isFinite(maxPriceValue) && maxPriceValue > 0) {
+      params.set('maxPrice', String(maxPriceValue * 1_000_000));
+    }
     if (Number.isFinite(minArea) && minArea > 0) params.set('minArea', String(minArea));
 
     const query = params.toString();
@@ -227,6 +297,18 @@ const Home: React.FC = () => {
   };
 
   const toggleSavedPost = (postId: string | number) => {
+    if (!isAuthenticated || !maNguoiDung) {
+      navigate('/login', {
+        state: {
+          from: {
+            pathname: location.pathname,
+            search: location.search,
+          },
+        },
+      });
+      return;
+    }
+
     setSavedPostIds((current) =>
       current.includes(postId) ? current.filter((id) => id !== postId) : [...current, postId],
     );
@@ -248,9 +330,11 @@ const Home: React.FC = () => {
                 <Link to="/danh-muc/phong-tro" className="site-home-btn site-home-btn--primary">
                   Khám phá tin thuê
                 </Link>
-                <Link to="/service-price" className="site-home-btn site-home-btn--ghost">
-                  Xem bảng giá
-                </Link>
+                {canViewServicePrice && (
+                  <Link to="/service-price" className="site-home-btn site-home-btn--ghost">
+                    Xem bảng giá
+                  </Link>
+                )}
               </div>
 
               <form className="site-home-search" onSubmit={handleSearchSubmit}>
@@ -272,28 +356,49 @@ const Home: React.FC = () => {
 
                 <div className="site-home-search__field">
                   <label htmlFor="home-min-price">Giá từ</label>
-                  <input
-                    id="home-min-price"
-                    type="number"
-                    min="0"
-                    step="0.5"
-                    placeholder="triệu"
-                    value={searchFilters.minPrice}
-                    onChange={(event) => updateSearchFilter('minPrice', event.target.value)}
-                  />
+                  <div className="site-home-price-input">
+                    <input
+                      id="home-min-price"
+                      type="number"
+                      min="0"
+                      step="0.5"
+                      inputMode="decimal"
+                      placeholder="0"
+                      title="Mỗi lần tăng/giảm là 500.000đ"
+                      value={searchFilters.minPrice}
+                      onChange={(event) => updateSearchFilter('minPrice', event.target.value)}
+                    />
+                    <span>Triệu</span>
+                  </div>
                 </div>
 
-                <div className="site-home-search__field">
+                <div
+                  className={`site-home-search__field ${
+                    shouldShowPriceRangeError ? 'site-home-search__field--error' : ''
+                  }`}
+                >
                   <label htmlFor="home-max-price">Giá đến</label>
-                  <input
-                    id="home-max-price"
-                    type="number"
-                    min="0"
-                    step="0.5"
-                    placeholder="triệu"
-                    value={searchFilters.maxPrice}
-                    onChange={(event) => updateSearchFilter('maxPrice', event.target.value)}
-                  />
+                  <div className="site-home-price-input">
+                    <input
+                      id="home-max-price"
+                      type="number"
+                      min="0"
+                      step="0.5"
+                      inputMode="decimal"
+                      placeholder="0"
+                      title="Mỗi lần tăng/giảm là 500.000đ"
+                      value={searchFilters.maxPrice}
+                      aria-invalid={shouldShowPriceRangeError}
+                      aria-describedby={shouldShowPriceRangeError ? 'home-max-price-error' : undefined}
+                      onChange={(event) => updateSearchFilter('maxPrice', event.target.value)}
+                    />
+                    <span>Triệu</span>
+                  </div>
+                  {shouldShowPriceRangeError && (
+                    <small id="home-max-price-error" className="site-home-search__error">
+                      Giá đến phải lớn hơn giá từ
+                    </small>
+                  )}
                 </div>
 
                 <div className="site-home-search__field">
@@ -314,17 +419,6 @@ const Home: React.FC = () => {
                 </button>
               </form>
             </div>
-          </div>
-        </section>
-
-        <section className="site-home-stats">
-          <div className="site-home-stats__inner">
-            {stats.map((item) => (
-              <div key={item.label} className="site-home-stat">
-                <strong>{item.value}</strong>
-                <span>{item.label}</span>
-              </div>
-            ))}
           </div>
         </section>
 
@@ -370,35 +464,35 @@ const Home: React.FC = () => {
         <section className="site-home-section site-home-section--soft">
           <div className="site-home-section-heading site-home-section-heading--center">
             <span className="site-home-eyebrow">Khu vực phổ biến</span>
-            <h2>Tìm kiếm theo quận tại Đà Nẵng</h2>
+            <h2>Tìm kiếm theo phường tại Đà Nẵng</h2>
           </div>
 
           <div className="site-home-districts">
-            {popularDistricts.map((district, index) => {
-              const districtMeta = getDistrictMeta(district, allHomePosts, index);
-
-              return (
+            {popularWards.length > 0 ? (
+              popularWards.map((ward) => (
                 <Link
-                  key={district.id}
-                  to={createListingPath({ districtId: district.id })}
+                  key={ward.id}
+                  to={`/posts?ward=${encodeURIComponent(ward.name)}`}
                   className="site-home-district"
                 >
                   <div className="site-home-district__top">
                     <EnvironmentOutlined />
-                    {districtMeta.badge && (
+                    {ward.badge && (
                       <span className="site-home-badge site-home-badge--soft">
-                        {districtMeta.badge}
+                        {ward.badge}
                       </span>
                     )}
                   </div>
-                  <strong>{district.name}</strong>
+                  <strong>{ward.name}</strong>
                   <div className="site-home-district__meta">
-                    <span>{district.postCount} tin</span>
-                    <span>Giá TB {districtMeta.averagePrice}</span>
+                    <span>{ward.postCount} tin</span>
+                    <span>Giá TB {ward.averagePrice}</span>
                   </div>
                 </Link>
-              );
-            })}
+              ))
+            ) : (
+              <div className="site-home-empty">Chưa có dữ liệu phường để hiển thị.</div>
+            )}
           </div>
         </section>
 

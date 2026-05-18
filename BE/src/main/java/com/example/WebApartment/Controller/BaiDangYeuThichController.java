@@ -35,7 +35,6 @@ public class BaiDangYeuThichController {
     }
 
     @GetMapping("/bai-dang/{maBaiDang}/count")
-    @PreAuthorize("hasAnyRole('ADMIN','NGUOI_CHO_THUE','NGUOI_THUE')")
     public ResponseEntity<Long> countByMaBaiDang(@PathVariable String maBaiDang) {
         return ResponseEntity.ok(service.countByMaBaiDang(maBaiDang));
     }
