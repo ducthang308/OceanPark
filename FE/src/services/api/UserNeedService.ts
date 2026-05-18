@@ -12,11 +12,8 @@ export interface NhuCauNguoiDungDTO {
   dayDuNoiThat: boolean;
   coMayLanh: boolean;
   coThangMay: boolean;
-  coBaoVe24h: boolean;
   coMayGiat: boolean;
-  khongChungChu: boolean;
-  coHamXe: boolean;
-  coKeBep: boolean;
+  coNhaXe: boolean;
   coTuLanh: boolean;
   gioGiacTuDo: boolean;
   ganTrungTam: boolean;
@@ -37,11 +34,8 @@ const toDto = (
   dayDuNoiThat: values.dayDuNoiThat,
   coMayLanh: values.coMayLanh,
   coThangMay: values.coThangMay,
-  coBaoVe24h: values.coBaoVe24h,
   coMayGiat: values.coMayGiat,
-  khongChungChu: values.khongChungChu,
-  coHamXe: values.coHamXe,
-  coKeBep: values.coKeBep,
+  coNhaXe: values.coNhaXe,
   coTuLanh: values.coTuLanh,
   gioGiacTuDo: values.gioGiacTuDo,
   ganTrungTam: values.ganTrungTam,

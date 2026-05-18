@@ -60,6 +60,11 @@ public class WebSecurityConfig {
                                 String.format("%s/hinh-anh-bai-dang/**", apiPrefix),
                                 String.format("%s/bai-dang-yeu-thich/bai-dang/*/count", apiPrefix)
                         ).permitAll()
+
+                        .requestMatchers(
+                                HttpMethod.PUT,
+                                String.format("%s/bai-dang/*/view", apiPrefix)
+                        ).permitAll()
                         .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated()

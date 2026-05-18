@@ -162,28 +162,13 @@ public class RecommendationService {
             score += 5;
         }
 
-        if (Boolean.TRUE.equals(nhuCau.getCoBaoVe24h())
-                && containsAny(baiDang, "bảo vệ", "bao ve", "an ninh", "24/24", "24h")) {
-            score += 5;
-        }
-
         if (Boolean.TRUE.equals(nhuCau.getCoMayGiat())
                 && containsAny(baiDang, "máy giặt", "may giat")) {
             score += 5;
         }
 
-        if (Boolean.TRUE.equals(nhuCau.getKhongChungChu())
-                && containsAny(baiDang, "không chung chủ", "khong chung chu")) {
-            score += 5;
-        }
-
-        if (Boolean.TRUE.equals(nhuCau.getCoHamXe())
+        if (Boolean.TRUE.equals(nhuCau.getCoNhaXe())
                 && containsAny(baiDang, "hầm xe", "ham xe", "để xe", "de xe", "bãi xe", "bai xe")) {
-            score += 5;
-        }
-
-        if (Boolean.TRUE.equals(nhuCau.getCoKeBep())
-                && containsAny(baiDang, "kệ bếp", "ke bep", "bếp", "bep")) {
             score += 5;
         }
 
