@@ -194,7 +194,13 @@ const AdminCategoryManagement: React.FC = () => {
         </div>
 
         <div className="admin-management-table-wrap">
-          <table className="admin-management-table">
+          <table className="admin-management-table admin-management-table--category">
+            <colgroup>
+              <col className="admin-management-col-code" />
+              <col className="admin-management-col-name" />
+              <col className="admin-management-col-status" />
+              <col className="admin-management-col-actions" />
+            </colgroup>
             <thead>
               <tr>
                 <th>Mã</th>
@@ -206,8 +212,10 @@ const AdminCategoryManagement: React.FC = () => {
             <tbody>
               {paginatedCategories.map((item) => (
                 <tr key={item.maDanhMuc || item.tenDanhMuc}>
-                  <td className="admin-management-primary">{item.maDanhMuc || '--'}</td>
-                  <td>{item.tenDanhMuc}</td>
+                  <td className="admin-management-primary" title={item.maDanhMuc || '--'}>
+                    {item.maDanhMuc || '--'}
+                  </td>
+                  <td title={item.tenDanhMuc}>{item.tenDanhMuc}</td>
                   <td>
                     <span className="admin-management-badge active">Đang dùng</span>
                   </td>

@@ -288,14 +288,22 @@ const AdminAccountManagement: React.FC = () => {
             <tbody>
               {paginatedUsers.map((item) => (
                 <tr key={item.maNguoiDung || item.soDienThoai}>
-                  <td className="admin-management-primary">{item.maNguoiDung || '--'}</td>
-                  <td>
-                    <div className="admin-management-primary">{item.hoVaTen}</div>
-                    <div className="admin-management-muted">{item.diaChi || 'Chưa có địa chỉ'}</div>
+                  <td className="admin-management-primary" title={item.maNguoiDung || '--'}>
+                    {item.maNguoiDung || '--'}
                   </td>
                   <td>
-                    <div>{item.soDienThoai}</div>
-                    <div className="admin-management-muted">{item.email || 'Chưa có email'}</div>
+                    <div className="admin-management-primary" title={item.hoVaTen}>
+                      {item.hoVaTen}
+                    </div>
+                    <div className="admin-management-muted" title={item.diaChi || 'Chưa có địa chỉ'}>
+                      {item.diaChi || 'Chưa có địa chỉ'}
+                    </div>
+                  </td>
+                  <td>
+                    <div title={item.soDienThoai}>{item.soDienThoai}</div>
+                    <div className="admin-management-muted" title={item.email || 'Chưa có email'}>
+                      {item.email || 'Chưa có email'}
+                    </div>
                   </td>
                   <td>{roleLabelMap[item.maVaiTro || ''] || item.maVaiTro || '--'}</td>
                   <td>

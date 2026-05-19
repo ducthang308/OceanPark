@@ -295,10 +295,17 @@ const AdminPackageManagement: React.FC = () => {
             <tbody>
               {paginatedPackages.map((item) => (
                 <tr key={item.maGoiDangBai || item.tenGoi}>
-                  <td className="admin-management-primary">{item.maGoiDangBai || '--'}</td>
+                  <td className="admin-management-primary" title={item.maGoiDangBai || '--'}>
+                    {item.maGoiDangBai || '--'}
+                  </td>
                   <td>
-                    <div className="admin-management-primary">{item.tenGoi}</div>
-                    <div className="admin-management-muted">
+                    <div className="admin-management-primary" title={item.tenGoi}>
+                      {item.tenGoi}
+                    </div>
+                    <div
+                      className="admin-management-muted"
+                      title={item.hoVaTenNguoiDung || item.maNguoiDung || 'Gói cấu hình'}
+                    >
                       {item.hoVaTenNguoiDung || item.maNguoiDung || 'Gói cấu hình'}
                     </div>
                   </td>

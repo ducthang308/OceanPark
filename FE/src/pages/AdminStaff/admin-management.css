@@ -159,6 +159,55 @@
   font-size: 13px;
 }
 
+.admin-management-table--category {
+  min-width: 900px;
+  table-layout: fixed;
+}
+
+.admin-management-table--category th,
+.admin-management-table--category td {
+  border-right: 1px solid #edf0f4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-management-table--category th:last-child,
+.admin-management-table--category td:last-child {
+  border-right: 0;
+}
+
+.admin-management-table--category th,
+.admin-management-table--category td:not(:last-child) {
+  white-space: nowrap;
+}
+
+.admin-management-table--category td:last-child {
+  overflow: visible;
+}
+
+.admin-management-table--category .admin-management-primary,
+.admin-management-table--category .admin-management-muted {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-management-table--category .admin-management-col-code {
+  width: 34%;
+}
+
+.admin-management-table--category .admin-management-col-name {
+  width: 30%;
+}
+
+.admin-management-table--category .admin-management-col-status {
+  width: 16%;
+}
+
+.admin-management-table--category .admin-management-col-actions {
+  width: 220px;
+}
+
 .admin-management-actions {
   display: flex;
   flex-wrap: wrap;
