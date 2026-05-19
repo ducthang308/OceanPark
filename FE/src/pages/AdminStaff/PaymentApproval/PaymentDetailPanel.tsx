@@ -2,12 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeftOutlined,
-  BankOutlined,
-  CalendarOutlined,
   CheckCircleOutlined,
-  ClockCircleOutlined,
   CreditCardOutlined,
-  ExclamationCircleOutlined,
   FileTextOutlined,
   MailOutlined,
   WalletOutlined,

@@ -22,6 +22,8 @@ public interface NguoiDungRepository extends JpaRepository<NguoiDung, String> {
 
     boolean existsBySoDienThoai(String soDienThoai);
 
+    long countByVaiTro_MaVaiTro(String maVaiTro);
+
     @Query("SELECT nd.maNguoiDung FROM NguoiDung nd ORDER BY nd.maNguoiDung DESC")
     List<String> findTopMaNguoiDung(Pageable pageable);
 }

@@ -9,14 +9,16 @@ import lombok.*;
 @Builder
 public class DashboardStatsDTO {
 
-    // Doanh thu từ người cho thuê thanh toán gói đăng bài
     private Double totalRevenue;
 
-    // Tổng số tài khoản trong web
     private Long totalUsers;
+    private Long totalRenters;
+    private Long totalLandlords;
+    private Long totalAdmins;
 
-    // Thống kê bài đăng
     private Long totalPosts;
     private Long activePosts;
     private Long rentedPosts;
+    private Long pendingPosts;
+    private Long pendingPayments;
 }

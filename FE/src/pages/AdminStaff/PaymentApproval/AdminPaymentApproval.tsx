@@ -6,7 +6,6 @@ import {
   CreditCardOutlined,
   ExclamationCircleOutlined,
   SearchOutlined,
-  WalletOutlined,
 } from '@ant-design/icons';
 import { getAllInvoices, type HoaDonDTO } from '../../../services/api/AdminPaymentService';
 import { getAllUsers, type AdminUserDTO } from '../../../services/api/AdminAccountService';

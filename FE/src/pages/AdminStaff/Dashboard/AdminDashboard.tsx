@@ -1,189 +1,456 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
-  ClockCircleOutlined,
-  DollarOutlined,
-  FileDoneOutlined,
+  BankOutlined,
+  CheckCircleOutlined,
   FileTextOutlined,
+  HomeOutlined,
+  IdcardOutlined,
+  KeyOutlined,
   ReloadOutlined,
+  TeamOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
 import { message } from 'antd';
 import {
-  getDashboardStats,
-  type ActivityDTO,
-  type DashboardQueueItemDTO,
+  getDashboardOverview,
+  getPendingPosts,
+  getPostChart,
+  getRevenueChart,
+  getUserChart,
+  type DashboardChartDTO,
+  type DashboardChartSeriesDTO,
+  type DashboardChartType,
   type DashboardStatsDTO,
-  type MonthlyDashboardPointDTO,
 } from '../../../services/api/AdminDashboardService';
+import type { BaiDangDTO } from '../../../services/api/PostManagementService';
 import { formatCurrency } from '../../../utils/currency';
 import { formatDate } from '../../../utils/date';
 import './admin-dashboard.css';
 
-type ChartPeriod = 3 | 6 | 12;
+type StatTone = 'revenue' | 'user' | 'renter' | 'landlord' | 'admin' | 'post' | 'active' | 'rented';
+type ChartValueType = 'currency' | 'number';
 
 interface StatCard {
   key: string;
   label: string;
   value: string;
   note: string;
-  trend: string;
-  tone: 'mint' | 'blue' | 'green' | 'gold';
+  tone: StatTone;
   icon: React.ReactNode;
 }
 
-const chartPeriodOptions: Array<{ label: string; value: ChartPeriod }> = [
-  { label: '3 tháng', value: 3 },
-  { label: '6 tháng', value: 6 },
-  { label: '1 năm', value: 12 },
+interface ChartPanelProps {
+  title: string;
+  description: string;
+  chart: DashboardChartDTO | null;
+  colors: string[];
+  loading: boolean;
+  valueType?: ChartValueType;
+}
+
+interface PostStatusSlice {
+  label: string;
+  value: number;
+  color: string;
+}
+
+interface PostPiePanelProps {
+  chart: DashboardChartDTO | null;
+  loading: boolean;
+}
+
+interface PendingPostsPanelProps {
+  posts: BaiDangDTO[];
+  loading: boolean;
+  onOpenPost: (maBaiDang?: string) => void;
+}
+
+const chartTypeOptions: Array<{ label: string; value: DashboardChartType }> = [
+  { label: 'Theo ngày', value: 'day' },
+  { label: 'Theo tháng', value: 'month' },
+  { label: 'Theo năm', value: 'year' },
 ];
 
 const safeNumber = (value: unknown) =>
   typeof value === 'number' && Number.isFinite(value) ? value : 0;
 
-const getLastMonthLabels = (count: number) =>
-  Array.from({ length: count }, (_, index) => {
-    const date = new Date();
-    date.setMonth(date.getMonth() - (count - 1 - index));
-    return `T${date.getMonth() + 1}`;
-  });
+const formatNumber = (value: number) => value.toLocaleString('vi-VN');
 
-const buildFallbackMonthlyStats = (stats: DashboardStatsDTO): MonthlyDashboardPointDTO[] =>
-  getLastMonthLabels(12).map((label, index, list) => {
-    const isCurrentMonth = index === list.length - 1;
-
-    return {
-      label,
-      approvedPosts: isCurrentMonth ? safeNumber(stats.approvedPosts) : 0,
-      pendingPosts: isCurrentMonth ? safeNumber(stats.pendingPosts) : 0,
-      confirmedPayments: isCurrentMonth ? safeNumber(stats.confirmedPayments) : 0,
-      revenue: isCurrentMonth ? safeNumber(stats.monthRevenue ?? stats.totalRevenue) : 0,
-    };
-  });
-
-const toQueueFallback = (activity: ActivityDTO): DashboardQueueItemDTO => ({
-  id: activity.id,
-  type: activity.type.includes('invoice') ? 'payment' : 'post',
-  title: activity.description,
-  meta: formatDate(activity.timestamp),
-  status: activity.type.includes('pending') ? 'Chờ xử lý' : 'Cập nhật',
-  createdAt: activity.timestamp,
-});
-
-const buildStatCards = (stats: DashboardStatsDTO): StatCard[] => {
-  const monthlyStats = stats.monthlyStats ?? [];
-  const approvedPosts = safeNumber(stats.approvedPosts);
-  const currentMonthApproved = safeNumber(
-    monthlyStats[monthlyStats.length - 1]?.approvedPosts ?? approvedPosts,
-  );
-  const pendingPayments = safeNumber(stats.pendingPayments);
-  const confirmedPayments = safeNumber(stats.confirmedPayments);
-  const approvalRate = stats.totalPosts
-    ? Math.round((approvedPosts / stats.totalPosts) * 100)
-    : 0;
-
-  return [
-    {
-      key: 'pendingPosts',
-      label: 'Bài đăng chờ duyệt',
-      value: safeNumber(stats.pendingPosts).toLocaleString('vi-VN'),
-      note: 'Tăng so với tuần trước',
-      trend: '+6.2%',
-      tone: 'mint',
-      icon: <FileTextOutlined />,
-    },
-    {
-      key: 'pendingPayments',
-      label: 'Thanh toán chờ duyệt',
-      value: pendingPayments.toLocaleString('vi-VN'),
-      note: 'Giảm nhẹ nhờ đối soát tốt hơn',
-      trend: '-2.1%',
-      tone: 'blue',
-      icon: <FileDoneOutlined />,
-    },
-    {
-      key: 'approvedPosts',
-      label: 'Bài đăng duyệt tháng này',
-      value: currentMonthApproved.toLocaleString('vi-VN'),
-      note: 'Chủ yếu từ khu vực Sơn Trà và Hải Châu',
-      trend: approvalRate > 0 ? `+${approvalRate}%` : '+14.8%',
-      tone: 'green',
-      icon: <FileTextOutlined />,
-    },
-    {
-      key: 'totalRevenue',
-      label: 'Doanh thu phí đăng bài',
-      value: formatCurrency(safeNumber(stats.totalRevenue)),
-      note: `${confirmedPayments.toLocaleString('vi-VN')} giao dịch đã xác nhận`,
-      trend: '+8.4%',
-      tone: 'gold',
-      icon: <DollarOutlined />,
-    },
-  ];
+const formatCompactNumber = (value: number) => {
+  if (Math.abs(value) >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(1)}B`;
+  if (Math.abs(value) >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+  if (Math.abs(value) >= 1_000) return `${(value / 1_000).toFixed(0)}K`;
+  return formatNumber(value);
 };
 
-const AdminDashboard: React.FC = () => {
-  const [stats, setStats] = useState<DashboardStatsDTO | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [chartPeriod, setChartPeriod] = useState<ChartPeriod>(6);
+const formatChartValue = (value: number, type: ChartValueType) =>
+  type === 'currency' ? formatCurrency(value) : formatNumber(value);
 
-  const loadStats = useCallback(async () => {
-    setLoading(true);
+const buildCards = (stats: DashboardStatsDTO): StatCard[] => [
+  {
+    key: 'totalRevenue',
+    label: 'Tổng doanh thu',
+    value: formatCurrency(safeNumber(stats.totalRevenue)),
+    note: 'Giao dịch SUCCESS hợp lệ',
+    tone: 'revenue',
+    icon: <BankOutlined />,
+  },
+  {
+    key: 'totalUsers',
+    label: 'Tổng người dùng',
+    value: formatNumber(safeNumber(stats.totalUsers)),
+    note: 'Tất cả tài khoản',
+    tone: 'user',
+    icon: <TeamOutlined />,
+  },
+  {
+    key: 'totalRenters',
+    label: 'Tổng người thuê',
+    value: formatNumber(safeNumber(stats.totalRenters)),
+    note: 'Vai trò Người Thuê',
+    tone: 'renter',
+    icon: <UserOutlined />,
+  },
+  {
+    key: 'totalLandlords',
+    label: 'Tổng người cho thuê',
+    value: formatNumber(safeNumber(stats.totalLandlords)),
+    note: 'Vai trò Người Cho Thuê',
+    tone: 'landlord',
+    icon: <HomeOutlined />,
+  },
+  {
+    key: 'totalAdmins',
+    label: 'Tổng admin',
+    value: formatNumber(safeNumber(stats.totalAdmins)),
+    note: 'Tài khoản quản trị',
+    tone: 'admin',
+    icon: <IdcardOutlined />,
+  },
+  {
+    key: 'totalPosts',
+    label: 'Tổng bài đăng',
+    value: formatNumber(safeNumber(stats.totalPosts)),
+    note: 'Toàn hệ thống',
+    tone: 'post',
+    icon: <FileTextOutlined />,
+  },
+  {
+    key: 'activePosts',
+    label: 'Bài đăng ACTIVE',
+    value: formatNumber(safeNumber(stats.activePosts)),
+    note: 'Đang hiển thị',
+    tone: 'active',
+    icon: <CheckCircleOutlined />,
+  },
+  {
+    key: 'rentedPosts',
+    label: 'Bài đăng DA_THUE',
+    value: formatNumber(safeNumber(stats.rentedPosts)),
+    note: 'Đã cho thuê',
+    tone: 'rented',
+    icon: <KeyOutlined />,
+  },
+];
+
+const toChartSeries = (chart: DashboardChartDTO): DashboardChartSeriesDTO[] => {
+  if (chart.series && chart.series.length > 0) {
+    return chart.series;
+  }
+
+  return [{ name: 'Giá trị', values: chart.values }];
+};
+
+const chartHasData = (chart: DashboardChartDTO | null) => {
+  if (!chart) return false;
+
+  return toChartSeries(chart).some((item) =>
+    item.values.some((value) => safeNumber(value) > 0),
+  );
+};
+
+const sumSeriesValue = (chart: DashboardChartDTO | null, matcher: (name: string) => boolean) => {
+  if (!chart) return 0;
+
+  const target = toChartSeries(chart).find((item) => matcher(item.name.toUpperCase()));
+  return target?.values.reduce((total, value) => total + safeNumber(value), 0) ?? 0;
+};
+
+const buildPostStatusSlices = (chart: DashboardChartDTO | null): PostStatusSlice[] => {
+  const totalPosts =
+    sumSeriesValue(chart, (name) => name.includes('TỔNG') || name.includes('TONG')) ||
+    (chart?.values ?? []).reduce((total, value) => total + safeNumber(value), 0);
+  const activePosts = sumSeriesValue(chart, (name) => name === 'ACTIVE');
+  const rentedPosts = sumSeriesValue(chart, (name) => name === 'DA_THUE');
+  const otherPosts = Math.max(totalPosts - activePosts - rentedPosts, 0);
+
+  return [
+    { label: 'ACTIVE', value: activePosts, color: '#059669' },
+    { label: 'DA_THUE', value: rentedPosts, color: '#7c3aed' },
+    { label: 'Khác', value: otherPosts, color: '#2563eb' },
+  ].filter((item) => item.value > 0);
+};
+
+const ChartPanel: React.FC<ChartPanelProps> = ({
+  title,
+  description,
+  chart,
+  colors,
+  loading,
+  valueType = 'number',
+}) => {
+  const series = useMemo(() => (chart ? toChartSeries(chart) : []), [chart]);
+  const hasData = chartHasData(chart);
+  const maxValue = useMemo(
+    () =>
+      Math.max(
+        ...series.flatMap((item) => item.values.map((value) => safeNumber(value))),
+        1,
+      ),
+    [series],
+  );
+
+  return (
+    <article className="admin-dashboard-panel">
+      <div className="admin-dashboard-panel__head">
+        <div>
+          <h2>{title}</h2>
+          <p>{description}</p>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="admin-dashboard-chart-state">Đang tải biểu đồ...</div>
+      ) : !hasData ? (
+        <div className="admin-dashboard-chart-state">Chưa có dữ liệu.</div>
+      ) : (
+        <div className="admin-dashboard-chart-box">
+          <div className="admin-dashboard-chart-scale" aria-hidden="true">
+            <span>{valueType === 'currency' ? formatCompactNumber(maxValue) : formatNumber(maxValue)}</span>
+            <span>{valueType === 'currency' ? formatCompactNumber(maxValue / 2) : formatNumber(maxValue / 2)}</span>
+            <span>0</span>
+          </div>
+
+          <div className="admin-dashboard-css-chart">
+            {chart?.labels.map((label, labelIndex) => (
+              <div className="admin-dashboard-css-chart__column" key={`${title}-${label}`}>
+                <div className="admin-dashboard-css-chart__bars">
+                  {series.map((item, seriesIndex) => {
+                    const value = safeNumber(item.values[labelIndex]);
+                    const percent = Math.max((value / maxValue) * 100, value > 0 ? 3 : 0);
+
+                    return (
+                      <span
+                        key={`${item.name}-${label}`}
+                        className="admin-dashboard-css-chart__bar"
+                        style={{
+                          height: `${percent}%`,
+                          background: colors[seriesIndex % colors.length],
+                        }}
+                        title={`${item.name}: ${formatChartValue(value, valueType)}`}
+                      />
+                    );
+                  })}
+                </div>
+                <span className="admin-dashboard-css-chart__label">{label}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="admin-dashboard-chart-legend">
+            {series.map((item, index) => (
+              <span key={item.name}>
+                <i style={{ background: colors[index % colors.length] }} />
+                {item.name}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </article>
+  );
+};
+
+const PostPiePanel: React.FC<PostPiePanelProps> = ({ chart, loading }) => {
+  const slices = useMemo(() => buildPostStatusSlices(chart), [chart]);
+  const total = slices.reduce((sum, item) => sum + item.value, 0);
+  let currentDegree = 0;
+  const gradient = slices
+    .map((item) => {
+      const start = currentDegree;
+      const end = currentDegree + (item.value / total) * 360;
+      currentDegree = end;
+      return `${item.color} ${start}deg ${end}deg`;
+    })
+    .join(', ');
+
+  return (
+    <article className="admin-dashboard-panel admin-dashboard-panel--pie">
+      <div className="admin-dashboard-panel__head">
+        <div>
+          <h2>Tỷ lệ bài đăng</h2>
+          <p>Phân bổ ACTIVE, DA_THUE và trạng thái khác.</p>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="admin-dashboard-chart-state">Đang tải biểu đồ...</div>
+      ) : total <= 0 ? (
+        <div className="admin-dashboard-chart-state">Chưa có dữ liệu bài đăng.</div>
+      ) : (
+        <div className="admin-dashboard-pie-layout">
+          <div
+            className="admin-dashboard-pie"
+            style={{ background: `conic-gradient(${gradient})` }}
+            aria-label="Biểu đồ tròn trạng thái bài đăng"
+          >
+            <div className="admin-dashboard-pie__center">
+              <strong>{formatNumber(total)}</strong>
+              <span>Tổng bài</span>
+            </div>
+          </div>
+
+          <div className="admin-dashboard-pie-legend">
+            {slices.map((item) => {
+              const percent = Math.round((item.value / total) * 100);
+
+              return (
+                <div className="admin-dashboard-pie-legend__item" key={item.label}>
+                  <span>
+                    <i style={{ background: item.color }} />
+                    {item.label}
+                  </span>
+                  <strong>
+                    {formatNumber(item.value)} ({percent}%)
+                  </strong>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </article>
+  );
+};
+
+const PendingPostsPanel: React.FC<PendingPostsPanelProps> = ({ posts, loading, onOpenPost }) => (
+  <article className="admin-dashboard-panel admin-dashboard-panel--pending">
+    <div className="admin-dashboard-panel__head">
+      <div>
+        <h2>Bài đăng cần duyệt</h2>
+        <p>Danh sách bài mới nhất đang ở trạng thái PENDING.</p>
+      </div>
+    </div>
+
+    {loading ? (
+      <div className="admin-dashboard-chart-state">Đang tải danh sách...</div>
+    ) : posts.length === 0 ? (
+      <div className="admin-dashboard-chart-state">Không có bài đăng cần duyệt.</div>
+    ) : (
+      <div className="admin-dashboard-pending-list">
+        {posts.map((post) => (
+          <button
+            type="button"
+            className="admin-dashboard-pending-item"
+            key={post.maBaiDang}
+            onClick={() => onOpenPost(post.maBaiDang)}
+          >
+            <div>
+              <strong>{post.tieuDe || 'Bài đăng chưa có tiêu đề'}</strong>
+              <span>
+                {post.maBaiDang || '--'} • {post.maNguoiDung || 'Chưa rõ người đăng'}
+              </span>
+            </div>
+            <small>{formatDate(post.ngayDang)}</small>
+          </button>
+        ))}
+      </div>
+    )}
+  </article>
+);
+
+const AdminDashboard: React.FC = () => {
+  const navigate = useNavigate();
+  const [overview, setOverview] = useState<DashboardStatsDTO | null>(null);
+  const [revenueChart, setRevenueChart] = useState<DashboardChartDTO | null>(null);
+  const [postChart, setPostChart] = useState<DashboardChartDTO | null>(null);
+  const [userChart, setUserChart] = useState<DashboardChartDTO | null>(null);
+  const [pendingPosts, setPendingPosts] = useState<BaiDangDTO[]>([]);
+  const [chartType, setChartType] = useState<DashboardChartType>('month');
+  const [loadingOverview, setLoadingOverview] = useState(false);
+  const [loadingCharts, setLoadingCharts] = useState(false);
+  const [error, setError] = useState('');
+
+  const loadOverview = useCallback(async () => {
+    setLoadingOverview(true);
     setError('');
 
     try {
-      const data = await getDashboardStats();
-      setStats(data);
+      const data = await getDashboardOverview();
+      setOverview(data);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Không tải được thống kê dashboard';
+      const errorMessage = err instanceof Error ? err.message : 'Không tải được thống kê tổng quan';
       setError(errorMessage);
       message.error(errorMessage);
     } finally {
-      setLoading(false);
+      setLoadingOverview(false);
     }
   }, []);
 
+  const loadCharts = useCallback(async (type: DashboardChartType) => {
+    setLoadingCharts(true);
+
+    try {
+      const [revenueResult, postResult, userResult, pendingResult] = await Promise.allSettled([
+        getRevenueChart(type),
+        getPostChart(type),
+        getUserChart(),
+        getPendingPosts(6),
+      ]);
+
+      const hasChartError =
+        revenueResult.status === 'rejected' ||
+        postResult.status === 'rejected' ||
+        userResult.status === 'rejected';
+
+      setRevenueChart(revenueResult.status === 'fulfilled' ? revenueResult.value : null);
+      setPostChart(postResult.status === 'fulfilled' ? postResult.value : null);
+      setUserChart(userResult.status === 'fulfilled' ? userResult.value : null);
+      setPendingPosts(pendingResult.status === 'fulfilled' ? pendingResult.value : []);
+
+      if (hasChartError) {
+        message.error('Không tải được một phần dữ liệu biểu đồ');
+      }
+    } finally {
+      setLoadingCharts(false);
+    }
+  }, []);
+
+  const refreshDashboard = useCallback(async () => {
+    await Promise.all([loadOverview(), loadCharts(chartType)]);
+  }, [chartType, loadCharts, loadOverview]);
+
   useEffect(() => {
-    void loadStats();
-  }, [loadStats]);
+    void loadOverview();
+  }, [loadOverview]);
 
-  const dashboardData = useMemo(() => {
-    if (!stats) return null;
+  useEffect(() => {
+    void loadCharts(chartType);
+  }, [chartType, loadCharts]);
 
-    const approvedPosts = safeNumber(stats.approvedPosts);
-    const rejectedPosts = safeNumber(stats.rejectedPosts);
-    const pendingPosts = safeNumber(stats.pendingPosts);
-    const pendingPayments = safeNumber(stats.pendingPayments);
-    const queueItems =
-      stats.queueItems && stats.queueItems.length > 0
-        ? stats.queueItems
-        : (stats.recentActivity ?? []).slice(0, 6).map(toQueueFallback);
-    const monthlyStats =
-      stats.monthlyStats && stats.monthlyStats.length > 0
-        ? stats.monthlyStats
-        : buildFallbackMonthlyStats(stats);
-    const approvalRate = stats.totalPosts
-      ? Math.round((approvedPosts / stats.totalPosts) * 100)
-      : 0;
-    const rejectionRate = stats.totalPosts
-      ? Math.round((rejectedPosts / stats.totalPosts) * 100)
-      : 0;
+  const cards = useMemo(() => (overview ? buildCards(overview) : []), [overview]);
+  const initialLoading = loadingOverview && !overview;
+  const handleOpenPost = useCallback((maBaiDang?: string) => {
+    if (!maBaiDang) {
+      navigate('/admin/posts');
+      return;
+    }
 
-    return {
-      statCards: buildStatCards(stats),
-      monthlyStats,
-      queueItems,
-      recentActivity: stats.recentActivity ?? [],
-      approvedPosts,
-      rejectedPosts,
-      pendingPosts,
-      pendingPayments,
-      queueTotal: pendingPosts + pendingPayments,
-      approvalRate,
-      rejectionRate,
-    };
-  }, [stats]);
+    navigate(`/admin/post-approval/${maBaiDang}`);
+  }, [navigate]);
 
-  if (loading && !stats) {
+  if (initialLoading) {
     return (
       <div className="admin-dashboard">
         <div className="admin-dashboard-state">Đang tải thống kê dashboard...</div>
@@ -191,12 +458,12 @@ const AdminDashboard: React.FC = () => {
     );
   }
 
-  if (error && !stats) {
+  if (error && !overview) {
     return (
       <div className="admin-dashboard">
         <div className="admin-dashboard-state admin-dashboard-state--error">
           <p>{error}</p>
-          <button type="button" className="admin-dashboard-action" onClick={loadStats}>
+          <button type="button" className="admin-dashboard-action" onClick={refreshDashboard}>
             <ReloadOutlined />
             Tải lại
           </button>
@@ -205,189 +472,83 @@ const AdminDashboard: React.FC = () => {
     );
   }
 
-  if (!dashboardData) return null;
-
-  const visibleMonthlyStats = dashboardData.monthlyStats.slice(-chartPeriod);
-  const maxChartValue = Math.max(
-    ...visibleMonthlyStats.flatMap((item) => [
-      safeNumber(item.approvedPosts),
-      safeNumber(item.pendingPosts),
-      safeNumber(item.confirmedPayments),
-    ]),
-    1,
-  );
-  const postQueue = dashboardData.queueItems.filter((item) => item.type !== 'payment');
-  const paymentQueue = dashboardData.queueItems.filter((item) => item.type === 'payment');
-  const ringStyle = {
-    '--value': `${dashboardData.approvalRate * 3.6}deg`,
-  } as React.CSSProperties;
-
   return (
     <div className="admin-dashboard">
+      <section className="admin-dashboard-toolbar">
+        <div>
+          <h2>Dashboard thống kê</h2>
+          <p>Doanh thu, tài khoản và bài đăng từ dữ liệu hệ thống.</p>
+        </div>
+
+        <button
+          type="button"
+          className="admin-dashboard-action"
+          onClick={refreshDashboard}
+          disabled={loadingOverview || loadingCharts}
+        >
+          <ReloadOutlined />
+          {loadingOverview || loadingCharts ? 'Đang tải...' : 'Làm mới'}
+        </button>
+      </section>
+
       <section className="admin-dashboard-metrics">
-        {dashboardData.statCards.map((item) => (
+        {cards.map((item) => (
           <article className={`admin-dashboard-kpi admin-dashboard-kpi--${item.tone}`} key={item.key}>
-            <div className="admin-dashboard-kpi__top">
-              <span className="admin-dashboard-kpi__icon">{item.icon}</span>
-              <span className="admin-dashboard-kpi__trend">{item.trend}</span>
+            <div className="admin-dashboard-kpi__icon">{item.icon}</div>
+            <div className="admin-dashboard-kpi__body">
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.note}</small>
             </div>
-            <p>{item.label}</p>
-            <strong>{item.value}</strong>
-            <small>{item.note}</small>
           </article>
         ))}
       </section>
 
-      <section className="admin-dashboard-main-grid">
-        <article className="admin-dashboard-panel admin-dashboard-panel--chart">
-          <div className="admin-dashboard-panel__head">
-            <div>
-              <h2>Thống kê {chartPeriod === 12 ? '1 năm' : `${chartPeriod} tháng`} gần nhất</h2>
-              <p>Theo dõi bài đã duyệt, bài chờ duyệt và thanh toán đã xác nhận theo từng tháng.</p>
-            </div>
+      <section className="admin-dashboard-chart-toolbar">
+        <div>
+          <h2>Biểu đồ theo thời gian</h2>
+          <p>Áp dụng cho doanh thu và bài đăng.</p>
+        </div>
 
-            <div className="admin-dashboard-periods" aria-label="Chọn khoảng thời gian biểu đồ">
-              {chartPeriodOptions.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  className={chartPeriod === option.value ? 'is-active' : ''}
-                  onClick={() => setChartPeriod(option.value)}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="admin-dashboard-chart">
-            <div className="admin-dashboard-chart__axis">
-              <span>{maxChartValue}</span>
-              <span>{Math.round(maxChartValue * 0.75)}</span>
-              <span>{Math.round(maxChartValue * 0.5)}</span>
-              <span>{Math.round(maxChartValue * 0.25)}</span>
-              <span>0</span>
-            </div>
-            <div
-              className="admin-dashboard-chart__plot"
-              style={{ '--chart-count': visibleMonthlyStats.length } as React.CSSProperties}
+        <div className="admin-dashboard-periods" aria-label="Chọn kiểu thống kê">
+          {chartTypeOptions.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              className={chartType === option.value ? 'is-active' : ''}
+              onClick={() => setChartType(option.value)}
             >
-              {visibleMonthlyStats.map((item, index) => (
-                <div className="admin-dashboard-chart__month" key={`${item.label}-${index}`}>
-                  <div className="admin-dashboard-chart__bars">
-                    <span
-                      className="admin-dashboard-chart__bar admin-dashboard-chart__bar--approved"
-                      style={{ height: `${Math.max((safeNumber(item.approvedPosts) / maxChartValue) * 100, 4)}%` }}
-                      title={`Đã duyệt: ${safeNumber(item.approvedPosts)}`}
-                    />
-                    <span
-                      className="admin-dashboard-chart__bar admin-dashboard-chart__bar--pending"
-                      style={{ height: `${Math.max((safeNumber(item.pendingPosts) / maxChartValue) * 100, 4)}%` }}
-                      title={`Chờ duyệt: ${safeNumber(item.pendingPosts)}`}
-                    />
-                    <span
-                      className="admin-dashboard-chart__bar admin-dashboard-chart__bar--payment"
-                      style={{ height: `${Math.max((safeNumber(item.confirmedPayments) / maxChartValue) * 100, 4)}%` }}
-                      title={`Thanh toán: ${safeNumber(item.confirmedPayments)}`}
-                    />
-                  </div>
-                  <span className="admin-dashboard-chart__label">{item.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="admin-dashboard-chart__legend">
-            <span><i className="approved" />Bài đã duyệt</span>
-            <span><i className="pending" />Bài chờ duyệt</span>
-            <span><i className="payment" />Thanh toán xác nhận</span>
-          </div>
-        </article>
-
-
+              {option.label}
+            </button>
+          ))}
+        </div>
       </section>
 
-      <section className="admin-dashboard-bottom-grid">
-        <article className="admin-dashboard-panel admin-dashboard-panel--health">
-          <div className="admin-dashboard-panel__head">
-            <div>
-              <h2>Hiệu suất kiểm duyệt</h2>
-              <p>Tỷ lệ bài đăng đã phê duyệt trên tổng số bài.</p>
-            </div>
-          </div>
+      <section className="admin-dashboard-panels">
+        <ChartPanel
+          title="Doanh thu"
+          description="Tổng tiền từ giao dịch SUCCESS hợp lệ."
+          chart={revenueChart}
+          colors={['#d97706']}
+          loading={loadingCharts}
+          valueType="currency"
+        />
 
-          <div className="admin-dashboard-health">
-            <div className="admin-dashboard-ring" style={ringStyle}>
-              <span>{dashboardData.approvalRate}%</span>
-            </div>
-            <div className="admin-dashboard-health__list">
-              <div>
-                <span>Bài đã duyệt</span>
-                <strong>{dashboardData.approvedPosts.toLocaleString('vi-VN')}</strong>
-              </div>
-              <div>
-                <span>Đang chờ</span>
-                <strong>{dashboardData.pendingPosts.toLocaleString('vi-VN')}</strong>
-              </div>
-              <div>
-                <span>Từ chối</span>
-                <strong>{dashboardData.rejectedPosts.toLocaleString('vi-VN')} ({dashboardData.rejectionRate}%)</strong>
-              </div>
-            </div>
-          </div>
-        </article>
+        <ChartPanel
+          title="Người dùng theo vai trò"
+          description="Cơ cấu tài khoản hiện tại."
+          chart={userChart}
+          colors={['#2563eb']}
+          loading={loadingCharts}
+        />
 
-        <article className="admin-dashboard-panel admin-dashboard-panel--queue">
-          <div className="admin-dashboard-panel__head">
-            <div>
-              <h2>Cần xử lý ngay</h2>
-              <p>Danh sách bài đăng và giao dịch đang chờ nhân viên xác nhận.</p>
-            </div>
-            <span className="admin-dashboard-panel__badge admin-dashboard-panel__badge--danger">
-              {dashboardData.queueTotal} mục
-            </span>
-          </div>
+        <PostPiePanel chart={postChart} loading={loadingCharts} />
 
-          <div className="admin-dashboard-queue">
-            <div className="admin-dashboard-queue__section">
-              <h3><ClockCircleOutlined /> Bài đăng chờ duyệt</h3>
-              {postQueue.length > 0 ? (
-                postQueue.slice(0, 3).map((item) => (
-                  <div className="admin-dashboard-queue__item" key={`${item.type}-${item.id}`}>
-                    <div>
-                      <strong>{item.title}</strong>
-                      <p>{item.meta}</p>
-                    </div>
-                    <span>{item.status}</span>
-                  </div>
-                ))
-              ) : (
-                <div className="admin-dashboard-empty admin-dashboard-empty--compact">
-                  Không có bài đăng chờ duyệt.
-                </div>
-              )}
-            </div>
-
-            <div className="admin-dashboard-queue__section">
-              <h3><DollarOutlined /> Thanh toán chờ xác nhận</h3>
-              {paymentQueue.length > 0 ? (
-                paymentQueue.slice(0, 3).map((item) => (
-                  <div className="admin-dashboard-queue__item" key={`${item.type}-${item.id}`}>
-                    <div>
-                      <strong>{item.title}</strong>
-                      <p>{item.meta}</p>
-                    </div>
-                    <span>{item.status}</span>
-                  </div>
-                ))
-              ) : (
-                <div className="admin-dashboard-empty admin-dashboard-empty--compact">
-                  Không có thanh toán chờ xác nhận.
-                </div>
-              )}
-            </div>
-          </div>
-        </article>
+        <PendingPostsPanel
+          posts={pendingPosts}
+          loading={loadingCharts}
+          onOpenPost={handleOpenPost}
+        />
       </section>
     </div>
   );

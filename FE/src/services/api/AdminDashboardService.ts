@@ -1,45 +1,65 @@
 import axiosClient from './AxiosClient';
+import type { BaiDangDTO } from './PostManagementService';
 
-export interface ActivityDTO {
-  id: string;
-  type: string;
-  description: string;
-  timestamp: string;
-}
-
-export interface MonthlyDashboardPointDTO {
-  label: string;
-  approvedPosts: number;
-  pendingPosts: number;
-  confirmedPayments: number;
-  revenue: number;
-}
-
-export interface DashboardQueueItemDTO {
-  id: string;
-  type: 'post' | 'payment' | string;
-  title: string;
-  meta: string;
-  status: string;
-  createdAt: string;
-}
+export type DashboardChartType = 'day' | 'month' | 'year';
 
 export interface DashboardStatsDTO {
-  totalUsers: number;
-  totalPosts: number;
-  pendingPosts: number;
-  approvedPosts?: number;
-  rejectedPosts?: number;
-  pendingPayments?: number;
-  confirmedPayments?: number;
   totalRevenue: number;
-  monthRevenue?: number;
-  monthlyStats?: MonthlyDashboardPointDTO[];
-  queueItems?: DashboardQueueItemDTO[];
-  recentActivity?: ActivityDTO[];
+  totalUsers: number;
+  totalRenters: number;
+  totalLandlords: number;
+  totalAdmins: number;
+  totalPosts: number;
+  activePosts: number;
+  rentedPosts: number;
+  pendingPosts?: number;
+  pendingPayments?: number;
 }
 
-export const getDashboardStats = async (): Promise<DashboardStatsDTO> => {
-  const res = await axiosClient.get<DashboardStatsDTO>('/api/v1/admin/dashboard/stats');
+export interface DashboardChartSeriesDTO {
+  name: string;
+  values: number[];
+}
+
+export interface DashboardChartDTO {
+  labels: string[];
+  values: number[];
+  series?: DashboardChartSeriesDTO[];
+}
+
+export const getDashboardOverview = async (): Promise<DashboardStatsDTO> => {
+  const res = await axiosClient.get<DashboardStatsDTO>('/api/v1/admin/dashboard/overview');
   return res.data;
 };
+
+export const getRevenueChart = async (
+  type: DashboardChartType,
+): Promise<DashboardChartDTO> => {
+  const res = await axiosClient.get<DashboardChartDTO>('/api/v1/admin/dashboard/revenue-chart', {
+    params: { type },
+  });
+  return res.data;
+};
+
+export const getPostChart = async (
+  type: DashboardChartType,
+): Promise<DashboardChartDTO> => {
+  const res = await axiosClient.get<DashboardChartDTO>('/api/v1/admin/dashboard/post-chart', {
+    params: { type },
+  });
+  return res.data;
+};
+
+export const getUserChart = async (): Promise<DashboardChartDTO> => {
+  const res = await axiosClient.get<DashboardChartDTO>('/api/v1/admin/dashboard/user-chart');
+  return res.data;
+};
+
+export const getPendingPosts = async (limit = 6): Promise<BaiDangDTO[]> => {
+  const res = await axiosClient.get<BaiDangDTO[]>('/api/v1/admin/dashboard/pending-posts', {
+    params: { limit },
+  });
+  return res.data;
+};
+
+export const getDashboardStats = getDashboardOverview;
