@@ -24,10 +24,12 @@ import {
   getApartmentDetailByPost,
   getCategories,
   getPostImages,
+  getPostById,
   getPosts,
   updatePost,
   updateApartmentDetail,
   type DanhMucDTO,
+  type BaiDangDTO,
 } from "../../../../services/api/PostManagementService";
 
 interface PostItem {
@@ -81,7 +83,7 @@ const formatDate = (dateStr?: string) => {
 };
 
 const mapStatusText = (status?: string) => {
-  switch (status) {
+  switch ((status || "").toUpperCase()) {
     case "ACTIVE":
     case "APPROVED":
       return "ĐANG HIỂN THỊ";
@@ -118,6 +120,45 @@ const getStatusColor = (status: string) => {
   }
 };
 
+const PENDING_POST_IDS_KEY_PREFIX = "pendingPostIds:";
+const PUBLIC_POST_STATUSES = new Set(["ACTIVE", "APPROVED"]);
+
+const getLocalPendingPostIds = (maNguoiDung: string) => {
+  const rawValue = localStorage.getItem(`${PENDING_POST_IDS_KEY_PREFIX}${maNguoiDung}`);
+  if (!rawValue) return [];
+
+  try {
+    const value = JSON.parse(rawValue);
+    return Array.isArray(value) ? value.filter((item) => typeof item === "string") : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveLocalPendingPostIds = (maNguoiDung: string, ids: string[]) => {
+  localStorage.setItem(
+    `${PENDING_POST_IDS_KEY_PREFIX}${maNguoiDung}`,
+    JSON.stringify(Array.from(new Set(ids)))
+  );
+};
+
+const mergePostsById = (posts: BaiDangDTO[]) => {
+  const result = new Map<string, BaiDangDTO>();
+
+  posts.forEach((post) => {
+    if (post.maBaiDang) {
+      result.set(post.maBaiDang, post);
+    }
+  });
+
+  return Array.from(result.values());
+};
+
+const shouldKeepLocalPost = (post: BaiDangDTO, maNguoiDung: string) => {
+  const status = (post.trangThai || "").toUpperCase();
+  return post.maNguoiDung === maNguoiDung && !PUBLIC_POST_STATUSES.has(status);
+};
+
 const ListPost = () => {
   const navigate = useNavigate();
   const [form] = Form.useForm<EditPostFormValues>();
@@ -136,14 +177,37 @@ const ListPost = () => {
     try {
       setLoading(true);
 
-      const [posts, categories] = await Promise.all([getPosts(), getCategories()]);
+      const localPendingPostIds = maNguoiDung ? getLocalPendingPostIds(maNguoiDung) : [];
+      const [posts, localPosts, categories] = await Promise.all([
+        getPosts(),
+        Promise.all(
+          localPendingPostIds.map((id) => getPostById(id).catch(() => null))
+        ),
+        getCategories(),
+      ]);
       setCategories(categories);
       const categoryMap = new Map(
         categories.map((category) => [category.maDanhMuc, category.tenDanhMuc])
       );
 
+      const localVisiblePosts = maNguoiDung
+        ? localPosts.filter((post): post is BaiDangDTO =>
+            Boolean(post && shouldKeepLocalPost(post, maNguoiDung))
+          )
+        : [];
+
+      if (maNguoiDung) {
+        saveLocalPendingPostIds(
+          maNguoiDung,
+          localVisiblePosts.map((post) => post.maBaiDang).filter(Boolean) as string[]
+        );
+      }
+
       const myPosts = maNguoiDung
-        ? posts.filter((post) => post.maNguoiDung === maNguoiDung)
+        ? mergePostsById([
+            ...posts.filter((post) => post.maNguoiDung === maNguoiDung),
+            ...localVisiblePosts,
+          ])
         : posts;
 
       const mappedPosts = await Promise.all(
@@ -219,7 +283,7 @@ const ListPost = () => {
   const totalPostCount = postList.length;
 
   const toggleVisibility = async (post: PostItem) => {
-    const nextStatus = post.status === "ĐANG HIỂN THỊ" ? "HIDDEN" : "ACTIVE";
+    const nextStatus = post.status === "ĐANG HIỂN THỊ" ? "HIDDEN" : "PENDING";
 
     try {
       setUpdatingId(post.id);
@@ -436,17 +500,24 @@ const ListPost = () => {
                   }`}
                   icon={<HomeOutlined />}
                   loading={updatingId === post.id}
+                  disabled={post.status === "CHỜ DUYỆT"}
                   onClick={(event) => {
                     event.stopPropagation();
 
-                    if (post.status === "ĐANG HIỂN THỊ") {
+                    if (post.status === "ĐANG HIỂN THỊ" || post.status === "ẨN TIN") {
                       toggleVisibility(post);
                     } else {
                       navigate(`/payment/${post.id}`);
                     }
                   }}
                 >
-                  {post.status === "ĐANG HIỂN THỊ" ? "Ẩn tin" : "Mua gói đăng tin"}
+                  {post.status === "ĐANG HIỂN THỊ"
+                    ? "Ẩn tin"
+                    : post.status === "CHỜ DUYỆT"
+                      ? "Chờ duyệt"
+                      : post.status === "ẨN TIN"
+                        ? "Gửi duyệt lại"
+                        : "Mua gói đăng tin"}
                 </Button>
               </div>
             </div>

@@ -14,6 +14,7 @@ import {
   updateCategory,
   type DanhMucDTO,
 } from '../../../services/api/CategoryService';
+import { getApiErrorMessage } from '../../../services/api/apiError';
 import AdminPagination from '../components/AdminPagination';
 import '../admin-management.css';
 
@@ -30,6 +31,7 @@ const AdminCategoryManagement: React.FC = () => {
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<DanhMucDTO | null>(null);
   const [form, setForm] = useState<DanhMucDTO>(emptyForm);
@@ -125,26 +127,24 @@ const AdminCategoryManagement: React.FC = () => {
     }
   };
 
-  const handleDelete = (item: DanhMucDTO) => {
-    if (!item.maDanhMuc) return;
+  const handleDelete = async (item: DanhMucDTO) => {
+    const maDanhMuc = item.maDanhMuc;
+    if (!maDanhMuc) return;
 
-    Modal.confirm({
-      title: 'Xóa danh mục?',
-      content: `Danh mục "${item.tenDanhMuc}" sẽ bị xóa nếu chưa được sử dụng.`,
-      okText: 'Xóa',
-      cancelText: 'Hủy',
-      okButtonProps: { danger: true },
-      onOk: async () => {
-        try {
-          await deleteCategory(item.maDanhMuc as string);
-          message.success('Xóa danh mục thành công');
-          await loadCategories();
-        } catch (error) {
-          console.error(error);
-          message.error('Xóa danh mục thất bại');
-        }
-      },
-    });
+    try {
+      setDeletingId(maDanhMuc);
+      await deleteCategory(maDanhMuc);
+      message.success('Xóa danh mục thành công');
+      await loadCategories();
+    } catch (error) {
+      console.error(error);
+      message.error(getApiErrorMessage(
+        error,
+        'Không thể xóa danh mục vì đang liên kết với bài đăng hoặc bảng khác.',
+      ));
+    } finally {
+      setDeletingId('');
+    }
   };
 
   const handlePageChange = (page: number, nextPageSize: number) => {
@@ -224,10 +224,11 @@ const AdminCategoryManagement: React.FC = () => {
                       <button
                         type="button"
                         className="admin-management-btn admin-management-btn--danger"
-                        onClick={() => handleDelete(item)}
+                        disabled={deletingId === item.maDanhMuc}
+                        onClick={() => void handleDelete(item)}
                       >
                         <DeleteOutlined />
-                        Xóa
+                        {deletingId === item.maDanhMuc ? 'Đang xóa...' : 'Xóa'}
                       </button>
                     </div>
                   </td>

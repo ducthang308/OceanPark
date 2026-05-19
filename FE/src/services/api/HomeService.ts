@@ -41,15 +41,7 @@ interface ListingData {
   stats: IHomeStat[];
 }
 
-const HIDDEN_POST_STATUSES = new Set([
-  'HIDDEN',
-  'INACTIVE',
-  'PENDING',
-  'CHO_DUYET',
-  'TU_CHOI',
-  'REJECTED',
-  'DELETED',
-]);
+const PUBLIC_POST_STATUSES = new Set(['ACTIVE', 'APPROVED']);
 
 export const HOME_STATIC_CONTENT = {
   heroTitle: 'Nền tảng cho thuê nhà, phòng trọ và căn hộ đáng tin cậy tại Đà Nẵng',
@@ -270,7 +262,7 @@ const getDateTime = (value?: string) => {
 
 const isPublicPost = (post: BaiDangDTO) => {
   const status = post.trangThai?.trim().toUpperCase();
-  return !status || !HIDDEN_POST_STATUSES.has(status);
+  return Boolean(status && PUBLIC_POST_STATUSES.has(status));
 };
 
 const mapCategoryDto = (category: DanhMucDTO): IHomeCategory => {

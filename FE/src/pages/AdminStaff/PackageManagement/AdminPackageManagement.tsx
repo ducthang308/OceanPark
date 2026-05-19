@@ -15,6 +15,7 @@ import {
   updatePackage,
   type GoiDangBaiDTO,
 } from '../../../services/api/PackageManagementService';
+import { getApiErrorMessage } from '../../../services/api/apiError';
 import { formatCurrency } from '../../../utils/currency';
 import { formatDate } from '../../../utils/date';
 import AdminPagination from '../components/AdminPagination';
@@ -43,6 +44,8 @@ const getBadgeClass = (status?: string | null) => {
   return 'inactive';
 };
 
+const isUsablePackage = (status?: string | null) => (status || '').toUpperCase() === 'ACTIVE';
+
 const AdminPackageManagement: React.FC = () => {
   const [packages, setPackages] = useState<GoiDangBaiDTO[]>([]);
   const [keyword, setKeyword] = useState('');
@@ -51,6 +54,7 @@ const AdminPackageManagement: React.FC = () => {
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<GoiDangBaiDTO | null>(null);
   const [form, setForm] = useState<PackageForm>(emptyForm);
@@ -188,26 +192,29 @@ const AdminPackageManagement: React.FC = () => {
     }
   };
 
-  const handleDelete = (item: GoiDangBaiDTO) => {
-    if (!item.maGoiDangBai) return;
+  const handleDelete = async (item: GoiDangBaiDTO) => {
+    const maGoiDangBai = item.maGoiDangBai;
+    if (!maGoiDangBai) return;
 
-    Modal.confirm({
-      title: 'Xóa gói bài đăng?',
-      content: `Gói "${item.tenGoi}" sẽ bị xóa khỏi hệ thống.`,
-      okText: 'Xóa',
-      cancelText: 'Hủy',
-      okButtonProps: { danger: true },
-      onOk: async () => {
-        try {
-          await deletePackage(item.maGoiDangBai as string);
-          message.success('Xóa gói bài đăng thành công');
-          await loadPackages();
-        } catch (error) {
-          console.error(error);
-          message.error('Xóa gói bài đăng thất bại');
-        }
-      },
-    });
+    if (isUsablePackage(item.trangThai)) {
+      message.warning('Không thể xóa gói còn dùng được. Vui lòng chuyển trạng thái sang INACTIVE trước.');
+      return;
+    }
+
+    try {
+      setDeletingId(maGoiDangBai);
+      await deletePackage(maGoiDangBai);
+      message.success('Xóa gói bài đăng thành công');
+      await loadPackages();
+    } catch (error) {
+      console.error(error);
+      message.error(getApiErrorMessage(
+        error,
+        'Không thể xóa gói vì đang liên kết với hóa đơn, người dùng hoặc bảng khác.',
+      ));
+    } finally {
+      setDeletingId('');
+    }
   };
 
   const handlePageChange = (page: number, nextPageSize: number) => {
@@ -316,10 +323,11 @@ const AdminPackageManagement: React.FC = () => {
                       <button
                         type="button"
                         className="admin-management-btn admin-management-btn--danger"
-                        onClick={() => handleDelete(item)}
+                        disabled={deletingId === item.maGoiDangBai}
+                        onClick={() => void handleDelete(item)}
                       >
                         <DeleteOutlined />
-                        Xóa
+                        {deletingId === item.maGoiDangBai ? 'Đang xóa...' : 'Xóa'}
                       </button>
                     </div>
                   </td>

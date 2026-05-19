@@ -38,15 +38,7 @@ import { LANDLORD_ROLE_IDS } from '../../constants/roles';
 import UserNeedDialog from '../../components/common/UserNeedDialog/UserNeedDialog';
 
 const POSTS_PER_PAGE = 3;
-const HIDDEN_POST_STATUSES = new Set([
-  'HIDDEN',
-  'INACTIVE',
-  'PENDING',
-  'CHO_DUYET',
-  'TU_CHOI',
-  'REJECTED',
-  'DELETED',
-]);
+const PUBLIC_POST_STATUSES = new Set(['ACTIVE', 'APPROVED']);
 
 type RoomTab = 'proposal' | 'new' | 'video';
 
@@ -167,7 +159,7 @@ const createCategoryLookup = (categories: RoomCategory[]) => {
 
 const isPublicPost = (post: BaiDangDTO) => {
   const status = post.trangThai?.trim().toUpperCase();
-  return !status || !HIDDEN_POST_STATUSES.has(status);
+  return Boolean(status && PUBLIC_POST_STATUSES.has(status));
 };
 
 const getImageUrl = (image: HinhAnhBaiDangDTO) =>

@@ -1,6 +1,29 @@
 import axios from 'axios';
 import { clearAuthSession } from '../../utils/storage';
 
+const getResponseMessage = (data: unknown) => {
+    if (typeof data === 'string') return data;
+
+    if (data && typeof data === 'object') {
+        const { message, error } = data as { message?: unknown; error?: unknown };
+        if (typeof message === 'string') return message;
+        if (typeof error === 'string') return error;
+    }
+
+    return '';
+};
+
+const isBusinessErrorReturnedAsUnauthorized = (data: unknown) => {
+    const message = getResponseMessage(data).toLowerCase();
+
+    return (
+        message.includes('không thể xóa') ||
+        message.includes('đang được sử dụng') ||
+        message.includes('đang liên kết') ||
+        message.includes('liên kết với')
+    );
+};
+
 const axiosClient = axios.create({
     baseURL: 'http://localhost:8082',
     headers: {
@@ -40,6 +63,10 @@ axiosClient.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
+            if (isBusinessErrorReturnedAsUnauthorized(error.response.data)) {
+                return Promise.reject(error);
+            }
+
             clearAuthSession();
 
             if (!isPublicRoute(window.location.pathname) && window.location.pathname !== '/login') {

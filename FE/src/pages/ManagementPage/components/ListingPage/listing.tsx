@@ -13,6 +13,7 @@ import {
 
 import Image from "../../../../assets/img/co4la.png";
 import VideoIcon from "../../../../assets/img/upload-video.png";
+import Navbar from "../../../../components/layout/Navbar/navbar";
 import { generatePostContentByAI } from "../../../../services/api/PostManagementService";
 
 import { useNavigate } from "react-router-dom";
@@ -69,6 +70,24 @@ const getStoredUser = (): StoredUser | null => {
     return JSON.parse(rawUser) as StoredUser;
   } catch {
     return null;
+  }
+};
+
+const PENDING_POST_IDS_KEY_PREFIX = "pendingPostIds:";
+
+const saveLocalPendingPostId = (maNguoiDung: string, maBaiDang: string) => {
+  const key = `${PENDING_POST_IDS_KEY_PREFIX}${maNguoiDung}`;
+
+  try {
+    const currentValue = localStorage.getItem(key);
+    const currentIds = currentValue ? JSON.parse(currentValue) : [];
+    const ids = Array.isArray(currentIds) ? currentIds.filter((id) => typeof id === "string") : [];
+
+    if (!ids.includes(maBaiDang)) {
+      localStorage.setItem(key, JSON.stringify([...ids, maBaiDang]));
+    }
+  } catch {
+    localStorage.setItem(key, JSON.stringify([maBaiDang]));
   }
 };
 
@@ -419,6 +438,7 @@ const Listing = () => {
         maDanhMuc: formData.maDanhMuc,
         tieuDe: formData.tieuDe,
         noiDung: formData.noiDung,
+        trangThai: "PENDING",
         lienHe: phone,
         hinhThucThanhToan: formData.hinhThucThanhToan,
       });
@@ -446,6 +466,7 @@ const Listing = () => {
         );
       }
 
+      saveLocalPendingPostId(maNguoiDung, post.maBaiDang);
       message.success("Đăng tin thành công");
       navigate("/list-post");
 
@@ -469,21 +490,24 @@ const Listing = () => {
   };
 
   return (
-    <div className="container-listing">
-      <div className="listing-main-header">
-        <div className="listing-header-top">
-          <Button
-            type="text"
-            icon={<ArrowLeftOutlined />}
-            onClick={() => navigate(-1)}
-            className="listing-back-btn"
-          >
-            Quay lại
-          </Button>
-        </div>
-        <h1 className="listing-main-title">Đăng tin mới</h1>
-        <p className="listing-main-subtitle">Vui lòng điền thông tin chính xác để tin đăng đạt hiệu quả tốt nhất</p>
-      </div>
+    <div className="listing-layout">
+      <Navbar />
+      <div className="listing-content-area">
+        <div className="container-listing">
+          <div className="listing-main-header">
+            <div className="listing-header-top">
+              <Button
+                type="text"
+                icon={<ArrowLeftOutlined />}
+                onClick={() => navigate(-1)}
+                className="listing-back-btn"
+              >
+                Quay lại
+              </Button>
+            </div>
+            <h1 className="listing-main-title">Đăng tin mới</h1>
+            <p className="listing-main-subtitle">Vui lòng điền thông tin chính xác để tin đăng đạt hiệu quả tốt nhất</p>
+          </div>
 
       <div className="category-listing">
         <div className="title-listing">Loại chuyên mục</div>
@@ -942,19 +966,21 @@ const Listing = () => {
         </div>
       </div>
 
-      <div className="button-listing">
-        <Button
-          type="primary"
-          className="continue-btn"
-          icon={<ArrowRightOutlined />}
-          iconPosition="end"
-          block
-          loading={isSubmitting}
-          disabled={isSubmitting}
-          onClick={handleSubmit}
-        >
-          {isSubmitting ? "Đang đăng tin..." : "Đăng tin"}
-        </Button>
+          <div className="button-listing">
+            <Button
+              type="primary"
+              className="continue-btn"
+              icon={<ArrowRightOutlined />}
+              iconPosition="end"
+              block
+              loading={isSubmitting}
+              disabled={isSubmitting}
+              onClick={handleSubmit}
+            >
+              {isSubmitting ? "Đang đăng tin..." : "Đăng tin"}
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );

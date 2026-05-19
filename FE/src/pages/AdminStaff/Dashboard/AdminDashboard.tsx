@@ -138,7 +138,7 @@ const buildCards = (stats: DashboardStatsDTO): StatCard[] => [
   },
   {
     key: 'activePosts',
-    label: 'Bài đăng ACTIVE',
+    label: 'Bài đăng đang hiển thị',
     value: formatNumber(safeNumber(stats.activePosts)),
     note: 'Đang hiển thị',
     tone: 'active',
@@ -181,12 +181,12 @@ const buildPostStatusSlices = (chart: DashboardChartDTO | null): PostStatusSlice
   const totalPosts =
     sumSeriesValue(chart, (name) => name.includes('TỔNG') || name.includes('TONG')) ||
     (chart?.values ?? []).reduce((total, value) => total + safeNumber(value), 0);
-  const activePosts = sumSeriesValue(chart, (name) => name === 'ACTIVE');
+  const activePosts = sumSeriesValue(chart, (name) => name === 'APPROVED' || name === 'ACTIVE');
   const rentedPosts = sumSeriesValue(chart, (name) => name === 'DA_THUE');
   const otherPosts = Math.max(totalPosts - activePosts - rentedPosts, 0);
 
   return [
-    { label: 'ACTIVE', value: activePosts, color: '#059669' },
+    { label: 'Đang hiển thị', value: activePosts, color: '#059669' },
     { label: 'DA_THUE', value: rentedPosts, color: '#7c3aed' },
     { label: 'Khác', value: otherPosts, color: '#2563eb' },
   ].filter((item) => item.value > 0);
@@ -290,7 +290,7 @@ const PostPiePanel: React.FC<PostPiePanelProps> = ({ chart, loading }) => {
       <div className="admin-dashboard-panel__head">
         <div>
           <h2>Tỷ lệ bài đăng</h2>
-          <p>Phân bổ ACTIVE, DA_THUE và trạng thái khác.</p>
+          <p>Phân bổ bài đang hiển thị, DA_THUE và trạng thái khác.</p>
         </div>
       </div>
 

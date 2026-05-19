@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Modal, message } from 'antd';
 import {
-  DeleteOutlined,
   EditOutlined,
   FilterOutlined,
   LockOutlined,
@@ -13,7 +12,6 @@ import {
 import {
   changeUserStatus,
   createUserByAdmin,
-  deleteUserByAdmin,
   getAllUsers,
   updateUserByAdmin,
   type AdminUserDTO,
@@ -213,28 +211,6 @@ const AdminAccountManagement: React.FC = () => {
     }
   };
 
-  const handleDelete = (item: AdminUserDTO) => {
-    if (!item.maNguoiDung) return;
-
-    Modal.confirm({
-      title: 'Xóa tài khoản?',
-      content: `Tài khoản "${item.hoVaTen}" sẽ bị xóa khỏi hệ thống.`,
-      okText: 'Xóa',
-      cancelText: 'Hủy',
-      okButtonProps: { danger: true },
-      onOk: async () => {
-        try {
-          await deleteUserByAdmin(item.maNguoiDung as string);
-          message.success('Xóa tài khoản thành công');
-          await loadUsers();
-        } catch (error) {
-          console.error(error);
-          message.error('Xóa tài khoản thất bại');
-        }
-      },
-    });
-  };
-
   const handlePageChange = (page: number, nextPageSize: number) => {
     setPageSize(nextPageSize);
     setCurrentPage(nextPageSize === pageSize ? page : 1);
@@ -349,14 +325,6 @@ const AdminAccountManagement: React.FC = () => {
                       >
                         {item.trangThai === false ? <UnlockOutlined /> : <LockOutlined />}
                         {item.trangThai === false ? 'Mở khóa' : 'Khóa'}
-                      </button>
-                      <button
-                        type="button"
-                        className="admin-management-btn admin-management-btn--danger"
-                        onClick={() => handleDelete(item)}
-                      >
-                        <DeleteOutlined />
-                        Xóa
                       </button>
                     </div>
                   </td>
