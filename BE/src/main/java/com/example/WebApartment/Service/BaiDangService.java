@@ -160,6 +160,7 @@ public class BaiDangService {
                 .trangThai(e.getTrangThai())
                 .lienHe(e.getLienHe())
                 .hinhThucThanhToan(e.getHinhThucThanhToan())
+                .luotXem(e.getLuotXem())
                 .build();
     }
 

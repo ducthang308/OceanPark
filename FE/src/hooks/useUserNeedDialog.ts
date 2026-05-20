@@ -32,8 +32,19 @@ const toFormValues = (
 export const useUserNeedDialog = (maNguoiDung?: string | null) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [savedNeed, setSavedNeed] = useState<NhuCauNguoiDungDTO | null>(null);
   const [initialValues, setInitialValues] =
     useState<Partial<IUserNeedFormValues>>();
+
+  const loadNeed = async () => {
+    if (!maNguoiDung) return null;
+
+    const need = await getUserNeedByUserId(maNguoiDung);
+    setSavedNeed(need);
+    setInitialValues(toFormValues(need));
+
+    return need;
+  };
 
   useEffect(() => {
     const checkNeed = async () => {
@@ -42,8 +53,7 @@ export const useUserNeedDialog = (maNguoiDung?: string | null) => {
       try {
         setLoading(true);
 
-        const need = await getUserNeedByUserId(maNguoiDung);
-        setInitialValues(toFormValues(need));
+        const need = await loadNeed();
         setOpen(!need);
       } catch (error) {
         console.error(error);
@@ -61,8 +71,24 @@ export const useUserNeedDialog = (maNguoiDung?: string | null) => {
     try {
       setLoading(true);
       const savedNeed = await createOrUpdateUserNeed(maNguoiDung, values);
+      setSavedNeed(savedNeed);
       setInitialValues(toFormValues(savedNeed));
       setOpen(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openDialog = async () => {
+    if (!maNguoiDung) return;
+
+    try {
+      setLoading(true);
+      await loadNeed();
+      setOpen(true);
+    } catch (error) {
+      console.error(error);
+      setOpen(true);
     } finally {
       setLoading(false);
     }
@@ -71,9 +97,10 @@ export const useUserNeedDialog = (maNguoiDung?: string | null) => {
   return {
     open,
     loading,
+    hasNeed: Boolean(savedNeed),
     initialValues,
     close: () => setOpen(false),
-    openDialog: () => setOpen(true),
+    openDialog,
     setOpen,
     submit,
   };

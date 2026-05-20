@@ -36,6 +36,13 @@ public class NhuCauNguoiDungService {
         return toDto(entity);
     }
 
+    public NhuCauNguoiDungDTO getByNguoiDung(String maNguoiDung) {
+        return nhuCauNguoiDungRepository
+                .findTopByNguoiDung_MaNguoiDungOrderByNgayTaoDesc(maNguoiDung)
+                .map(this::toDto)
+                .orElse(null);
+    }
+
     public NhuCauNguoiDungDTO create(NhuCauNguoiDungDTO dto) {
 
         NguoiDung nguoiDung = getNguoiDung(dto.getMaNguoiDung());
@@ -64,10 +71,10 @@ public class NhuCauNguoiDungService {
             existing.setNguoiDung(nguoiDung);
         }
 
-        if (dto.getMinPrice() != null) existing.setMinPrice(dto.getMinPrice());
-        if (dto.getMaxPrice() != null) existing.setMaxPrice(dto.getMaxPrice());
-        if (dto.getPhuong() != null) existing.setPhuong(dto.getPhuong());
-        if (dto.getLoaiCanHo() != null) existing.setLoaiCanHo(dto.getLoaiCanHo());
+        existing.setMinPrice(dto.getMinPrice());
+        existing.setMaxPrice(dto.getMaxPrice());
+        existing.setPhuong(dto.getPhuong());
+        existing.setLoaiCanHo(dto.getLoaiCanHo());
         if (dto.getCoBanCong() != null) existing.setCoBanCong(dto.getCoBanCong());
         if (dto.getDayDuNoiThat() != null) existing.setDayDuNoiThat(dto.getDayDuNoiThat());
         if (dto.getCoMayLanh() != null) existing.setCoMayLanh(dto.getCoMayLanh());

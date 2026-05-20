@@ -132,6 +132,12 @@ const Header: React.FC = () => {
         allowedRoles: LANDLORD_ROLE_IDS,
       },
       {
+        key: 'landlord-dashboard',
+        label: 'Doanh thu & thống kê',
+        to: '/landlord-dashboard',
+        allowedRoles: LANDLORD_ROLE_IDS,
+      },
+      {
         key: 'transactions',
         label: 'Quản lý giao dịch',
         to: '/history?tab=recharge',

@@ -33,6 +33,15 @@ public class NhuCauNguoiDungController {
         );
     }
 
+    @GetMapping("/nguoi-dung/{maNguoiDung}")
+    @PreAuthorize("hasAnyRole('ADMIN','NGUOI_THUE','NGUOI_CHO_THUE')")
+    public ResponseEntity<NhuCauNguoiDungDTO> getByNguoiDung(
+            @PathVariable String maNguoiDung) {
+        NhuCauNguoiDungDTO dto = nhuCauNguoiDungService.getByNguoiDung(maNguoiDung);
+
+        return dto == null ? ResponseEntity.noContent().build() : ResponseEntity.ok(dto);
+    }
+
     // ================= CREATE =================
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','NGUOI_THUE','NGUOI_CHO_THUE')")

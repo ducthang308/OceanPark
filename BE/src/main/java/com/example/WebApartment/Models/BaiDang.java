@@ -47,6 +47,7 @@ public class BaiDang {
     @Column(name = "hinhThucThanhToan")
     private String hinhThucThanhToan;
 
+    @Builder.Default
     @Column(name = "luotXem")
     private Long luotXem = 0L;
 }

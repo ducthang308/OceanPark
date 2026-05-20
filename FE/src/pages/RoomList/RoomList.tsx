@@ -234,14 +234,17 @@ const RoomList: React.FC = () => {
 
   const maNguoiDung = user?.maNguoiDung ?? null;
   const canViewServicePrice = Boolean(roleId && LANDLORD_ROLE_IDS.includes(roleId));
+  const canManageUserNeed = Boolean(maNguoiDung && !canViewServicePrice);
 
   const {
     open,
     close,
     loading,
+    hasNeed,
     initialValues,
+    openDialog,
     submit,
-  } = useUserNeedDialog(maNguoiDung);
+  } = useUserNeedDialog(canManageUserNeed ? maNguoiDung : null);
 
   const queryDistrict = searchParams.get('district') || 'all';
   const activeDistrict = DISTRICT_OPTIONS.some((district) => district.id === queryDistrict)
@@ -628,6 +631,15 @@ const RoomList: React.FC = () => {
                 <Link to="/danh-muc/phong-tro" className="room-list-btn room-list-btn--primary">
                   Khám phá tin thuê
                 </Link>
+                {canManageUserNeed && hasNeed && (
+                  <button
+                    type="button"
+                    className="room-list-btn room-list-btn--ghost"
+                    onClick={() => void openDialog()}
+                  >
+                    Sửa nhu cầu
+                  </button>
+                )}
                 {canViewServicePrice && (
                   <Link to="/service-price" className="room-list-btn room-list-btn--ghost">
                     Xem bảng giá
@@ -998,6 +1010,7 @@ const RoomList: React.FC = () => {
       </main>
       <UserNeedDialog
         open={open}
+        mode={hasNeed ? 'edit' : 'create'}
         loading={loading}
         initialValues={initialValues}
         onClose={close}
