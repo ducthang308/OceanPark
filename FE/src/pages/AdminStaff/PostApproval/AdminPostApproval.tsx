@@ -20,6 +20,7 @@ import {
   rejectPost,
 } from '../../../services/api/AdminPostService';
 import { getCategories } from '../../../services/api/CategoryService';
+import { getApiErrorMessage } from '../../../services/api/apiError';
 import type { BaiDangDTO } from '../../../services/api/PostManagementService';
 import { formatDate } from '../../../utils/date';
 import AdminPagination from '../components/AdminPagination';
@@ -27,20 +28,31 @@ import './admin-post-approval.css';
 
 const statusLabelMap: Record<string, { text: string; className: string }> = {
   PENDING: { text: 'Chờ duyệt', className: 'pending' },
+  CHO_DUYET: { text: 'Chờ duyệt', className: 'pending' },
   APPROVED: { text: 'Đã duyệt', className: 'approved' },
+  DA_DUYET: { text: 'Đã duyệt', className: 'approved' },
   ACTIVE: { text: 'Đang hiển thị', className: 'approved' },
   REJECTED: { text: 'Từ chối', className: 'rejected' },
+  TU_CHOI: { text: 'Từ chối', className: 'rejected' },
   INACTIVE: { text: 'Đã ẩn', className: 'rejected' },
 };
 
+const normalizePostStatus = (status?: string) => (status || '').toUpperCase();
+
 const getStatusBadge = (status?: string) =>
-  statusLabelMap[(status || '').toUpperCase()] ?? {
+  statusLabelMap[normalizePostStatus(status)] ?? {
     text: status || 'Không xác định',
     className: 'pending',
   };
 
 const isVisiblePostStatus = (status?: string) =>
-  ['APPROVED', 'ACTIVE'].includes((status || '').toUpperCase());
+  ['APPROVED', 'ACTIVE', 'DA_DUYET'].includes(normalizePostStatus(status));
+
+const isPendingPostStatus = (status?: string) =>
+  ['PENDING', 'CHO_DUYET'].includes(normalizePostStatus(status));
+
+const isRejectedPostStatus = (status?: string) =>
+  ['REJECTED', 'TU_CHOI'].includes(normalizePostStatus(status));
 
 const DEFAULT_PAGE_SIZE = 10;
 
@@ -54,6 +66,7 @@ const AdminPostApproval: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [processingId, setProcessingId] = useState('');
   const [selectedPost, setSelectedPost] = useState<BaiDangDTO | null>(null);
+  const [rejectTargetPost, setRejectTargetPost] = useState<BaiDangDTO | null>(null);
 
   const loadPosts = useCallback(async () => {
     setLoading(true);
@@ -107,6 +120,22 @@ const AdminPostApproval: React.FC = () => {
     return categoryNameById[maNguoiDung] || maNguoiDung;
   }, [categoryNameById]);
 
+  const replacePostInState = useCallback((updatedPost: BaiDangDTO) => {
+    if (!updatedPost.maBaiDang) return;
+
+    setPosts((currentPosts) =>
+      currentPosts.map((item) =>
+        item.maBaiDang === updatedPost.maBaiDang ? { ...item, ...updatedPost } : item,
+      ),
+    );
+
+    setSelectedPost((currentPost) =>
+      currentPost?.maBaiDang === updatedPost.maBaiDang
+        ? { ...currentPost, ...updatedPost }
+        : currentPost,
+    );
+  }, []);
+
   const filteredPosts = useMemo(() => {
     const normalizedKeyword = keyword.trim().toLowerCase();
 
@@ -131,11 +160,15 @@ const AdminPostApproval: React.FC = () => {
           ? true
           : status === 'VISIBLE'
             ? isVisiblePostStatus(postStatus)
-            : postStatus === status;
+            : status === 'PENDING'
+              ? isPendingPostStatus(postStatus)
+              : status === 'REJECTED'
+                ? isRejectedPostStatus(postStatus)
+                : postStatus === status;
 
       return matchKeyword && matchStatus;
     });
-  }, [getCategoryName, keyword, posts, status]);
+  }, [getCategoryName, getUserName, keyword, posts, status]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -155,49 +188,51 @@ const AdminPostApproval: React.FC = () => {
   }, [currentPage, filteredPosts, pageSize]);
 
   const totalPosts = posts.length;
-  const pendingPosts = posts.filter((item) => (item.trangThai || '').toUpperCase() === 'PENDING').length;
+  const pendingPosts = posts.filter((item) => isPendingPostStatus(item.trangThai)).length;
   const approvedPosts = posts.filter((item) => isVisiblePostStatus(item.trangThai)).length;
-  const rejectedPosts = posts.filter((item) => (item.trangThai || '').toUpperCase() === 'REJECTED').length;
+  const rejectedPosts = posts.filter((item) => isRejectedPostStatus(item.trangThai)).length;
 
   const handleApprove = async (maBaiDang?: string) => {
     if (!maBaiDang) return;
 
     try {
       setProcessingId(maBaiDang);
-      await approvePost(maBaiDang);
+      const updatedPost = await approvePost(maBaiDang);
+      replacePostInState(updatedPost);
       message.success('Đã duyệt và hiển thị bài đăng');
       await loadPosts();
     } catch (error) {
       console.error(error);
-      message.error('Duyệt bài đăng thất bại');
+      message.error(getApiErrorMessage(error, 'Duyệt bài đăng thất bại'));
     } finally {
       setProcessingId('');
     }
   };
 
-  const handleReject = async (maBaiDang?: string) => {
+  const openRejectConfirm = (post?: BaiDangDTO | null) => {
+    if (!post?.maBaiDang) return;
+    setSelectedPost(null);
+    setRejectTargetPost(post);
+  };
+
+  const handleReject = async () => {
+    const post = rejectTargetPost;
+    const maBaiDang = post?.maBaiDang;
     if (!maBaiDang) return;
 
-    Modal.confirm({
-      title: 'Từ chối bài đăng?',
-      content: 'Bài đăng sẽ chuyển sang trạng thái REJECTED.',
-      okText: 'Từ chối',
-      cancelText: 'Hủy',
-      okButtonProps: { danger: true },
-      onOk: async () => {
-        try {
-          setProcessingId(maBaiDang);
-          await rejectPost(maBaiDang);
-          message.success('Đã từ chối bài đăng');
-          await loadPosts();
-        } catch (error) {
-          console.error(error);
-          message.error('Từ chối bài đăng thất bại');
-        } finally {
-          setProcessingId('');
-        }
-      },
-    });
+    try {
+      setProcessingId(maBaiDang);
+      const updatedPost = await rejectPost(maBaiDang);
+      replacePostInState(updatedPost);
+      setRejectTargetPost(null);
+      message.success('Đã từ chối bài đăng');
+      await loadPosts();
+    } catch (error) {
+      console.error(error);
+      message.error(getApiErrorMessage(error, 'Từ chối bài đăng thất bại'));
+    } finally {
+      setProcessingId('');
+    }
   };
 
   const handlePageChange = (page: number, nextPageSize: number) => {
@@ -317,6 +352,7 @@ const AdminPostApproval: React.FC = () => {
                   const badge = getStatusBadge(item.trangThai);
                   const isProcessing = processingId === item.maBaiDang;
                   const isVisible = isVisiblePostStatus(item.trangThai);
+                  const isRejected = isRejectedPostStatus(item.trangThai);
 
                   return (
                     <tr key={item.maBaiDang}>
@@ -355,7 +391,7 @@ const AdminPostApproval: React.FC = () => {
                         <div className="post-approval-actions">
                           <button
                             type="button"
-                            className="post-approval-btn post-approval-btn--row post-approval-btn--icon post-approval-btn--light"
+                            className="post-approval-btn post-approval-btn--row post-approval-btn--light"
                             onClick={() => setSelectedPost(item)}
                             aria-label="Xem chi tiết"
                             title="Xem chi tiết"
@@ -364,7 +400,7 @@ const AdminPostApproval: React.FC = () => {
                           </button>
                           <button
                             type="button"
-                            className="post-approval-btn post-approval-btn--row post-approval-btn--icon post-approval-btn--success"
+                            className="post-approval-btn post-approval-btn--row post-approval-btn--success"
                             disabled={isProcessing || isVisible}
                             onClick={() => handleApprove(item.maBaiDang)}
                             aria-label="Duyệt bài"
@@ -374,9 +410,9 @@ const AdminPostApproval: React.FC = () => {
                           </button>
                           <button
                             type="button"
-                            className="post-approval-btn post-approval-btn--row post-approval-btn--icon post-approval-btn--danger"
-                            disabled={isProcessing}
-                            onClick={() => handleReject(item.maBaiDang)}
+                            className="post-approval-btn post-approval-btn--row post-approval-btn--danger"
+                            disabled={isProcessing || isRejected}
+                            onClick={() => openRejectConfirm(item)}
                             aria-label="Từ chối bài"
                             title="Từ chối bài"
                           >
@@ -496,8 +532,8 @@ const AdminPostApproval: React.FC = () => {
               <button
                 type="button"
                 className="post-approval-btn post-approval-btn--danger"
-                disabled={isSelectedProcessing}
-                onClick={() => handleReject(selectedPost.maBaiDang)}
+                disabled={isSelectedProcessing || isRejectedPostStatus(selectedPost.trangThai)}
+                onClick={() => openRejectConfirm(selectedPost)}
               >
                 <CloseOutlined />
                 Từ chối
@@ -505,6 +541,27 @@ const AdminPostApproval: React.FC = () => {
             </div>
           </div>
         )}
+      </Modal>
+
+      <Modal
+        title="Từ chối bài đăng?"
+        centered
+        open={!!rejectTargetPost}
+        okText="Từ chối"
+        cancelText="Hủy"
+        okButtonProps={{ danger: true }}
+        confirmLoading={
+          !!rejectTargetPost?.maBaiDang && processingId === rejectTargetPost.maBaiDang
+        }
+        onOk={handleReject}
+        onCancel={() => {
+          if (!processingId) setRejectTargetPost(null);
+        }}
+      >
+        <p>
+          Bài đăng "{rejectTargetPost?.tieuDe || rejectTargetPost?.maBaiDang}" sẽ chuyển
+          sang trạng thái từ chối.
+        </p>
       </Modal>
     </div>
   );

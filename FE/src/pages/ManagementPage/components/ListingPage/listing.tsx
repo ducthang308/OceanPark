@@ -14,6 +14,7 @@ import {
 import Image from "../../../../assets/img/co4la.png";
 import VideoIcon from "../../../../assets/img/upload-video.png";
 import Navbar from "../../../../components/layout/Navbar/navbar";
+import { DANANG_ADMINISTRATIVE_UNITS } from "../../../../constants/danangAdministrativeUnits";
 import { generatePostContentByAI } from "../../../../services/api/PostManagementService";
 
 import { useNavigate } from "react-router-dom";
@@ -619,19 +620,24 @@ const Listing = () => {
                 </div>
 
                 <div className="form-group-listing">
-                  <label className="label">Phường</label>
+                  <label className="label">Phường/Xã</label>
                   <Select
                     className="select-listing"
                     placeholder="-- Chọn phường/xã --"
                     size="large"
+                    showSearch
+                    allowClear
+                    optionFilterProp="children"
                     value={address.phuong || undefined}
                     onChange={(value) =>
-                      setAddress((prev) => ({ ...prev, phuong: value }))
+                      setAddress((prev) => ({ ...prev, phuong: value || "" }))
                     }
                   >
-                    <Option value="An Hải">An Hải</Option>
-                    <Option value="Hải Châu">Hải Châu</Option>
-                    <Option value="Hòa Xuân">Hòa Xuân</Option>
+                    {DANANG_ADMINISTRATIVE_UNITS.map((unit) => (
+                      <Option key={unit} value={unit}>
+                        {unit}
+                      </Option>
+                    ))}
                   </Select>
                 </div>
               </div>
