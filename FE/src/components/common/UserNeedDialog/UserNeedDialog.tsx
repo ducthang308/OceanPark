@@ -8,6 +8,7 @@ import './UserNeedDialog.css';
 
 interface UserNeedDialogProps {
   open: boolean;
+  mode?: 'create' | 'edit';
   loading?: boolean;
   initialValues?: Partial<IUserNeedFormValues>;
   onClose?: () => void;
@@ -58,6 +59,7 @@ const preferenceOptions: Array<{ key: UserNeedPreferenceKey; label: string }> = 
 
 const UserNeedDialog: React.FC<UserNeedDialogProps> = ({
   open,
+  mode = 'create',
   loading = false,
   initialValues,
   onClose,
@@ -108,10 +110,14 @@ const UserNeedDialog: React.FC<UserNeedDialogProps> = ({
       <div className="user-need-dialog__panel">
         <div className="user-need-dialog__header">
           <div>
-            <p className="user-need-dialog__eyebrow">Thiết lập lần đầu</p>
+            <p className="user-need-dialog__eyebrow">
+              {mode === 'edit' ? 'Xem lại & chỉnh sửa' : 'Thiết lập lần đầu'}
+            </p>
             <h2>Nhu cầu tìm thuê của bạn</h2>
             <p className="user-need-dialog__description">
-              Điền nhanh vài thông tin để hệ thống gợi ý bài đăng phù hợp hơn.
+              {mode === 'edit'
+                ? 'Xem lại thông tin đã lưu và cập nhật khi nhu cầu tìm thuê thay đổi.'
+                : 'Điền nhanh vài thông tin để hệ thống gợi ý bài đăng phù hợp hơn.'}
             </p>
           </div>
 
@@ -225,7 +231,7 @@ const UserNeedDialog: React.FC<UserNeedDialogProps> = ({
               className="user-need-dialog__btn user-need-dialog__btn--primary"
               disabled={loading}
             >
-              {loading ? 'Đang lưu...' : 'Lưu nhu cầu'}
+              {loading ? 'Đang lưu...' : mode === 'edit' ? 'Cập nhật nhu cầu' : 'Lưu nhu cầu'}
             </button>
           </div>
         </form>

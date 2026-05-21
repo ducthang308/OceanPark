@@ -10,6 +10,7 @@ export interface BaiDangDTO {
   trangThai?: string;
   lienHe?: string;
   hinhThucThanhToan?: string;
+  luotXem?: number;
 }
 
 export interface ChiTietCanHoDTO {
@@ -52,9 +53,48 @@ export const getCategories = async () => {
   return res.data;
 };
 
+const mergePostsById = (posts: BaiDangDTO[]) => {
+  const result = new Map<string, BaiDangDTO>();
+
+  posts.forEach((post) => {
+    if (post.maBaiDang) {
+      result.set(post.maBaiDang, post);
+    }
+  });
+
+  return Array.from(result.values());
+};
+
 export const getPosts = async () => {
-  const res = await axiosClient.get<BaiDangDTO[]>("/api/v1/bai-dang");
-  return res.data;
+  const [listResult, detailResult] = await Promise.allSettled([
+    axiosClient.get<BaiDangDTO[]>("/api/v1/bai-dang"),
+    axiosClient.get<ChiTietCanHoDTO[]>("/api/v1/chi-tiet-can-ho"),
+  ]);
+
+  const listPosts = listResult.status === "fulfilled" ? listResult.value.data : [];
+  const knownPostIds = new Set(listPosts.map((post) => post.maBaiDang).filter(Boolean));
+  const detailPostIds =
+    detailResult.status === "fulfilled"
+      ? detailResult.value.data
+        .map((detail) => detail.maBaiDang)
+        .filter((id): id is string => Boolean(id && !knownPostIds.has(id)))
+      : [];
+
+  const postResults = await Promise.allSettled(
+    Array.from(new Set(detailPostIds)).map((id) =>
+      axiosClient.get<BaiDangDTO>(`/api/v1/bai-dang/${id}`)
+    )
+  );
+
+  const detailPosts = postResults.flatMap((result) =>
+    result.status === "fulfilled" ? [result.value.data] : []
+  );
+
+  if (listResult.status === "rejected" && detailResult.status === "rejected") {
+    throw listResult.reason;
+  }
+
+  return mergePostsById([...listPosts, ...detailPosts]);
 };
 
 export const getPostById = async (maBaiDang: string) => {

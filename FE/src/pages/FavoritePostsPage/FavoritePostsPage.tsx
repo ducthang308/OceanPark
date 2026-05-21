@@ -46,15 +46,7 @@ interface FavoritePost {
   isFeatured?: boolean;
 }
 
-const HIDDEN_POST_STATUSES = new Set([
-  'HIDDEN',
-  'INACTIVE',
-  'PENDING',
-  'CHO_DUYET',
-  'TU_CHOI',
-  'REJECTED',
-  'DELETED',
-]);
+const PUBLIC_POST_STATUSES = new Set(['ACTIVE', 'APPROVED']);
 
 const formatPrice = (value: number | null) => {
   if (typeof value !== 'number' || Number.isNaN(value) || value <= 0) {
@@ -97,7 +89,7 @@ const getImageUrl = (image: HinhAnhBaiDangDTO) =>
 
 const isPublicPost = (post: BaiDangDTO) => {
   const status = post.trangThai?.trim().toUpperCase();
-  return !status || !HIDDEN_POST_STATUSES.has(status);
+  return Boolean(status && PUBLIC_POST_STATUSES.has(status));
 };
 
 const resolveRentalStatus = (status?: string): FavoritePostStatus => {

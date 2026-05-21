@@ -50,8 +50,11 @@ export const getUserNeeds = async () => {
 };
 
 export const getUserNeedByUserId = async (maNguoiDung: string) => {
-  const needs = await getUserNeeds();
-  return needs.find((item) => item.maNguoiDung === maNguoiDung) || null;
+  const response = await axiosClient.get<NhuCauNguoiDungDTO | "">(
+    `/api/v1/nhucaunguoidung/nguoi-dung/${maNguoiDung}`
+  );
+
+  return response.data || null;
 };
 
 export const createUserNeed = async (

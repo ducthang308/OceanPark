@@ -15,10 +15,16 @@
 }
 
 .nav-header {
+    width: 100%;
     display: flex;
     align-items: center;
     gap: 12px;
-    margin-bottom: 12px;
+    margin-bottom: 18px;
+    padding: 14px;
+    border-radius: 12px;
+    background: #f0fdfa;
+    border: 1px solid #99f6e4;
+    box-sizing: border-box;
 }
 
 .avatar-nav .avatar {
@@ -42,48 +48,13 @@
 }
 
 .info-nav .phone {
-    color: #555;
-    font-size: 13px;
-}
-
-.nav-insight {
-    margin: 14px 0;
-    padding: 14px;
-    display: flex;
-    gap: 12px;
-    border-radius: 12px;
-    background: #f0fdfa;
-    border: 1px solid #99f6e4;
-}
-
-.nav-insight-icon {
-    width: 34px;
-    height: 34px;
-    border-radius: 10px;
-    background: #0f766e;
-    color: #ffffff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
-
-.nav-insight-title {
-    font-size: 14px;
-    font-weight: 700;
-    color: #134e4a;
-    margin-bottom: 4px;
-}
-
-.nav-insight-text {
-    font-size: 12px;
-    line-height: 1.45;
     color: #0f766e;
+    font-size: 13px;
 }
 
 .nav-tabs {
     flex-grow: 1;
-    margin-top: 12px;
+    margin-top: 0;
 }
 
 .custom-ant-menu{

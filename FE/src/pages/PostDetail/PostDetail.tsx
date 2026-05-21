@@ -47,15 +47,7 @@ interface PostDetailView {
   isNew: boolean;
 }
 
-const HIDDEN_POST_STATUSES = new Set([
-  'HIDDEN',
-  'INACTIVE',
-  'PENDING',
-  'CHO_DUYET',
-  'TU_CHOI',
-  'REJECTED',
-  'DELETED',
-]);
+const PUBLIC_POST_STATUSES = new Set(['ACTIVE', 'APPROVED']);
 
 const formatCurrency = (value?: number) => {
   if (typeof value !== 'number' || Number.isNaN(value) || value <= 0) {
@@ -95,7 +87,7 @@ const formatPostedAt = (value?: string) => {
 
 const isPublicPost = (post: BaiDangDTO) => {
   const status = post.trangThai?.trim().toUpperCase();
-  return !status || !HIDDEN_POST_STATUSES.has(status);
+  return Boolean(status && PUBLIC_POST_STATUSES.has(status));
 };
 
 const getImageUrl = (image: HinhAnhBaiDangDTO) =>

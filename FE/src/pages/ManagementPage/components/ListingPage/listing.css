@@ -2,14 +2,31 @@
    Listing Page - Premium UI
    ============================================= */
 
-.container-listing {
+.listing-layout {
+  min-height: 100vh;
+  padding: 100px 0 48px;
   background-color: #f4f6fb;
-  padding: 110px 16px 80px;
+  display: grid;
+  grid-template-columns: 265px minmax(0, 1fr);
+  align-items: start;
+}
+
+.listing-content-area {
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+  padding: 0 40px;
+}
+
+.container-listing {
+  width: 100%;
+  background-color: transparent;
+  padding: 0 16px 80px;
   display: flex;
   flex-direction: column;
   gap: 20px;
   align-items: center;
-  min-height: 100vh;
+  min-height: auto;
 }
 
 .listing-main-header {
@@ -575,7 +592,31 @@ textarea.ant-input {
   }
 }
 
+@media (max-width: 1100px) {
+  .listing-layout {
+    grid-template-columns: 1fr;
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  .listing-layout .navbar-management {
+    display: none;
+  }
+
+  .listing-content-area {
+    padding: 0;
+  }
+}
+
 @media (max-width: 768px) {
+  .listing-layout {
+    padding: 88px 14px 48px;
+  }
+
+  .container-listing {
+    padding: 0;
+  }
+
   .area-select, .detail-listing-grid {
     grid-template-columns: 1fr;
     gap: 16px;

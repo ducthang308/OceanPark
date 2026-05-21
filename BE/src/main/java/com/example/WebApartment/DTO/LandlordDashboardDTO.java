@@ -17,4 +17,5 @@ public class LandlordDashboardDTO {
     private Long totalLikes;
 
     private List<LandlordPostStatsDTO> posts;
+    private List<LandlordRevenueDTO> revenues;
 }

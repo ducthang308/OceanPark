@@ -169,6 +169,7 @@ const Home: React.FC = () => {
   });
   const maNguoiDung = user?.maNguoiDung ?? null;
   const canViewServicePrice = Boolean(roleId && LANDLORD_ROLE_IDS.includes(roleId));
+  const canManageUserNeed = Boolean(maNguoiDung && !canViewServicePrice);
   const minPriceValue = Number(searchFilters.minPrice);
   const maxPriceValue = Number(searchFilters.maxPrice);
   const hasMinPriceValue =
@@ -183,9 +184,11 @@ const Home: React.FC = () => {
     open,
     close,
     loading,
+    hasNeed,
     initialValues,
+    openDialog,
     submit,
-  } = useUserNeedDialog(maNguoiDung);
+  } = useUserNeedDialog(canManageUserNeed ? maNguoiDung : null);
 
   useEffect(() => {
     let ignore = false;
@@ -330,6 +333,15 @@ const Home: React.FC = () => {
                 <Link to="/danh-muc/phong-tro" className="site-home-btn site-home-btn--primary">
                   Khám phá tin thuê
                 </Link>
+                {canManageUserNeed && hasNeed && (
+                  <button
+                    type="button"
+                    className="site-home-btn site-home-btn--ghost"
+                    onClick={() => void openDialog()}
+                  >
+                    Sửa nhu cầu
+                  </button>
+                )}
                 {canViewServicePrice && (
                   <Link to="/service-price" className="site-home-btn site-home-btn--ghost">
                     Xem bảng giá
@@ -669,6 +681,7 @@ const Home: React.FC = () => {
 
       <UserNeedDialog
         open={open}
+        mode={hasNeed ? 'edit' : 'create'}
         loading={loading}
         initialValues={initialValues}
         onClose={close}

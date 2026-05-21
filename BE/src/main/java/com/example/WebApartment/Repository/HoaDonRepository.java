@@ -36,4 +36,6 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, String> {
             String loaiHoaDon,
             String trangThaiThanhToan
     );
+
+    long countByTrangThaiThanhToanIgnoreCase(String trangThaiThanhToan);
 }

@@ -39,6 +39,9 @@ const getStatusBadge = (status?: string) =>
     className: 'pending',
   };
 
+const isVisiblePostStatus = (status?: string) =>
+  ['APPROVED', 'ACTIVE'].includes((status || '').toUpperCase());
+
 const DEFAULT_PAGE_SIZE = 10;
 
 const AdminPostApproval: React.FC = () => {
@@ -123,7 +126,12 @@ const AdminPostApproval: React.FC = () => {
         .toLowerCase();
 
       const matchKeyword = searchText.includes(normalizedKeyword);
-      const matchStatus = status === 'ALL' ? true : postStatus === status;
+      const matchStatus =
+        status === 'ALL'
+          ? true
+          : status === 'VISIBLE'
+            ? isVisiblePostStatus(postStatus)
+            : postStatus === status;
 
       return matchKeyword && matchStatus;
     });
@@ -147,11 +155,9 @@ const AdminPostApproval: React.FC = () => {
   }, [currentPage, filteredPosts, pageSize]);
 
   const totalPosts = posts.length;
-  const pendingPosts = posts.filter((item) => item.trangThai === 'PENDING').length;
-  const approvedPosts = posts.filter((item) =>
-    ['APPROVED', 'ACTIVE'].includes((item.trangThai || '').toUpperCase()),
-  ).length;
-  const rejectedPosts = posts.filter((item) => item.trangThai === 'REJECTED').length;
+  const pendingPosts = posts.filter((item) => (item.trangThai || '').toUpperCase() === 'PENDING').length;
+  const approvedPosts = posts.filter((item) => isVisiblePostStatus(item.trangThai)).length;
+  const rejectedPosts = posts.filter((item) => (item.trangThai || '').toUpperCase() === 'REJECTED').length;
 
   const handleApprove = async (maBaiDang?: string) => {
     if (!maBaiDang) return;
@@ -159,7 +165,7 @@ const AdminPostApproval: React.FC = () => {
     try {
       setProcessingId(maBaiDang);
       await approvePost(maBaiDang);
-      message.success('Đã duyệt bài đăng');
+      message.success('Đã duyệt và hiển thị bài đăng');
       await loadPosts();
     } catch (error) {
       console.error(error);
@@ -231,7 +237,7 @@ const AdminPostApproval: React.FC = () => {
             >
               <option value="ALL">Tất cả trạng thái</option>
               <option value="PENDING">Chờ duyệt</option>
-              <option value="APPROVED">Đã duyệt</option>
+              <option value="VISIBLE">Đã duyệt / đang hiển thị</option>
               <option value="REJECTED">Từ chối</option>
             </select>
           </div>
@@ -310,6 +316,7 @@ const AdminPostApproval: React.FC = () => {
                 paginatedPosts.map((item) => {
                   const badge = getStatusBadge(item.trangThai);
                   const isProcessing = processingId === item.maBaiDang;
+                  const isVisible = isVisiblePostStatus(item.trangThai);
 
                   return (
                     <tr key={item.maBaiDang}>
@@ -358,7 +365,7 @@ const AdminPostApproval: React.FC = () => {
                           <button
                             type="button"
                             className="post-approval-btn post-approval-btn--row post-approval-btn--icon post-approval-btn--success"
-                            disabled={isProcessing}
+                            disabled={isProcessing || isVisible}
                             onClick={() => handleApprove(item.maBaiDang)}
                             aria-label="Duyệt bài"
                             title="Duyệt bài"
@@ -480,7 +487,7 @@ const AdminPostApproval: React.FC = () => {
               <button
                 type="button"
                 className="post-approval-btn post-approval-btn--success"
-                disabled={isSelectedProcessing}
+                disabled={isSelectedProcessing || isVisiblePostStatus(selectedPost.trangThai)}
                 onClick={() => handleApprove(selectedPost.maBaiDang)}
               >
                 <CheckOutlined />

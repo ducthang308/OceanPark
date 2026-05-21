@@ -21,6 +21,7 @@ import Listing from './pages/ManagementPage/components/ListingPage/listing.tsx';
 import ListPost from './pages/ManagementPage/components/ListPostPage/listPost.tsx';
 import FavoritePostsPage from './pages/FavoritePostsPage/FavoritePostsPage';
 import ServicePrice from './components/sections/ServicePrice/servicePrice.tsx';
+import LandlordDashboardPage from './pages/LandlordDashboard/LandlordDashboardPage.tsx';
 
 import AdminLayout from './pages/AdminStaff/components/AdminLayout.tsx';
 import AdminDashboard from './pages/AdminStaff/Dashboard/AdminDashboard.tsx';
@@ -102,6 +103,7 @@ function App() {
             <Route path="/recharge/:method" element={<TopUpPage />} />
             <Route path="/listing" element={<Listing />} />
             <Route path="/list-post" element={<ListPost />} />
+            <Route path="/landlord-dashboard" element={<LandlordDashboardPage />} />
           </Route>
         </Route>
 
