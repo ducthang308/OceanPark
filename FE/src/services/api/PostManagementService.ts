@@ -76,8 +76,8 @@ export const getPosts = async () => {
   const detailPostIds =
     detailResult.status === "fulfilled"
       ? detailResult.value.data
-          .map((detail) => detail.maBaiDang)
-          .filter((id): id is string => Boolean(id && !knownPostIds.has(id)))
+        .map((detail) => detail.maBaiDang)
+        .filter((id): id is string => Boolean(id && !knownPostIds.has(id)))
       : [];
 
   const postResults = await Promise.allSettled(
@@ -311,6 +311,46 @@ export interface ChatbotResponseDTO {
 export const askChatbot = async (payload: ChatbotRequestDTO) => {
   const res = await axiosClient.post<ChatbotResponseDTO>(
     '/api/v1/chatbot/ask',
+    payload
+  );
+
+  return res.data;
+};
+
+export interface RentPriceAnalysisRequest {
+  loaiCanHo?: string;
+  giaDeXuat?: number;
+  dienTich?: number;
+  phuong?: string;
+  diaChi?: string;
+  phongNgu?: number;
+
+  coBanCong?: boolean;
+  dayDuNoiThat?: boolean;
+  coMayLanh?: boolean;
+  coThangMay?: boolean;
+  coMayGiat?: boolean;
+  coNhaXe?: boolean;
+  coTuLanh?: boolean;
+  gioGiacTuDo?: boolean;
+  ganTrungTam?: boolean;
+  ganBien?: boolean;
+}
+
+export interface RentPriceAnalysisResponse {
+  mucDoHopLy: string;
+  giaThap: number;
+  giaCao: number;
+  giaKhuyenNghi: number;
+  nhanXet: string;
+  chienLuoc: string;
+}
+
+export const analyzeRentPrice = async (
+  payload: RentPriceAnalysisRequest
+) => {
+  const res = await axiosClient.post<RentPriceAnalysisResponse>(
+    '/api/v1/ai/rent-price-analysis',
     payload
   );
 
