@@ -66,6 +66,7 @@ public class WebSecurityConfig {
                                 String.format("%s/bai-dang/*/view", apiPrefix)
                         ).permitAll()
                         .requestMatchers("/ws/**").permitAll()
+                        .requestMatchers("/ws-chat/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated()
                 )
