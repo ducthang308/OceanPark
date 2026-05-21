@@ -26,7 +26,7 @@
 .post-approval-filter-card__left {
   flex: 1;
   display: grid;
-  grid-template-columns: 1fr 160px;
+  grid-template-columns: minmax(300px, 1fr) minmax(230px, 260px);
   gap: 10px;
   min-width: 280px;
 }
@@ -61,6 +61,15 @@
 .post-approval-input--with-icon,
 .post-approval-select--with-icon {
   padding-left: 42px;
+}
+
+.post-approval-select {
+  padding-right: 42px;
+  text-overflow: ellipsis;
+}
+
+.post-approval-field--select {
+  min-width: 220px;
 }
 
 .post-approval-field__icon {
@@ -175,37 +184,32 @@
 .post-approval-table {
   width: 100%;
   border-collapse: collapse;
-  table-layout: auto;
+  table-layout: fixed;
+  min-width: 900px;
 }
 
 .post-approval-col-post {
-  width: 35%;
-  min-width: 280px;
+  width: 34%;
 }
 
 .post-approval-col-user {
   width: 12%;
-  min-width: 100px;
 }
 
 .post-approval-col-category {
-  width: 15%;
-  min-width: 120px;
+  width: 14%;
 }
 
 .post-approval-col-date {
   width: 14%;
-  min-width: 110px;
 }
 
 .post-approval-col-status {
-  width: 12%;
-  min-width: 100px;
+  width: 13%;
 }
 
 .post-approval-col-action {
-  width: 12%;
-  min-width: 120px;
+  width: 13%;
 }
 
 .post-approval-table thead th {
@@ -364,11 +368,18 @@
 }
 
 .post-approval-actions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, 34px);
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
+  width: fit-content;
+  margin: 0 auto;
+  padding: 4px;
+  border: 1px solid #e6edf5;
+  border-radius: 10px;
+  background: #f8fafc;
+  box-sizing: border-box;
 }
 
 .post-approval-btn {
@@ -392,10 +403,13 @@
 }
 
 .post-approval-btn--row {
-  height: 32px;
-  padding: 0 10px;
-  font-size: 12px;
+  height: 34px;
+  width: 34px;
+  min-width: 0;
+  padding: 0;
+  font-size: 14px;
   border-radius: 6px;
+  white-space: nowrap;
 }
 
 .post-approval-btn--icon {

@@ -37,9 +37,9 @@ export const approvePost = async (maBaiDang: string): Promise<BaiDangDTO> => {
 };
 
 export const rejectPost = async (maBaiDang: string, reason?: string): Promise<BaiDangDTO> => {
-  const res = await axiosClient.put<BaiDangDTO>(
-    `/api/v1/bai-dang/${maBaiDang}/reject`,
-    reason ? { reason } : {},
-  );
+  const res = reason
+    ? await axiosClient.put<BaiDangDTO>(`/api/v1/bai-dang/${maBaiDang}/reject`, { reason })
+    : await axiosClient.put<BaiDangDTO>(`/api/v1/bai-dang/${maBaiDang}/reject`);
+
   return res.data;
 };
