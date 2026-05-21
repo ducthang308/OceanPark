@@ -74,13 +74,7 @@ public class AdminDashboardService {
     public DashboardChartDTO getRevenueChart(String type) {
         String normalizedType = normalizeType(type);
         List<RevenueRecord> revenueRecords = findRevenueRecords();
-        List<ChartBucket> buckets = buildBuckets(
-                normalizedType,
-                revenueRecords.stream()
-                        .map(RevenueRecord::date)
-                        .filter(Objects::nonNull)
-                        .toList()
-        );
+        List<ChartBucket> buckets = buildBuckets(normalizedType);
         Map<String, Double> revenueByBucket = initBucketMap(buckets);
 
         for (RevenueRecord record : revenueRecords) {
@@ -112,13 +106,7 @@ public class AdminDashboardService {
     public DashboardChartDTO getPostChart(String type) {
         String normalizedType = normalizeType(type);
         List<BaiDang> posts = baiDangRepository.findAll();
-        List<ChartBucket> buckets = buildBuckets(
-                normalizedType,
-                posts.stream()
-                        .map(BaiDang::getNgayDang)
-                        .filter(Objects::nonNull)
-                        .toList()
-        );
+        List<ChartBucket> buckets = buildBuckets(normalizedType);
         Map<String, Double> totalByBucket = initBucketMap(buckets);
         Map<String, Double> activeByBucket = initBucketMap(buckets);
         Map<String, Double> rentedByBucket = initBucketMap(buckets);
@@ -329,44 +317,6 @@ public class AdminDashboardService {
                 .toList();
     }
 
-    private List<ChartBucket> buildBuckets(String type, Collection<LocalDateTime> dates) {
-        if (dates == null || dates.isEmpty()) {
-            return buildBuckets(type);
-        }
-
-        if (TYPE_DAY.equals(type)) {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM");
-
-            return dates.stream()
-                    .filter(Objects::nonNull)
-                    .map(LocalDateTime::toLocalDate)
-                    .distinct()
-                    .sorted()
-                    .map(date -> new ChartBucket(date.toString(), date.format(formatter)))
-                    .toList();
-        }
-
-        if (TYPE_YEAR.equals(type)) {
-            return dates.stream()
-                    .filter(Objects::nonNull)
-                    .map(date -> String.valueOf(date.getYear()))
-                    .distinct()
-                    .sorted()
-                    .map(year -> new ChartBucket(year, year))
-                    .toList();
-        }
-
-        return dates.stream()
-                .filter(Objects::nonNull)
-                .map(YearMonth::from)
-                .distinct()
-                .sorted()
-                .map(month -> new ChartBucket(
-                        month.toString(),
-                        "T" + month.getMonthValue() + "/" + month.getYear()
-                ))
-                .toList();
-    }
 
     private String toBucketKey(LocalDateTime dateTime, String type) {
         if (TYPE_DAY.equals(type)) {

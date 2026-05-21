@@ -210,6 +210,12 @@
   color: #b91c1c;
 }
 
+.admin-dashboard-charts-stacked {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .admin-dashboard-panels {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

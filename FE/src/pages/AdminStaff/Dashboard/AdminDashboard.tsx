@@ -524,7 +524,7 @@ const AdminDashboard: React.FC = () => {
         </div>
       </section>
 
-      <section className="admin-dashboard-panels">
+      <section className="admin-dashboard-charts-stacked">
         <ChartPanel
           title="Doanh thu"
           description="Tổng tiền từ giao dịch SUCCESS hợp lệ."
@@ -541,7 +541,9 @@ const AdminDashboard: React.FC = () => {
           colors={['#2563eb']}
           loading={loadingCharts}
         />
+      </section>
 
+      <section className="admin-dashboard-panels">
         <PostPiePanel chart={postChart} loading={loadingCharts} />
 
         <PendingPostsPanel
