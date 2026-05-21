@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { getAuthSession } from '../../utils/storage';
 import { ROLE_ID } from '../../constants/roles';
@@ -6,6 +6,7 @@ import {
   getRoomsByUser,
   getMessages,
   sendMessageRest,
+  uploadChatImage,
 } from '../../services/api/ChatService';
 import type {
   ChatRoomDTO,
@@ -20,7 +21,7 @@ import {
 import type {
   HinhAnhBaiDangDTO,
 } from '../../services/api/PostManagementService';
-import { StompClient } from '../../utils/stomp';
+import { useChatNotifications } from '../../contexts/ChatNotificationProvider';
 import { Send, ArrowLeft, Image, Search, MessageSquare } from 'lucide-react';
 import './ChatPage.css';
 
@@ -38,6 +39,14 @@ const ChatPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const targetRoomId = searchParams.get('room');
 
+  const {
+    stompClient,
+    isConnected,
+    recentRooms,
+    markAllAsRead,
+    loadRooms: loadGlobalRooms,
+  } = useChatNotifications();
+
   // Thông tin user hiện tại
   const session = getAuthSession();
   const currentUserId = session?.user.maNguoiDung || '';
@@ -53,18 +62,23 @@ const ChatPage: React.FC = () => {
   const [loadingRooms, setLoadingRooms] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [sending, setSending] = useState(false);
+  const [latestMessageId, setLatestMessageId] = useState<string | null>(null);
 
-  // Attachment (đính kèm ảnh URL)
-  const [imageUrlInput, setImageUrlInput] = useState('');
-  const [showImageInputBar, setShowImageInputBar] = useState(false);
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [selectedImagePreviewUrl, setSelectedImagePreviewUrl] = useState<string | null>(null);
 
   // Apartment details state cho room đang chọn
   const [apartmentDetails, setApartmentDetails] = useState<ApartmentSnippet | null>(null);
 
-  // Quản lý WebSocket và Subscription
-  const stompClientRef = useRef<StompClient | null>(null);
+  // Quản lý Subscription cho phòng hiện tại
   const activeSubscriptionRef = useRef<{ unsubscribe: () => void } | null>(null);
+  const activeSubscriptionRoomIdRef = useRef<string | null>(null);
+  const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const messageEndRef = useRef<HTMLDivElement | null>(null);
+  const messagesRef = useRef<ChatMessageDTO[]>([]);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const pendingScrollBehaviorRef = useRef<ScrollBehavior | null>(null);
+  const stickToBottomRef = useRef(true);
 
   // Phân biệt layout Admin hay Client
   const isAdminLayout = location.pathname.startsWith('/admin');
@@ -76,33 +90,32 @@ const ChatPage: React.FC = () => {
     }
   }, [session, navigate, location]);
 
-  // Khởi tạo WebSocket Connection khi component mount
   useEffect(() => {
-    if (!currentUserId) return;
+    markAllAsRead();
+    window.dispatchEvent(new Event('chat-opened'));
+  }, [markAllAsRead]);
 
-    // Connect to Spring Boot WebSocket STOMP
-    const wsUrl = 'ws://localhost:8082/ws-chat';
-    const client = new StompClient(wsUrl);
-    stompClientRef.current = client;
-
-    client.connect(
-      () => {
-        console.log('STOMP connected successfully to', wsUrl);
-      },
-      (err) => {
-        console.error('STOMP connection error:', err);
-      }
-    );
-
+  // Cleanup subscription khi component unmount
+  useEffect(() => {
     return () => {
       if (activeSubscriptionRef.current) {
         activeSubscriptionRef.current.unsubscribe();
       }
-      if (stompClientRef.current) {
-        stompClientRef.current.disconnect();
+      activeSubscriptionRoomIdRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  useEffect(() => {
+    return () => {
+      if (selectedImagePreviewUrl) {
+        URL.revokeObjectURL(selectedImagePreviewUrl);
       }
     };
-  }, [currentUserId]);
+  }, [selectedImagePreviewUrl]);
 
   // Tải danh sách phòng chat
   const loadRooms = async () => {
@@ -112,28 +125,6 @@ const ChatPage: React.FC = () => {
       const roomsData = await getRoomsByUser(currentUserId);
       setRooms(roomsData);
       setFilteredRooms(roomsData);
-
-      // Nếu có room ID được truyền qua URL query (?room=...), kích hoạt phòng đó luôn
-      if (targetRoomId) {
-        const target = roomsData.find((r) => r.maPhongChat === targetRoomId);
-        if (target) {
-          handleSelectRoom(target);
-        } else {
-          // Trường hợp room ID không có trong danh sách nhưng được truyền (VD: vừa tạo phòng từ post detail)
-          try {
-            // Lấy lại danh sách một lần nữa hoặc đợi
-            const freshRooms = await getRoomsByUser(currentUserId);
-            const freshTarget = freshRooms.find((r) => r.maPhongChat === targetRoomId);
-            if (freshTarget) {
-              setRooms(freshRooms);
-              setFilteredRooms(freshRooms);
-              handleSelectRoom(freshTarget);
-            }
-          } catch (e) {
-            console.error('Không tải được phòng chỉ định', e);
-          }
-        }
-      }
     } catch (error) {
       console.error('Không thể tải danh sách phòng chat:', error);
     } finally {
@@ -143,7 +134,12 @@ const ChatPage: React.FC = () => {
 
   useEffect(() => {
     loadRooms();
-  }, [currentUserId, targetRoomId]);
+  }, [currentUserId]);
+
+  useEffect(() => {
+    if (!currentUserId || recentRooms.length === 0) return;
+    setRooms(recentRooms);
+  }, [currentUserId, recentRooms]);
 
   // Bộ lọc danh sách phòng chat theo tên người nhận
   useEffect(() => {
@@ -161,38 +157,92 @@ const ChatPage: React.FC = () => {
     setFilteredRooms(filtered);
   }, [searchTerm, rooms]);
 
-  // Tự động cuộn xuống dưới cùng của danh sách tin nhắn khi có tin nhắn mới
+  // Smart scroll: chỉ bám đáy khi người dùng đang đọc gần cuối hội thoại.
+  const isNearBottom = (threshold = 160): boolean => {
+    if (!messagesContainerRef.current) return true;
+    const { scrollHeight, scrollTop, clientHeight } = messagesContainerRef.current;
+    return scrollHeight - scrollTop - clientHeight < threshold;
+  };
+
+  const handleMessagesScroll = () => {
+    stickToBottomRef.current = isNearBottom();
+  };
+
+  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+    messageEndRef.current?.scrollIntoView({ behavior, block: 'end' });
+  };
+
+  useLayoutEffect(() => {
+    const pendingBehavior = pendingScrollBehaviorRef.current;
+
+    if (pendingBehavior) {
+      scrollToBottom(pendingBehavior);
+      pendingScrollBehaviorRef.current = null;
+      stickToBottomRef.current = true;
+      return;
+    }
+
+    if (stickToBottomRef.current) {
+      scrollToBottom('auto');
+    }
+  }, [messages.length, loadingMessages]);
+
   useEffect(() => {
-    messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    if (!latestMessageId) return;
+
+    const timer = window.setTimeout(() => {
+      setLatestMessageId(null);
+    }, 700);
+
+    return () => window.clearTimeout(timer);
+  }, [latestMessageId]);
+
+  const appendMessage = (newMsg: ChatMessageDTO, forceScroll = false) => {
+    if (messagesRef.current.some((msg) => msg.maTinNhan === newMsg.maTinNhan)) return;
+
+    const shouldScroll = forceScroll || newMsg.maNguoiGui === currentUserId || isNearBottom();
+    if (shouldScroll) {
+      pendingScrollBehaviorRef.current =
+        forceScroll || newMsg.maNguoiGui === currentUserId ? 'smooth' : 'auto';
+    }
+
+    const nextMessages = [...messagesRef.current, newMsg];
+    messagesRef.current = nextMessages;
+    setMessages(nextMessages);
+    setLatestMessageId(newMsg.maTinNhan);
+  };
 
   // Đăng ký nhận tin nhắn WebSocket real-time khi chuyển phòng
   const subscribeToRoom = (roomId: string) => {
+    if (activeSubscriptionRoomIdRef.current === roomId && activeSubscriptionRef.current) {
+      return;
+    }
+
     // Huỷ đăng ký phòng cũ trước
     if (activeSubscriptionRef.current) {
       activeSubscriptionRef.current.unsubscribe();
       activeSubscriptionRef.current = null;
     }
+    activeSubscriptionRoomIdRef.current = null;
 
-    if (!stompClientRef.current) return;
+    if (!stompClient) {
+      console.warn('STOMP client is not ready, cannot subscribe to room');
+      return;
+    }
 
     const destination = `/topic/chat-room/${roomId}`;
-    console.log(`Subscribing to topic: ${destination}`);
+    console.log(`Subscribing to room: ${destination}`);
 
-    const sub = stompClientRef.current.subscribe(destination, (frame) => {
+    const sub = stompClient.subscribe(destination, (frame) => {
       try {
         const newMsg = JSON.parse(frame.body) as ChatMessageDTO;
         console.log('Received WebSocket message:', newMsg);
 
-        setMessages((prev) => {
-          // Tránh trùng lặp tin nhắn nếu tin nhắn gửi đi đã được cập nhật local
-          if (prev.some((m) => m.maTinNhan === newMsg.maTinNhan)) return prev;
-          return [...prev, newMsg];
-        });
+        appendMessage(newMsg);
 
         // Cập nhật tin nhắn cuối cùng trên danh sách phòng
-        setRooms((prevRooms) =>
-          prevRooms.map((r) => {
+        setRooms((prevRooms) => {
+          const nextRooms = prevRooms.map((r) => {
             if (r.maPhongChat === roomId) {
               return {
                 ...r,
@@ -201,34 +251,47 @@ const ChatPage: React.FC = () => {
               };
             }
             return r;
-          })
-        );
+          });
+
+          return [...nextRooms].sort((a, b) => {
+            const timeA = new Date(a.thoiGianTinNhanCuoi || a.ngayTao || 0).getTime();
+            const timeB = new Date(b.thoiGianTinNhanCuoi || b.ngayTao || 0).getTime();
+            return timeB - timeA;
+          });
+        });
       } catch (err) {
         console.error('Lỗi phân giải tin nhắn WebSocket:', err);
       }
     });
 
     activeSubscriptionRef.current = sub;
+    activeSubscriptionRoomIdRef.current = roomId;
   };
 
   // Lựa chọn phòng để chat
   const handleSelectRoom = async (room: ChatRoomDTO) => {
+    if (activeSubscriptionRef.current) {
+      activeSubscriptionRef.current.unsubscribe();
+      activeSubscriptionRef.current = null;
+      activeSubscriptionRoomIdRef.current = null;
+    }
+
     setActiveRoom(room);
     setLoadingMessages(true);
     setApartmentDetails(null);
-    setSearchParams({ room: room.maPhongChat });
+    setSearchParams({ room: room.maPhongChat }, { replace: true });
 
     try {
       // 1. Tải lịch sử tin nhắn
       const history = await getMessages(room.maPhongChat);
+      messagesRef.current = history;
+      pendingScrollBehaviorRef.current = 'auto';
+      setLatestMessageId(null);
       setMessages(history);
 
-      // 2. Đăng ký WebSocket nhận tin nhắn real-time
-      subscribeToRoom(room.maPhongChat);
-
-      // 3. Tải thông tin chi tiết bài viết (nếu có đính kèm căn hộ)
+      // 2. Tải thông tin chi tiết bài viết (nếu có đính kèm căn hộ)
       if (room.maBaiDang) {
-        loadApartmentSnippet(room.maBaiDang);
+        void loadApartmentSnippet(room.maBaiDang);
       }
     } catch (error) {
       console.error('Lỗi khi mở phòng chat:', error);
@@ -236,6 +299,21 @@ const ChatPage: React.FC = () => {
       setLoadingMessages(false);
     }
   };
+
+  useEffect(() => {
+    if (!targetRoomId || loadingRooms) return;
+    if (activeRoom?.maPhongChat === targetRoomId) return;
+
+    const target = rooms.find((room) => room.maPhongChat === targetRoomId);
+    if (target) {
+      void handleSelectRoom(target);
+    }
+  }, [targetRoomId, rooms, loadingRooms, activeRoom?.maPhongChat]);
+
+  useEffect(() => {
+    if (!activeRoom || loadingMessages) return;
+    subscribeToRoom(activeRoom.maPhongChat);
+  }, [activeRoom?.maPhongChat, isConnected, stompClient, loadingMessages]);
 
   // Tải chi tiết căn hộ để hiển thị Horizontal Card
   const loadApartmentSnippet = async (maBaiDang: string) => {
@@ -260,40 +338,78 @@ const ChatPage: React.FC = () => {
     }
   };
 
+  const clearSelectedImage = () => {
+    setSelectedImageFile(null);
+    setSelectedImagePreviewUrl(null);
+  };
+
+  const handleSelectImageFile = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Vui lòng chọn đúng file ảnh.');
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Ảnh không được vượt quá 10MB.');
+      return;
+    }
+
+    setSelectedImageFile(file);
+    setSelectedImagePreviewUrl(URL.createObjectURL(file));
+  };
+
   // Gửi tin nhắn
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     const content = messageInput.trim();
-    if (!content && !imageUrlInput.trim()) return;
+    if (!content && !selectedImageFile) return;
     if (!activeRoom) return;
 
     setSending(true);
 
-    const payload: SendMessageRequest = {
-      maPhongChat: activeRoom.maPhongChat,
-      maNguoiGui: currentUserId,
-      noiDung: content || 'Đã gửi một hình ảnh',
-      loaiTinNhan: imageUrlInput.trim() ? 'IMAGE' : 'TEXT',
-      tepDinhKemUrl: imageUrlInput.trim() || null,
-    };
-
     try {
+      const imageFileToUpload = selectedImageFile;
+      let uploadedImageUrl: string | null = null;
+
+      if (imageFileToUpload) {
+        const attachment = await uploadChatImage(imageFileToUpload);
+        uploadedImageUrl = attachment.url;
+      }
+
+      const payload: SendMessageRequest = {
+        maPhongChat: activeRoom.maPhongChat,
+        maNguoiGui: currentUserId,
+        noiDung: content || 'Đã gửi một hình ảnh',
+        loaiTinNhan: uploadedImageUrl ? 'IMAGE' : 'TEXT',
+        tepDinhKemUrl: uploadedImageUrl,
+      };
+
       // Ưu tiên gửi qua WebSocket
-      if (stompClientRef.current && stompClientRef.current.isConnected()) {
-        stompClientRef.current.send('/app/chat.send', payload);
+      pendingScrollBehaviorRef.current = 'smooth';
+      const sentBySocket =
+        stompClient &&
+        isConnected &&
+        stompClient.isConnected() &&
+        stompClient.send('/app/chat.send', payload);
+
+      if (sentBySocket) {
         // Reset inputs
         setMessageInput('');
-        setImageUrlInput('');
-        setShowImageInputBar(false);
+        clearSelectedImage();
       } else {
         // Fallback gửi qua REST API
         console.warn('STOMP offline, falling back to REST API');
         const savedMsg = await sendMessageRest(payload);
-        setMessages((prev) => [...prev, savedMsg]);
+        appendMessage(savedMsg, true);
 
         // Cập nhật lại tin nhắn cuối
-        setRooms((prevRooms) =>
-          prevRooms.map((r) => {
+        setRooms((prevRooms) => {
+          const nextRooms = prevRooms.map((r) => {
             if (r.maPhongChat === activeRoom.maPhongChat) {
               return {
                 ...r,
@@ -302,12 +418,19 @@ const ChatPage: React.FC = () => {
               };
             }
             return r;
-          })
-        );
+          });
+
+          return [...nextRooms].sort((a, b) => {
+            const timeA = new Date(a.thoiGianTinNhanCuoi || a.ngayTao || 0).getTime();
+            const timeB = new Date(b.thoiGianTinNhanCuoi || b.ngayTao || 0).getTime();
+            return timeB - timeA;
+          });
+        });
         setMessageInput('');
-        setImageUrlInput('');
-        setShowImageInputBar(false);
+        clearSelectedImage();
       }
+
+      void loadGlobalRooms();
     } catch (error) {
       console.error('Lỗi khi gửi tin nhắn:', error);
       alert('Không thể gửi tin nhắn. Vui lòng kiểm tra lại kết nối!');
@@ -497,7 +620,11 @@ const ChatPage: React.FC = () => {
             )}
 
             {/* Khung tin nhắn */}
-            <div className="chat-messages-container">
+            <div
+              className="chat-messages-container"
+              ref={messagesContainerRef}
+              onScroll={handleMessagesScroll}
+            >
               {loadingMessages ? (
                 <div className="chat-empty-state">
                   <p>Đang tải lịch sử trò chuyện...</p>
@@ -514,11 +641,18 @@ const ChatPage: React.FC = () => {
                   const showAuthor = !isMe && activeRoom.loaiPhongChat === 'USER_ADMIN';
 
                   return (
-                    <div key={msg.maTinNhan || index} className={`chat-msg-row ${isMe ? 'sent' : 'received'}`}>
+                    <div
+                      key={msg.maTinNhan || index}
+                      className={`chat-msg-row ${isMe ? 'sent' : 'received'} ${
+                        latestMessageId === msg.maTinNhan ? 'chat-msg-row--new' : ''
+                      }`}
+                    >
                       <div className="chat-msg-bubble">
                         {showAuthor && <span className="chat-msg-author">{msg.tenNguoiGui}</span>}
                         
-                        <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{msg.noiDung}</p>
+                        {!(msg.loaiTinNhan === 'IMAGE' && msg.noiDung === 'Đã gửi một hình ảnh') && (
+                          <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{msg.noiDung}</p>
+                        )}
 
                         {msg.tepDinhKemUrl && (
                           <img
@@ -542,29 +676,25 @@ const ChatPage: React.FC = () => {
 
             {/* Thanh nhập liệu */}
             <div className="chat-input-area">
-              {showImageInputBar && (
+              {selectedImageFile && selectedImagePreviewUrl && (
                 <div className="chat-image-preview-bar">
-                  <Image size={18} className="chat-image-preview-thumbnail" style={{ color: '#6366f1' }} />
-                  <input
-                    type="text"
-                    placeholder="Dán URL hình ảnh muốn gửi tại đây..."
-                    value={imageUrlInput}
-                    onChange={(e) => setImageUrlInput(e.target.value)}
-                    style={{
-                      flex: 1,
-                      border: 'none',
-                      background: 'transparent',
-                      outline: 'none',
-                      fontSize: '0.82rem',
-                    }}
+                  <img
+                    src={selectedImagePreviewUrl}
+                    alt={selectedImageFile.name}
+                    className="chat-image-preview-thumbnail"
                   />
+                  <div className="chat-image-preview-info">
+                    <span className="chat-image-preview-name">{selectedImageFile.name}</span>
+                    <span className="chat-image-preview-size">
+                      {(selectedImageFile.size / 1024 / 1024).toFixed(2)} MB
+                    </span>
+                  </div>
                   <button
                     type="button"
                     className="chat-image-preview-cancel"
-                    onClick={() => {
-                      setImageUrlInput('');
-                      setShowImageInputBar(false);
-                    }}
+                    onClick={clearSelectedImage}
+                    disabled={sending}
+                    aria-label="Bỏ ảnh đã chọn"
                   >
                     ×
                   </button>
@@ -572,11 +702,19 @@ const ChatPage: React.FC = () => {
               )}
 
               <form onSubmit={handleSendMessage} className="chat-input-form">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="chat-file-input"
+                  onChange={handleSelectImageFile}
+                />
                 <button
                   type="button"
                   className="chat-attach-btn"
-                  title="Gửi hình ảnh bằng link"
-                  onClick={() => setShowImageInputBar((prev) => !prev)}
+                  title="Chọn ảnh từ thiết bị"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={sending}
                 >
                   <Image size={20} />
                 </button>
@@ -595,9 +733,9 @@ const ChatPage: React.FC = () => {
                 <button
                   type="submit"
                   className="chat-send-btn"
-                  disabled={sending || (!messageInput.trim() && !imageUrlInput.trim())}
+                  disabled={sending || (!messageInput.trim() && !selectedImageFile)}
                 >
-                  <span>Gửi</span>
+                  <span>{sending ? 'Đang gửi' : 'Gửi'}</span>
                   <Send size={16} />
                 </button>
               </form>

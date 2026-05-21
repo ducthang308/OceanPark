@@ -41,6 +41,13 @@ export interface SendMessageRequest {
   tepDinhKemUrl?: string | null;
 }
 
+export interface ChatAttachmentDTO {
+  url: string;
+  originalName?: string;
+  contentType?: string;
+  size?: number;
+}
+
 /**
  * Lấy hoặc tạo phòng chat giữa 2 người dùng
  */
@@ -70,5 +77,21 @@ export const getMessages = async (maPhongChat: string): Promise<ChatMessageDTO[]
  */
 export const sendMessageRest = async (request: SendMessageRequest): Promise<ChatMessageDTO> => {
   const response = await axiosClient.post<ChatMessageDTO>('/api/v1/chat/messages', request);
+  return response.data;
+};
+
+/**
+ * Upload ảnh chat từ thiết bị, trả về URL đã lưu trên Cloudinary
+ */
+export const uploadChatImage = async (file: File): Promise<ChatAttachmentDTO> => {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await axiosClient.post<ChatAttachmentDTO>(
+    '/api/v1/chat/attachments',
+    formData,
+    { headers: { 'Content-Type': 'multipart/form-data' } },
+  );
+
   return response.data;
 };

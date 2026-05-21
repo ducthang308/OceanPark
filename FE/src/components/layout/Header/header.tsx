@@ -5,6 +5,8 @@ import { LANDLORD_ROLE_IDS, ROLE_ID } from '../../../constants/roles';
 import type { RoleId } from '../../../constants/roles';
 import { clearAuthSession, getAuthSession } from '../../../utils/storage';
 import { getFavoritePostsByUser } from '../../../services/api/PostManagementService';
+import { useChatNotifications } from '../../../contexts/ChatNotificationProvider';
+import { MessageSquare } from 'lucide-react';
 
 type NavItem = {
   key: string;
@@ -51,12 +53,23 @@ const Header: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [favoriteTotal, setFavoriteTotal] = useState(0);
 
   const userMenuRef = useRef<HTMLDivElement | null>(null);
   const searchRef = useRef<HTMLDivElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const notificationRef = useRef<HTMLDivElement | null>(null);
+
+  // Get chat notifications from global context
+  const {
+    unreadCount,
+    unreadByRoom,
+    recentRooms,
+    markAllAsRead,
+    markRoomAsRead,
+  } = useChatNotifications();
 
   // Lấy thông tin user thật từ localStorage
   const [currentUser, setCurrentUser] = useState<CurrentUser>(getUserFromStorage);
@@ -220,6 +233,7 @@ const Header: React.FC = () => {
     setIsMobileMenuOpen(false);
     setIsUserMenuOpen(false);
     setIsSearchOpen(false);
+    setIsNotificationOpen(false);
   }, [location.pathname, location.search]);
 
   useEffect(() => {
@@ -237,6 +251,10 @@ const Header: React.FC = () => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setIsSearchOpen(false);
       }
+
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setIsNotificationOpen(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -249,6 +267,7 @@ const Header: React.FC = () => {
         setIsMobileMenuOpen(false);
         setIsUserMenuOpen(false);
         setIsSearchOpen(false);
+        setIsNotificationOpen(false);
       }
     };
 
@@ -287,6 +306,24 @@ const Header: React.FC = () => {
 
     navigate(`/posts?q=${encodeURIComponent(keyword)}`);
   };
+
+  const formatDropdownTime = (timeStr?: string) => {
+    if (!timeStr) return '';
+
+    const date = new Date(timeStr);
+    if (Number.isNaN(date.getTime())) return '';
+
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+
+    if (isToday) {
+      return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+  };
+
+  const unreadBadgeLabel = unreadCount > 99 ? '99+' : String(unreadCount);
 
   const headerClassName = [
     'rental-header',
@@ -362,6 +399,95 @@ const Header: React.FC = () => {
                 </svg>
               </button>
             </form>
+          </div>
+
+          <div className="rental-header__chat-menu" ref={notificationRef}>
+            <button
+              type="button"
+              className={`rental-header__icon-button rental-header__icon-button--chat ${
+                isNotificationOpen ? 'is-open' : ''
+              }`}
+              aria-label="Tin nhắn"
+              aria-expanded={isNotificationOpen}
+              onClick={() => setIsNotificationOpen((prev) => !prev)}
+            >
+              <MessageSquare size={20} strokeWidth={1.8} />
+              {unreadCount > 0 && (
+                <span className="rental-header__chat-badge">{unreadBadgeLabel}</span>
+              )}
+            </button>
+
+            <div className={`rental-chat-dropdown ${isNotificationOpen ? 'is-open' : ''}`}>
+              <div className="rental-chat-dropdown__header">
+                <h3>Tin nhắn</h3>
+                {unreadCount > 0 && (
+                  <span className="rental-chat-dropdown__unread-indicator">{unreadBadgeLabel} tin mới</span>
+                )}
+              </div>
+
+              {recentRooms.length === 0 ? (
+                <div className="rental-chat-dropdown__empty">
+                  <p>Chưa có cuộc trò chuyện</p>
+                </div>
+              ) : (
+                <div className="rental-chat-dropdown__list">
+                  {recentRooms.slice(0, 5).map((room) => {
+                    const otherName = room.maNguoiDung1 === currentUser?.maNguoiDung
+                      ? room.tenNguoiDung2
+                      : room.tenNguoiDung1;
+                    const otherInitial = otherName ? otherName.charAt(0).toUpperCase() : '?';
+                    const roomUnreadCount = unreadByRoom[room.maPhongChat] ?? 0;
+                    const isUnread = roomUnreadCount > 0;
+
+                    return (
+                      <button
+                        key={room.maPhongChat}
+                        type="button"
+                        className={`rental-chat-dropdown__item ${isUnread ? 'is-unread' : ''}`}
+                        onClick={() => {
+                          markRoomAsRead(room.maPhongChat);
+                          navigate(`/chat?room=${room.maPhongChat}`);
+                          setIsNotificationOpen(false);
+                        }}
+                      >
+                        <div className="rental-chat-dropdown__item-avatar">
+                          {otherInitial}
+                          {isUnread && (
+                            <span className="rental-chat-dropdown__item-unread-dot">
+                              {roomUnreadCount > 1 ? roomUnreadCount : ''}
+                            </span>
+                          )}
+                        </div>
+                        <div className="rental-chat-dropdown__item-content">
+                          <div className="rental-chat-dropdown__item-top">
+                            <p className="rental-chat-dropdown__item-name">{otherName}</p>
+                            <span className="rental-chat-dropdown__item-time">
+                              {formatDropdownTime(room.thoiGianTinNhanCuoi || room.ngayTao)}
+                            </span>
+                          </div>
+                          <p className="rental-chat-dropdown__item-message">
+                            {room.tinNhanCuoi || 'Chưa có tin nhắn'}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="rental-chat-dropdown__footer">
+                <Link
+                  to="/chat"
+                  className="rental-chat-dropdown__view-all"
+                  onClick={() => {
+                    markAllAsRead();
+                    setIsNotificationOpen(false);
+                  }}
+                >
+                  Xem tất cả tin nhắn →
+                </Link>
+              </div>
+            </div>
           </div>
 
           <button

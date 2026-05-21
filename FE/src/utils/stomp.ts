@@ -34,7 +34,7 @@ export function parseFrames(data: string): StompFrame[] {
     const nullIndex = data.indexOf('\u0000', index);
     if (nullIndex === -1) break;
 
-    const rawFrame = data.slice(index, nullIndex);
+    const rawFrame = data.slice(index, nullIndex).replace(/\r\n/g, '\n');
     index = nullIndex + 1;
 
     // Bỏ qua ký tự xuống dòng thừa giữa các frames (nếu có)
@@ -153,10 +153,10 @@ export class StompClient {
   /**
    * Gửi tin nhắn qua STOMP
    */
-  public send(destination: string, body: any, headers: StompHeaders = {}) {
+  public send(destination: string, body: any, headers: StompHeaders = {}): boolean {
     if (!this.connected || !this.ws || this.ws.readyState !== WebSocket.OPEN) {
       console.warn('STOMP client is not connected. Message queued or discarded.');
-      return;
+      return false;
     }
 
     const payload = typeof body === 'string' ? body : JSON.stringify(body);
@@ -167,6 +167,7 @@ export class StompClient {
     };
 
     this.ws.send(serializeFrame('SEND', mergedHeaders, payload));
+    return true;
   }
 
   /**
@@ -195,7 +196,8 @@ export class StompClient {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(serializeFrame('CONNECT', {
         'accept-version': '1.1,1.2',
-        'heart-beat': '10000,10000',
+        host: window.location.host,
+        'heart-beat': '0,0',
       }));
     }
   }
@@ -223,7 +225,7 @@ export class StompClient {
           }
         } else if (frame.command === 'MESSAGE') {
           const subId = frame.headers['subscription'];
-          const sub = this.subscriptions.get(subId);
+          const sub = this.subscriptions.get(subId) ?? this.findSubscriptionByDestination(frame);
           if (sub) {
             sub.callback(frame);
           }
@@ -237,6 +239,13 @@ export class StompClient {
     } catch (e) {
       console.error('Error handling WebSocket message:', e);
     }
+  }
+
+  private findSubscriptionByDestination(frame: StompFrame): Subscription | undefined {
+    const destination = frame.headers['destination'];
+    if (!destination) return undefined;
+
+    return Array.from(this.subscriptions.values()).find((sub) => sub.destination === destination);
   }
 
   private handleClose() {

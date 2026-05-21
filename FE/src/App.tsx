@@ -5,6 +5,7 @@ import ProtectedRoute from './components/auth/ProtectedRoute.tsx';
 import Header from './components/layout/Header/header.tsx';
 import Footer from './components/layout/Footer/footer.tsx';
 import ChatBox from './components/common/ChatBox/ChatBox.tsx';
+import { ChatNotificationProvider } from './contexts/ChatNotificationProvider.tsx';
 // import Navbar from "./components/layout/Navbar/navbar.tsx";
 
 import LoginPage from './pages/Login/LoginPage.tsx';
@@ -70,9 +71,10 @@ function ScrollToTop() {
 
 function App() {
   return (
-    <Router>
-      <ScrollToTop />
-      <Routes>
+    <ChatNotificationProvider>
+      <Router>
+        <ScrollToTop />
+        <Routes>
         {/* User routes */}
         <Route element={<UserLayout />}>
           <Route path="/" element={<Home />} />
@@ -124,7 +126,8 @@ function App() {
           </Route>
         </Route>
       </Routes>
-    </Router>
+      </Router>
+    </ChatNotificationProvider>
   );
 }
 
