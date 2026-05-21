@@ -10,6 +10,8 @@ import {
   type HoaDonDTO,
 } from '../../services/api/PostManagementService';
 import { getAuthSession } from '../../utils/storage';
+import { openInvoicePrintWindow } from '../../utils/invoicePrint';
+import type { InvoicePrintRow } from '../../utils/invoicePrint';
 
 type TransactionRow = {
   id: string;
@@ -115,14 +117,6 @@ const sortInvoicesByLatest = (items: HoaDonDTO[]) =>
     return (Number.isNaN(right) ? 0 : right) - (Number.isNaN(left) ? 0 : left);
   });
 
-const escapeHtml = (value: string) =>
-  value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-
 const TenantTransactionsPage = () => {
   const [invoices, setInvoices] = useState<HoaDonDTO[]>([]);
   const [loading, setLoading] = useState(false);
@@ -192,7 +186,7 @@ const TenantTransactionsPage = () => {
   };
 
   const handleExportInvoice = (invoice: HoaDonDTO) => {
-    const invoiceRows = [
+    const invoiceRows: InvoicePrintRow[] = [
       ['Mã hóa đơn', invoice.maHoaDon],
       ['Người dùng', invoice.maNguoiDung || '-'],
       ['Bài đăng', invoice.maBaiDang || '-'],
@@ -207,52 +201,19 @@ const TenantTransactionsPage = () => {
       ['Ngày bắt đầu', formatDateTime(invoice.ngayBatDau)],
       ['Ngày kết thúc', formatDateTime(invoice.ngayKetThuc)],
     ];
-    const rowsHtml = invoiceRows
-      .map(
-        ([label, value]) =>
-          `<tr><th>${escapeHtml(label)}</th><td>${escapeHtml(value)}</td></tr>`,
-      )
-      .join('');
-    const printWindow = window.open('', '_blank', 'width=900,height=720');
 
-    if (!printWindow) {
+    const didOpen = openInvoicePrintWindow({
+      title: 'Hóa đơn giao dịch',
+      documentTitle: `Hóa đơn ${invoice.maHoaDon}`,
+      generatedAt: formatDateTime(new Date().toISOString()),
+      rows: invoiceRows,
+      footer: 'Hóa đơn được xuất từ hệ thống quản lý giao dịch người thuê.',
+      signerLabel: 'Chữ ký người thuê',
+    });
+
+    if (!didOpen) {
       message.error('Trình duyệt đang chặn cửa sổ xuất hóa đơn');
-      return;
     }
-
-    printWindow.document.write(`
-      <!doctype html>
-      <html lang="vi">
-        <head>
-          <meta charset="utf-8" />
-          <title>Hoa don ${escapeHtml(invoice.maHoaDon)}</title>
-          <style>
-            body { font-family: Arial, sans-serif; color: #111827; margin: 40px; }
-            .invoice { max-width: 760px; margin: 0 auto; }
-            h1 { margin: 0 0 8px; font-size: 28px; }
-            .subtitle { color: #64748b; margin-bottom: 28px; }
-            table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #e5e7eb; padding: 12px 14px; text-align: left; }
-            th { width: 36%; background: #f8fafc; color: #334155; }
-            .footer { margin-top: 28px; color: #64748b; font-size: 13px; }
-          </style>
-        </head>
-        <body>
-          <div class="invoice">
-            <h1>Hóa đơn giao dịch</h1>
-            <div class="subtitle">DThang Home - ${escapeHtml(formatDateTime(new Date().toISOString()))}</div>
-            <table>${rowsHtml}</table>
-            <div class="footer">Hóa đơn được xuất từ hệ thống quản lý giao dịch người thuê.</div>
-          </div>
-          <script>
-            window.onload = function () {
-              window.print();
-            };
-          </script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
   };
 
   return (
@@ -445,7 +406,7 @@ const TenantTransactionsPage = () => {
                     onClick={() => handleExportInvoice(selectedInvoice)}
                   >
                     <i className="fas fa-file-invoice"></i>
-                    Xuất hóa đơn
+                    In hóa đơn
                   </button>
                 </div>
               </>
