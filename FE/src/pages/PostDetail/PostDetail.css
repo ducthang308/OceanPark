@@ -435,6 +435,11 @@
   border: 1px solid #d2e7ff;
 }
 
+.rental-detail-btn--chat {
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  color: #fff;
+}
+
 .rental-detail-btn--primary {
   background: linear-gradient(135deg, #ea7b2c, #d65b10);
   color: #fff;

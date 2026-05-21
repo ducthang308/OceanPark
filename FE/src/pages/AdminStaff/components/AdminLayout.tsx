@@ -6,6 +6,7 @@ import {
   GiftOutlined,
   HomeOutlined,
   UserOutlined,
+  MessageOutlined,
 } from '@ant-design/icons';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import AdminTopbar from './AdminTopbar';
@@ -36,6 +37,10 @@ const pageMeta: Record<string, { title: string; subtitle: string }> = {
   '/admin/accounts': {
     title: 'Quản lý tài khoản',
     subtitle: 'Quản lý hồ sơ, vai trò và trạng thái hoạt động của tài khoản.',
+  },
+  '/admin/chat': {
+    title: 'Hỗ trợ khách hàng',
+    subtitle: 'Nhắn tin trực tuyến và giải đáp thắc mắc cho người dùng hệ thống.',
   },
 };
 
@@ -142,6 +147,16 @@ const AdminLayout: React.FC = () => {
           >
             <UserOutlined />
             <span>Quản lý tài khoản</span>
+          </NavLink>
+
+          <NavLink
+            to="/admin/chat"
+            className={({ isActive }) =>
+              `admin-layout__nav-link ${isActive ? 'active' : ''}`
+            }
+          >
+            <MessageOutlined />
+            <span>Hỗ trợ khách hàng</span>
           </NavLink>
         </nav>
 

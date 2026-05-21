@@ -119,6 +119,7 @@ const Header: React.FC = () => {
   const authenticatedMenuItems: UserMenuItem[] = useMemo(
     () => [
       { key: 'profile', label: 'Thông tin tài khoản', to: '/AccountManagement' },
+      { key: 'chat', label: 'Tin nhắn', to: '/chat' },
       {
         key: 'tenant-transactions',
         label: 'Quản lý giao dịch',
