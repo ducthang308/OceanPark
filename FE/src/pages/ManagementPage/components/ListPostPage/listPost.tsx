@@ -25,6 +25,8 @@ import {
   getApartmentDetailByPost,
   getCategories,
   getPostImages,
+  getPostImageUrls,
+  getPostVideoUrls,
   getPostById,
   getPosts,
   updatePost,
@@ -42,6 +44,7 @@ interface PostItem {
   postId: string;
   thumbnail?: string;
   imageCount: number;
+  videoCount: number;
   status: string;
   type: string;
   createdAt?: string;
@@ -221,6 +224,9 @@ const ListPost = () => {
               : Promise.resolve(null),
             maBaiDang ? getPostImages(maBaiDang).catch(() => []) : Promise.resolve([]),
           ]);
+          const sortedMedia = [...images].sort((a, b) => (a.thuTu ?? 0) - (b.thuTu ?? 0));
+          const gallery = getPostImageUrls(sortedMedia);
+          const videoUrls = getPostVideoUrls(sortedMedia);
 
           return {
             id: maBaiDang,
@@ -231,8 +237,9 @@ const ListPost = () => {
             area: detail?.dienTich ? `${detail.dienTich} m²` : "Chưa có diện tích",
             location: detail?.diaChiCuThe || detail?.phuong || "Chưa có địa chỉ",
             postId: maBaiDang,
-            thumbnail: images[0]?.thumbnailUrl || images[0]?.duongDan,
-            imageCount: images.length,
+            thumbnail: gallery[0],
+            imageCount: gallery.length,
+            videoCount: videoUrls.length,
             status: mapStatusText(post.trangThai),
             type:
               categoryMap.get(post.maDanhMuc || "") ||
@@ -445,6 +452,7 @@ const ListPost = () => {
                     <div className="post-top-row">
                       <div className="post-badge-group">
                         <Tag color="blue">{post.type}</Tag>
+                        {post.videoCount > 0 && <Tag color="geekblue">Có video</Tag>}
                       </div>
                     </div>
 

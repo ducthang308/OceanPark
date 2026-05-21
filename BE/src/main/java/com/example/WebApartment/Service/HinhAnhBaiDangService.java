@@ -20,6 +20,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class HinhAnhBaiDangService {
 
+    private static final String MEDIA_FOLDER = "web-apartment/bai-dang";
+    private static final String IMAGE_TYPE = "IMAGE";
+    private static final String VIDEO_TYPE = "VIDEO";
+
     private final HinhAnhBaiDangRepository hinhAnhRepo;
     private final BaiDangRepository baiDangRepo;
     private final Cloudinary cloudinary;
@@ -55,12 +59,7 @@ public class HinhAnhBaiDangService {
         BaiDang baiDang = baiDangRepo.findById(maBaiDang)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy bài đăng"));
 
-        HinhAnhBaiDang lastImage =
-                hinhAnhRepo.findTopByBaiDang_MaBaiDangOrderByThuTuDesc(maBaiDang);
-
-        int currentIndex = lastImage != null && lastImage.getThuTu() != null
-                ? lastImage.getThuTu()
-                : 0;
+        int currentIndex = getLastThuTu(maBaiDang);
 
         List<HinhAnhBaiDangDTO> result = new java.util.ArrayList<>();
 
@@ -68,32 +67,7 @@ public class HinhAnhBaiDangService {
             if (file == null || file.isEmpty()) continue;
 
             currentIndex++;
-
-            try {
-                Map uploadResult = cloudinary.uploader().upload(
-                        file.getBytes(),
-                        ObjectUtils.asMap(
-                                "folder", "web-apartment/bai-dang",
-                                "resource_type", "image"
-                        )
-                );
-
-                String imageUrl = uploadResult.get("secure_url").toString();
-
-                HinhAnhBaiDang entity = HinhAnhBaiDang.builder()
-                        .maHinhAnhBaiDang(UUID.randomUUID().toString())
-                        .baiDang(baiDang)
-                        .loai(loai != null && !loai.isBlank() ? loai : "IMAGE")
-                        .duongDan(imageUrl)
-                        .thumbnailUrl(imageUrl)
-                        .thuTu(currentIndex)
-                        .build();
-
-                result.add(toDto(hinhAnhRepo.save(entity)));
-
-            } catch (Exception e) {
-                throw new RuntimeException("Upload ảnh thất bại: " + e.getMessage());
-            }
+            result.add(uploadMedia(baiDang, file, normalizeLoai(loai, IMAGE_TYPE), "image", currentIndex, "ảnh"));
         }
 
         return result;
@@ -114,32 +88,43 @@ public class HinhAnhBaiDangService {
         BaiDang baiDang = baiDangRepo.findById(maBaiDang)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy bài đăng"));
 
-        try {
-            Map uploadResult = cloudinary.uploader().upload(
-                    file.getBytes(),
-                    ObjectUtils.asMap(
-                            "folder", "web-apartment/bai-dang",
-                            "resource_type", "image"
-                    )
-            );
+        return uploadMedia(
+                baiDang,
+                file,
+                normalizeLoai(loai, IMAGE_TYPE),
+                "image",
+                thuTu != null ? thuTu : 1,
+                "ảnh"
+        );
+    }
 
-            String imageUrl = uploadResult.get("secure_url").toString();
-            String publicId = uploadResult.get("public_id").toString();
-
-            HinhAnhBaiDang entity = HinhAnhBaiDang.builder()
-                    .maHinhAnhBaiDang(UUID.randomUUID().toString())
-                    .baiDang(baiDang)
-                    .loai(loai != null && !loai.isBlank() ? loai : "IMAGE")
-                    .duongDan(imageUrl)
-                    .thumbnailUrl(imageUrl)
-                    .thuTu(thuTu != null ? thuTu : 1)
-                    .build();
-
-            return toDto(hinhAnhRepo.save(entity));
-
-        } catch (Exception e) {
-            throw new RuntimeException("Upload ảnh thất bại: " + e.getMessage());
+    public HinhAnhBaiDangDTO uploadVideo(String maBaiDang,
+                                         MultipartFile file,
+                                         Integer thuTu) {
+        if (maBaiDang == null || maBaiDang.isBlank()) {
+            throw new RuntimeException("Mã bài đăng không được để trống");
         }
+
+        if (file == null || file.isEmpty()) {
+            throw new RuntimeException("File video không được để trống");
+        }
+
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.toLowerCase().startsWith("video/")) {
+            throw new RuntimeException("Vui lòng chọn đúng định dạng video");
+        }
+
+        BaiDang baiDang = baiDangRepo.findById(maBaiDang)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy bài đăng"));
+
+        return uploadMedia(
+                baiDang,
+                file,
+                VIDEO_TYPE,
+                "video",
+                thuTu != null ? thuTu : getLastThuTu(maBaiDang) + 1,
+                "video"
+        );
     }
 
     public HinhAnhBaiDangDTO updateInfo(String maHinhAnhBaiDang, HinhAnhBaiDangDTO dto) {
@@ -158,6 +143,73 @@ public class HinhAnhBaiDangService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy hình ảnh bài đăng"));
 
         hinhAnhRepo.delete(existing);
+    }
+
+    private HinhAnhBaiDangDTO uploadMedia(BaiDang baiDang,
+                                          MultipartFile file,
+                                          String loai,
+                                          String resourceType,
+                                          Integer thuTu,
+                                          String errorLabel) {
+        try {
+            Map uploadResult = cloudinary.uploader().upload(
+                    file.getBytes(),
+                    ObjectUtils.asMap(
+                            "folder", MEDIA_FOLDER,
+                            "resource_type", resourceType
+                    )
+            );
+
+            Object secureUrlValue = uploadResult.get("secure_url");
+            if (secureUrlValue == null) {
+                throw new RuntimeException("Cloudinary không trả về URL");
+            }
+
+            String mediaUrl = secureUrlValue.toString();
+            String thumbnailUrl = VIDEO_TYPE.equalsIgnoreCase(loai)
+                    ? buildVideoThumbnailUrl(mediaUrl)
+                    : mediaUrl;
+
+            HinhAnhBaiDang entity = HinhAnhBaiDang.builder()
+                    .maHinhAnhBaiDang(UUID.randomUUID().toString())
+                    .baiDang(baiDang)
+                    .loai(loai)
+                    .duongDan(mediaUrl)
+                    .thumbnailUrl(thumbnailUrl)
+                    .thuTu(thuTu)
+                    .build();
+
+            return toDto(hinhAnhRepo.save(entity));
+        } catch (Exception e) {
+            throw new RuntimeException("Upload " + errorLabel + " thất bại: " + e.getMessage());
+        }
+    }
+
+    private int getLastThuTu(String maBaiDang) {
+        HinhAnhBaiDang lastMedia =
+                hinhAnhRepo.findTopByBaiDang_MaBaiDangOrderByThuTuDesc(maBaiDang);
+
+        return lastMedia != null && lastMedia.getThuTu() != null
+                ? lastMedia.getThuTu()
+                : 0;
+    }
+
+    private String normalizeLoai(String loai, String defaultLoai) {
+        return loai != null && !loai.isBlank() ? loai : defaultLoai;
+    }
+
+    private String buildVideoThumbnailUrl(String videoUrl) {
+        if (videoUrl == null || videoUrl.isBlank()) {
+            return null;
+        }
+
+        int extensionIndex = videoUrl.lastIndexOf('.');
+        int lastSlashIndex = videoUrl.lastIndexOf('/');
+        String baseUrl = extensionIndex > lastSlashIndex
+                ? videoUrl.substring(0, extensionIndex)
+                : videoUrl;
+
+        return baseUrl.replace("/video/upload/", "/video/upload/so_0/") + ".jpg";
     }
 
     private HinhAnhBaiDangDTO toDto(HinhAnhBaiDang entity) {

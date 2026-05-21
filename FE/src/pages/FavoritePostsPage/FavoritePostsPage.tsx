@@ -10,6 +10,7 @@ import {
   getFavoritePostsByUser,
   getPostById,
   getPostImages,
+  getPostImageUrls,
   removeFavoritePost,
 } from '../../services/api/PostManagementService';
 import type {
@@ -84,9 +85,6 @@ const getDateTime = (value?: string | null) => {
   return Number.isNaN(date.getTime()) ? 0 : date.getTime();
 };
 
-const getImageUrl = (image: HinhAnhBaiDangDTO) =>
-  image.thumbnailUrl?.trim() || image.duongDan?.trim() || '';
-
 const isPublicPost = (post: BaiDangDTO) => {
   const status = post.trangThai?.trim().toUpperCase();
   return Boolean(status && PUBLIC_POST_STATUSES.has(status));
@@ -130,7 +128,7 @@ const buildFavoritePost = async (
 
     const category = categories.find((item) => item.maDanhMuc === postResponse.maDanhMuc);
     const sortedImages = [...imagesResponse].sort((a, b) => (a.thuTu ?? 0) - (b.thuTu ?? 0));
-    const gallery = sortedImages.map(getImageUrl).filter(Boolean);
+    const gallery = getPostImageUrls(sortedImages);
     const address = detailResponse?.diaChiCuThe?.trim() || 'Đang cập nhật địa chỉ';
     const ward = detailResponse?.phuong?.trim() || '';
     const title =

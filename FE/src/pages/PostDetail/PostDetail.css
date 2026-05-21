@@ -41,6 +41,7 @@
 }
 
 .rental-detail-gallery-card,
+.rental-detail-video-card,
 .rental-detail-content-card,
 .rental-detail-owner-card,
 .rental-detail-side-card,
@@ -52,6 +53,10 @@
 }
 
 .rental-detail-gallery-card {
+  padding: 16px;
+}
+
+.rental-detail-video-card {
   padding: 16px;
 }
 
@@ -168,6 +173,42 @@
 .rental-detail-thumb.active {
   border-color: #e18a44;
   box-shadow: 0 0 0 3px rgba(225, 138, 68, 0.16);
+}
+
+.rental-detail-video-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.rental-detail-video-header h2 {
+  margin: 0;
+  color: #1f2937;
+  font-size: 20px;
+}
+
+.rental-detail-video-header span {
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.rental-detail-video-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rental-detail-video-player {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  max-height: 520px;
+  display: block;
+  object-fit: contain;
+  background: #111827;
+  border-radius: 16px;
 }
 
 .rental-detail-content-card {

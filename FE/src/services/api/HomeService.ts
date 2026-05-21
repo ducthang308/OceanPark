@@ -4,7 +4,9 @@ import {
   getCategories,
   getFavoriteCountByPost,
   getPostImages,
+  getPostImageUrls,
   getPosts,
+  getPostVideoUrls,
 } from './PostManagementService';
 import type {
   BaiDangDTO,
@@ -213,17 +215,6 @@ const WARD_TO_DISTRICT = new Map(
   WARD_OPTIONS.map(({ name, districtId }) => [normalizeText(name), districtId] as const),
 );
 
-const getImageUrl = (image: HinhAnhBaiDangDTO) =>
-  image.thumbnailUrl?.trim() || image.duongDan?.trim() || '';
-
-const hasVideoAsset = (images: HinhAnhBaiDangDTO[]) =>
-  images.some((image) => {
-    const type = (image.loai || '').toUpperCase();
-    const path = `${image.duongDan || ''} ${image.thumbnailUrl || ''}`.toLowerCase();
-
-    return type.includes('VIDEO') || /\.(mp4|mov|webm|avi)(\?|$)/i.test(path);
-  });
-
 const formatCurrency = (value?: number) => {
   if (typeof value !== 'number' || Number.isNaN(value) || value <= 0) {
     return 'Liên hệ';
@@ -323,7 +314,8 @@ const buildPostCard = (
 
   const category = post.maDanhMuc ? categoryLookup.get(post.maDanhMuc) : undefined;
   const sortedImages = [...images].sort((a, b) => (a.thuTu ?? 0) - (b.thuTu ?? 0));
-  const gallery = sortedImages.map(getImageUrl).filter(Boolean);
+  const gallery = getPostImageUrls(sortedImages);
+  const videoUrls = getPostVideoUrls(sortedImages);
   const price = typeof detail?.gia === 'number' ? detail.gia : null;
   const area = typeof detail?.dienTich === 'number' ? detail.dienTich : null;
   const wardText = detail?.phuong?.trim() || 'Đang cập nhật';
@@ -354,7 +346,7 @@ const buildPostCard = (
     districtId: resolveDistrictId(addressText, wardText),
     createdAtTime: getDateTime(post.ngayDang) || index,
     likeCount: 0,
-    hasVideo: hasVideoAsset(images),
+    hasVideo: videoUrls.length > 0,
     isFeatured: false,
     isNew: false,
   };

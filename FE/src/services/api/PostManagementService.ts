@@ -36,6 +36,33 @@ export interface HinhAnhBaiDangDTO {
   thuTu?: number;
 }
 
+const VIDEO_EXTENSION_REGEX = /\.(mp4|mov|webm|avi|m4v|mkv)(\?|$)/i;
+
+export const getPostMediaUrl = (media: HinhAnhBaiDangDTO) =>
+  media.duongDan?.trim() || media.thumbnailUrl?.trim() || "";
+
+export const getPostImageUrl = (media: HinhAnhBaiDangDTO) =>
+  media.thumbnailUrl?.trim() || media.duongDan?.trim() || "";
+
+export const isPostVideoAsset = (media: HinhAnhBaiDangDTO) => {
+  const type = (media.loai || "").trim().toUpperCase();
+  const path = `${media.duongDan || ""} ${media.thumbnailUrl || ""}`.toLowerCase();
+
+  return type.includes("VIDEO") || VIDEO_EXTENSION_REGEX.test(path);
+};
+
+export const getPostImageAssets = (media: HinhAnhBaiDangDTO[]) =>
+  media.filter((item) => !isPostVideoAsset(item));
+
+export const getPostVideoAssets = (media: HinhAnhBaiDangDTO[]) =>
+  media.filter(isPostVideoAsset);
+
+export const getPostImageUrls = (media: HinhAnhBaiDangDTO[]) =>
+  getPostImageAssets(media).map(getPostImageUrl).filter(Boolean);
+
+export const getPostVideoUrls = (media: HinhAnhBaiDangDTO[]) =>
+  getPostVideoAssets(media).map(getPostMediaUrl).filter(Boolean);
+
 export interface DanhMucDTO {
   maDanhMuc: string;
   tenDanhMuc: string;
@@ -151,6 +178,20 @@ export const uploadPostImages = async (maBaiDang: string, files: File[]) => {
 
   const res = await axiosClient.post<HinhAnhBaiDangDTO[]>(
     "/api/v1/hinh-anh-bai-dang/upload-multiple",
+    formData,
+    { headers: { "Content-Type": "multipart/form-data" } }
+  );
+
+  return res.data;
+};
+
+export const uploadPostVideo = async (maBaiDang: string, file: File) => {
+  const formData = new FormData();
+  formData.append("maBaiDang", maBaiDang);
+  formData.append("file", file);
+
+  const res = await axiosClient.post<HinhAnhBaiDangDTO>(
+    "/api/v1/hinh-anh-bai-dang/upload-video",
     formData,
     { headers: { "Content-Type": "multipart/form-data" } }
   );

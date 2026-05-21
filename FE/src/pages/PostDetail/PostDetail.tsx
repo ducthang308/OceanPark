@@ -11,6 +11,8 @@ import {
   getFavoritePostsByUser,
   getPostById,
   getPostImages,
+  getPostImageUrls,
+  getPostVideoUrls,
   increasePostView,
   removeFavoritePost,
 } from '../../services/api/PostManagementService';
@@ -42,6 +44,7 @@ interface PostDetailView {
   phone: string;
   tags: string[];
   amenities: string[];
+  videoUrls: string[];
   hasVideo: boolean;
   isFeatured: boolean;
   isNew: boolean;
@@ -90,17 +93,6 @@ const isPublicPost = (post: BaiDangDTO) => {
   return Boolean(status && PUBLIC_POST_STATUSES.has(status));
 };
 
-const getImageUrl = (image: HinhAnhBaiDangDTO) =>
-  image.thumbnailUrl?.trim() || image.duongDan?.trim() || '';
-
-const hasVideoAsset = (images: HinhAnhBaiDangDTO[]) =>
-  images.some((image) => {
-    const type = (image.loai || '').toUpperCase();
-    const path = `${image.duongDan || ''} ${image.thumbnailUrl || ''}`.toLowerCase();
-
-    return type.includes('VIDEO') || /\.(mp4|mov|webm|avi)(\?|$)/i.test(path);
-  });
-
 const findMockPost = (id?: string): PostDetailView | null => {
   if (!id) return null;
 
@@ -118,6 +110,7 @@ const findMockPost = (id?: string): PostDetailView | null => {
     gallery: post.gallery.length > 0 ? post.gallery : [post.coverImage || fallbackRoomImage],
     coverImage: post.coverImage || post.gallery[0] || fallbackRoomImage,
     ownerAvatar: null,
+    videoUrls: [],
     isFeatured: Boolean(post.isFeatured),
     isNew: Boolean(post.isNew),
     hasVideo: Boolean(post.hasVideo),
@@ -140,7 +133,8 @@ const buildApiPostDetail = (
 
   const category = categories.find((item) => item.maDanhMuc === post.maDanhMuc);
   const sortedImages = [...images].sort((a, b) => (a.thuTu ?? 0) - (b.thuTu ?? 0));
-  const gallery = sortedImages.map(getImageUrl).filter(Boolean);
+  const gallery = getPostImageUrls(sortedImages);
+  const videoUrls = getPostVideoUrls(sortedImages);
   const wardText = detail?.phuong?.trim() || 'Đang cập nhật';
   const addressText =
     [detail?.diaChiCuThe, detail?.phuong].filter(Boolean).join(', ') ||
@@ -163,7 +157,8 @@ const buildApiPostDetail = (
     phone: post.lienHe?.trim() || owner?.soDienThoai?.trim() || 'Đang cập nhật',
     tags: [],
     amenities: [],
-    hasVideo: hasVideoAsset(images),
+    videoUrls,
+    hasVideo: videoUrls.length > 0,
     isFeatured: true,
     isNew: true,
   };
@@ -505,6 +500,30 @@ const PostDetail: React.FC = () => {
                 ))}
               </div>
             </section>
+
+            {post.videoUrls.length > 0 && (
+              <section className="rental-detail-video-card">
+                <div className="rental-detail-video-header">
+                  <h2>Video</h2>
+                  <span>{post.videoUrls.length} video</span>
+                </div>
+
+                <div className="rental-detail-video-list">
+                  {post.videoUrls.map((videoUrl, index) => (
+                    <video
+                      key={`${videoUrl}-${index}`}
+                      className="rental-detail-video-player"
+                      src={videoUrl}
+                      controls
+                      preload="metadata"
+                      title={`Video ${index + 1} của ${post.title}`}
+                    >
+                      Trình duyệt không hỗ trợ phát video.
+                    </video>
+                  ))}
+                </div>
+              </section>
+            )}
 
             <section className="rental-detail-content-card">
               <div className="rental-detail-header">
