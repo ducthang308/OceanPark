@@ -22,6 +22,7 @@ import {
   createPost,
   getCategories,
   uploadPostImages,
+  uploadPostVideo,
   type DanhMucDTO,
 } from "../../../../services/api/PostManagementService";
 
@@ -513,9 +514,13 @@ const Listing = () => {
         );
       }
 
+      if (video) {
+        setIsUploadingVideo(true);
+        await uploadPostVideo(post.maBaiDang, video.file);
+      }
+
       saveLocalPendingPostId(maNguoiDung, post.maBaiDang);
       message.success("Đăng tin thành công");
-      navigate("/list-post");
 
       setFormData({
         maDanhMuc: "",
@@ -528,11 +533,20 @@ const Listing = () => {
         huongCanHo: "",
       });
       setImages([]);
+      if (video?.url) {
+        URL.revokeObjectURL(video.url);
+      }
+      setVideo(null);
+      if (videoInputRef.current) {
+        videoInputRef.current.value = "";
+      }
+      navigate("/list-post");
     } catch (error) {
       console.error(error);
       message.error(getApiErrorMessage(error, "Đăng tin thất bại"));
     } finally {
       setIsSubmitting(false);
+      setIsUploadingVideo(false);
     }
   };
 
@@ -980,8 +994,8 @@ const Listing = () => {
             </div>
 
             <div className="note-span">
-              <span className="listing-span">• Video hiện chỉ lưu preview trên UI</span>
-              <span className="listing-span">• Khi BE có API upload video, có thể dùng lại state video.file</span>
+              <span className="listing-span">• Tải lên tối đa 1 video trong một bài đăng</span>
+              <span className="listing-span">• Video sẽ hiển thị trong trang chi tiết bài đăng</span>
               <span className="listing-span">• Dung lượng video tối đa 50MB</span>
             </div>
 

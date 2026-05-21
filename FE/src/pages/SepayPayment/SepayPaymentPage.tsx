@@ -73,7 +73,10 @@ const SepayPaymentPage: React.FC = () => {
                 <div className="sepay-page">
                     <div className="sepay-card">
                         <div className="sepay-card__header">
-                            <h2>{title}</h2>
+                            <div className="sepay-card__heading">
+                                <span className="sepay-card__eyebrow">Xác nhận thanh toán</span>
+                                <h2>{title}</h2>
+                            </div>
 
                             <div className="sepay-price">
                                 {payment.soTien.toLocaleString('vi-VN')}đ

@@ -9,7 +9,9 @@ import {
   getFavoriteCountByPost,
   getFavoritePostsByUser,
   getPostImages,
+  getPostImageUrls,
   getPosts,
+  getPostVideoUrls,
   removeFavoritePost,
 } from '../../services/api/PostManagementService';
 import type {
@@ -162,17 +164,6 @@ const isPublicPost = (post: BaiDangDTO) => {
   return Boolean(status && PUBLIC_POST_STATUSES.has(status));
 };
 
-const getImageUrl = (image: HinhAnhBaiDangDTO) =>
-  image.thumbnailUrl?.trim() || image.duongDan?.trim() || '';
-
-const hasVideoAsset = (images: HinhAnhBaiDangDTO[]) =>
-  images.some((image) => {
-    const type = (image.loai || '').toUpperCase();
-    const path = `${image.duongDan || ''} ${image.thumbnailUrl || ''}`.toLowerCase();
-
-    return type.includes('VIDEO') || /\.(mp4|mov|webm|avi)(\?|$)/i.test(path);
-  });
-
 const buildPostCard = (
   post: BaiDangDTO,
   detail: ChiTietCanHoDTO | null,
@@ -182,7 +173,8 @@ const buildPostCard = (
 ): RoomPostCard => {
   const category = post.maDanhMuc ? categoryLookup.get(post.maDanhMuc) : undefined;
   const sortedImages = [...images].sort((a, b) => (a.thuTu ?? 0) - (b.thuTu ?? 0));
-  const gallery = sortedImages.map(getImageUrl).filter(Boolean);
+  const gallery = getPostImageUrls(sortedImages);
+  const videoUrls = getPostVideoUrls(sortedImages);
   const price = typeof detail?.gia === 'number' ? detail.gia : null;
   const area = typeof detail?.dienTich === 'number' ? detail.dienTich : null;
   const wardText = detail?.phuong?.trim() || 'Đang cập nhật';
@@ -205,7 +197,7 @@ const buildPostCard = (
     postedBy: 'Chủ nhà',
     postedAtText: formatPostedAt(post.ngayDang),
     phone: post.lienHe?.trim() || 'Đang cập nhật',
-    hasVideo: hasVideoAsset(images),
+    hasVideo: videoUrls.length > 0,
     isFeatured: false,
     isNew: false,
     createdAtTime: getDateTime(post.ngayDang),

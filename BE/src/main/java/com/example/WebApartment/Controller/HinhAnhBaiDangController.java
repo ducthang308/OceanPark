@@ -59,6 +59,18 @@ public class HinhAnhBaiDangController {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','NGUOI_CHO_THUE')")
+    @PostMapping(value = "/upload-video", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<HinhAnhBaiDangDTO> uploadVideo(
+            @RequestParam("maBaiDang") String maBaiDang,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "thuTu", required = false) Integer thuTu
+    ) {
+        return ResponseEntity.status(201).body(
+                service.uploadVideo(maBaiDang, file, thuTu)
+        );
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN','NGUOI_CHO_THUE')")
     @PutMapping("/{maHinhAnhBaiDang}")
     public ResponseEntity<HinhAnhBaiDangDTO> updateInfo(
             @PathVariable String maHinhAnhBaiDang,

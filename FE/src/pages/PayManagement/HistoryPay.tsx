@@ -5,6 +5,8 @@ import { Alert, Tag, Table, Button, Card, Descriptions, Modal, Space, message } 
 import Navbar from "../../components/layout/Navbar/navbar";
 import { getHoaDonByNguoiDung } from "../../services/api/PostManagementService";
 import type { HoaDonDTO } from "../../services/api/PostManagementService";
+import { openInvoicePrintWindow } from "../../utils/invoicePrint";
+import type { InvoicePrintRow } from "../../utils/invoicePrint";
 
 type PackageRow = {
   id: string;
@@ -133,14 +135,6 @@ const sortInvoicesByLatest = (items: HoaDonDTO[]) => {
   });
 };
 
-const escapeHtml = (value: string) =>
-  value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-
 const History = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') || 'recharge';
@@ -204,7 +198,7 @@ const History = () => {
       normalizeStatus(invoice.loaiHoaDon) === "DANG_BAI"
         ? "Hóa đơn thanh toán bài đăng"
         : "Hóa đơn giao dịch";
-    const invoiceRows = [
+    const invoiceRows: InvoicePrintRow[] = [
       ["Mã hóa đơn", invoice.maHoaDon],
       ["Loại giao dịch", getInvoiceTypeLabel(invoice.loaiHoaDon)],
       ["Số tiền", `${(invoice.soTien || 0).toLocaleString("vi-VN")} đ`],
@@ -217,52 +211,19 @@ const History = () => {
       ["Ngày bắt đầu", formatDateTime(invoice.ngayBatDau)],
       ["Ngày kết thúc", formatDateTime(invoice.ngayKetThuc)],
     ];
-    const rowsHtml = invoiceRows
-      .map(
-        ([label, value]) =>
-          `<tr><th>${escapeHtml(label)}</th><td>${escapeHtml(value)}</td></tr>`,
-      )
-      .join("");
-    const printWindow = window.open("", "_blank", "width=900,height=720");
 
-    if (!printWindow) {
+    const didOpen = openInvoicePrintWindow({
+      title: invoiceTitle,
+      documentTitle: `${invoiceTitle} ${invoice.maHoaDon}`,
+      generatedAt: formatDateTime(new Date().toISOString()),
+      rows: invoiceRows,
+      footer: "Hóa đơn được xuất từ hệ thống quản lý tài chính người cho thuê.",
+      signerLabel: "Chữ ký người cho thuê",
+    });
+
+    if (!didOpen) {
       message.error("Trình duyệt đang chặn cửa sổ xuất hóa đơn");
-      return;
     }
-
-    printWindow.document.write(`
-      <!doctype html>
-      <html lang="vi">
-        <head>
-          <meta charset="utf-8" />
-          <title>${escapeHtml(invoiceTitle)} ${escapeHtml(invoice.maHoaDon)}</title>
-          <style>
-            body { font-family: Arial, sans-serif; color: #111827; margin: 40px; }
-            .invoice { max-width: 760px; margin: 0 auto; }
-            h1 { margin: 0 0 8px; font-size: 28px; }
-            .subtitle { color: #64748b; margin-bottom: 28px; }
-            table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #e5e7eb; padding: 12px 14px; text-align: left; }
-            th { width: 36%; background: #f8fafc; color: #334155; }
-            .footer { margin-top: 28px; color: #64748b; font-size: 13px; }
-          </style>
-        </head>
-        <body>
-          <div class="invoice">
-            <h1>${escapeHtml(invoiceTitle)}</h1>
-            <div class="subtitle">DThang Home - ${escapeHtml(formatDateTime(new Date().toISOString()))}</div>
-            <table>${rowsHtml}</table>
-            <div class="footer">Hóa đơn được xuất từ hệ thống quản lý tài chính người cho thuê.</div>
-          </div>
-          <script>
-            window.onload = function () {
-              window.print();
-            };
-          </script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
   };
 
   const packageColumns = [
@@ -339,7 +300,7 @@ const History = () => {
             Chi tiết
           </Button>
           <Button type="link" onClick={() => handleExportInvoice(record.invoice)}>
-            Xuất hóa đơn
+            In hóa đơn
           </Button>
         </Space>
       ),
@@ -474,7 +435,7 @@ const History = () => {
                   type="primary"
                   onClick={() => handleExportInvoice(selectedInvoice)}
                 >
-                  Xuất hóa đơn
+                  In hóa đơn
                 </Button>,
               ]
             : null
