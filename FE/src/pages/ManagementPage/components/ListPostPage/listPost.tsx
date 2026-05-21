@@ -18,6 +18,7 @@ import {
   SearchOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
+import Navbar from "../../../../components/layout/Navbar/navbar";
 import "./listPost.css";
 import cloverImg from "../../../../assets/img/co4la.png";
 import {
@@ -376,306 +377,312 @@ const ListPost = () => {
   };
 
   return (
-    <div className="post-container">
-      <div className="post-page-header">
-        <div className="post-page-heading">
-          <h2 className="post-page-title">Danh sách bài đăng</h2>
-          <p className="post-page-subtitle">
-            Quản lý các bài đăng của bạn trực quan và dễ dàng hơn
-          </p>
-        </div>
+    <div className="post-page-layout">
+      <Navbar />
 
-        <div className="post-search-panel">
-          <Input
-            className="search-input-post"
-            placeholder="Tìm mã tin, tiêu đề..."
-            prefix={<SearchOutlined />}
-            allowClear
-            value={searchValue}
-            onChange={(event) => setSearchValue(event.target.value)}
-          />
-          <div className="post-search-count">
-            <strong>{visiblePostCount}</strong>
-            <span>/ {totalPostCount} tin</span>
-          </div>
-        </div>
-      </div>
+      <div className="post-content-area">
+        <div className="post-container">
+          <div className="post-page-header">
+            <div className="post-page-heading">
+              <h2 className="post-page-title">Danh sách bài đăng</h2>
+              <p className="post-page-subtitle">
+                Quản lý các bài đăng của bạn trực quan và dễ dàng hơn
+              </p>
+            </div>
 
-      <div className="list-container">
-        {loading ? (
-          <div className="empty-post">
-            <Spin />
-          </div>
-        ) : (
-          filteredPosts.map((post) => (
-            <div
-              key={post.id}
-              className="post-card"
-              role="button"
-              tabIndex={0}
-              aria-label={`Xem chi tiết ${post.title}`}
-              onClick={() => openPostDetail(post)}
-              onKeyDown={(event) => handlePostCardKeyDown(event, post)}
-            >
-              <div className="post-thumbnail">
-                <img
-                  src={post.thumbnail?.trim() ? post.thumbnail : cloverImg}
-                  alt={post.title}
-                  onError={(event) => {
-                    event.currentTarget.src = cloverImg;
-                  }}
-                />
-
-                <div className="post-overlay">
-                  <Tag color={getStatusColor(post.status)}>{post.status}</Tag>
-                </div>
-
-                <div className="post-camera-icon">
-                  <CameraOutlined />
-                  <span>{post.imageCount}</span>
-                </div>
-              </div>
-
-              <div className="post-info">
-                <div className="post-top-row">
-                  <div className="post-badge-group">
-                    <Tag color="blue">{post.type}</Tag>
-                  </div>
-                </div>
-
-                <h3 className="post-title">{post.title}</h3>
-
-                <div className="post-meta">
-                  <span className="post-price">{post.price}</span>
-                  <span className="meta-dot">•</span>
-                  <span className="post-size">{post.area}</span>
-                  <span className="meta-dot">•</span>
-                  <span className="post-location">{post.location}</span>
-                </div>
-
-                <div className="post-details">
-                  <div className="post-detail-item">
-                    <span className="label">Mã tin</span>
-                    <strong>{post.postId}</strong>
-                  </div>
-
-                  <div className="post-detail-item">
-                    <span className="label">Ngày đăng</span>
-                    <strong>{formatDate(post.createdAt)}</strong>
-                  </div>
-
-                  <div className="post-detail-item">
-                    <span className="label">Trạng thái</span>
-                    <strong>{post.status}</strong>
-                  </div>
-                </div>
-              </div>
-
-              <div className="post-actions">
-                <Button
-                  className="detail-btn"
-                  icon={<EyeOutlined />}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    openPostDetail(post);
-                  }}
-                >
-                  Chi tiết
-                </Button>
-
-                <Button
-                  className="edit-btn"
-                  icon={<EditOutlined />}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    openEditModal(post);
-                  }}
-                >
-                  Sửa tin
-                </Button>
-
-                <Button
-                  className={`status-btn ${
-                    post.status === "ĐANG HIỂN THỊ" ? "rented" : "available"
-                  }`}
-                  icon={<HomeOutlined />}
-                  loading={updatingId === post.id}
-                  disabled={post.status === "CHỜ DUYỆT"}
-                  onClick={(event) => {
-                    event.stopPropagation();
-
-                    if (post.status === "ĐANG HIỂN THỊ" || post.status === "ẨN TIN") {
-                      toggleVisibility(post);
-                    } else {
-                      navigate(`/payment/${post.id}`);
-                    }
-                  }}
-                >
-                  {post.status === "ĐANG HIỂN THỊ"
-                    ? "Ẩn tin"
-                    : post.status === "CHỜ DUYỆT"
-                      ? "Chờ duyệt"
-                      : post.status === "ẨN TIN"
-                        ? "Gửi duyệt lại"
-                        : "Mua gói đăng tin"}
-                </Button>
+            <div className="post-search-panel">
+              <Input
+                className="search-input-post"
+                placeholder="Tìm mã tin, tiêu đề..."
+                prefix={<SearchOutlined />}
+                allowClear
+                value={searchValue}
+                onChange={(event) => setSearchValue(event.target.value)}
+              />
+              <div className="post-search-count">
+                <strong>{visiblePostCount}</strong>
+                <span>/ {totalPostCount} tin</span>
               </div>
             </div>
-          ))
-        )}
+          </div>
 
-        {!loading && filteredPosts.length === 0 && (
-          <div className="empty-post">Không tìm thấy bài đăng phù hợp.</div>
-        )}
+          <div className="list-container">
+            {loading ? (
+              <div className="empty-post">
+                <Spin />
+              </div>
+            ) : (
+              filteredPosts.map((post) => (
+                <div
+                  key={post.id}
+                  className="post-card"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Xem chi tiết ${post.title}`}
+                  onClick={() => openPostDetail(post)}
+                  onKeyDown={(event) => handlePostCardKeyDown(event, post)}
+                >
+                  <div className="post-thumbnail">
+                    <img
+                      src={post.thumbnail?.trim() ? post.thumbnail : cloverImg}
+                      alt={post.title}
+                      onError={(event) => {
+                        event.currentTarget.src = cloverImg;
+                      }}
+                    />
+
+                    <div className="post-overlay">
+                      <Tag color={getStatusColor(post.status)}>{post.status}</Tag>
+                    </div>
+
+                    <div className="post-camera-icon">
+                      <CameraOutlined />
+                      <span>{post.imageCount}</span>
+                    </div>
+                  </div>
+
+                  <div className="post-info">
+                    <div className="post-top-row">
+                      <div className="post-badge-group">
+                        <Tag color="blue">{post.type}</Tag>
+                      </div>
+                    </div>
+
+                    <h3 className="post-title">{post.title}</h3>
+
+                    <div className="post-meta">
+                      <span className="post-price">{post.price}</span>
+                      <span className="meta-dot">•</span>
+                      <span className="post-size">{post.area}</span>
+                      <span className="meta-dot">•</span>
+                      <span className="post-location">{post.location}</span>
+                    </div>
+
+                    <div className="post-details">
+                      <div className="post-detail-item">
+                        <span className="label">Mã tin</span>
+                        <strong>{post.postId}</strong>
+                      </div>
+
+                      <div className="post-detail-item">
+                        <span className="label">Ngày đăng</span>
+                        <strong>{formatDate(post.createdAt)}</strong>
+                      </div>
+
+                      <div className="post-detail-item">
+                        <span className="label">Trạng thái</span>
+                        <strong>{post.status}</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="post-actions">
+                    <Button
+                      className="detail-btn"
+                      icon={<EyeOutlined />}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        openPostDetail(post);
+                      }}
+                    >
+                      Chi tiết
+                    </Button>
+
+                    <Button
+                      className="edit-btn"
+                      icon={<EditOutlined />}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        openEditModal(post);
+                      }}
+                    >
+                      Sửa tin
+                    </Button>
+
+                    <Button
+                      className={`status-btn ${
+                        post.status === "ĐANG HIỂN THỊ" ? "rented" : "available"
+                      }`}
+                      icon={<HomeOutlined />}
+                      loading={updatingId === post.id}
+                      disabled={post.status === "CHỜ DUYỆT"}
+                      onClick={(event) => {
+                        event.stopPropagation();
+
+                        if (post.status === "ĐANG HIỂN THỊ" || post.status === "ẨN TIN") {
+                          toggleVisibility(post);
+                        } else {
+                          navigate(`/payment/${post.id}`);
+                        }
+                      }}
+                    >
+                      {post.status === "ĐANG HIỂN THỊ"
+                        ? "Ẩn tin"
+                        : post.status === "CHỜ DUYỆT"
+                          ? "Chờ duyệt"
+                          : post.status === "ẨN TIN"
+                            ? "Gửi duyệt lại"
+                            : "Mua gói đăng tin"}
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
+
+            {!loading && filteredPosts.length === 0 && (
+              <div className="empty-post">Không tìm thấy bài đăng phù hợp.</div>
+            )}
+          </div>
+
+          <Modal
+            title={`Sửa bài đăng ${editingPost?.postId || ""}`}
+            open={isEditModalOpen}
+            onCancel={closeEditModal}
+            onOk={handleSaveEdit}
+            okText="Lưu thay đổi"
+            cancelText="Hủy"
+            confirmLoading={isSavingEdit}
+            width={820}
+            destroyOnHidden
+          >
+            <Form form={form} layout="vertical" className="edit-post-form">
+              <Form.Item label="Danh mục">
+                <Select
+                  disabled
+                  value={editingPost?.maDanhMuc}
+                  options={categories.map((category) => ({
+                    label: category.tenDanhMuc,
+                    value: category.maDanhMuc,
+                  }))}
+                  placeholder="BE hiện chưa hỗ trợ sửa danh mục"
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="tieuDe"
+                label="Tiêu đề"
+                rules={[{ required: true, message: "Vui lòng nhập tiêu đề" }]}
+              >
+                <Input placeholder="Nhập tiêu đề bài đăng" />
+              </Form.Item>
+
+              <Form.Item
+                name="noiDung"
+                label="Nội dung mô tả"
+                rules={[{ required: true, message: "Vui lòng nhập nội dung mô tả" }]}
+              >
+                <Input.TextArea rows={5} placeholder="Nhập nội dung mô tả" />
+              </Form.Item>
+
+              <div className="edit-post-grid">
+                <Form.Item
+                  name="gia"
+                  label="Giá cho thuê"
+                  rules={[{ required: true, message: "Vui lòng nhập giá" }]}
+                >
+                  <InputNumber
+                    min={0}
+                    addonAfter="đ/tháng"
+                    style={{ width: "100%" }}
+                    placeholder="Nhập giá"
+                  />
+                </Form.Item>
+
+                <Form.Item
+                  name="dienTich"
+                  label="Diện tích"
+                  rules={[{ required: true, message: "Vui lòng nhập diện tích" }]}
+                >
+                  <InputNumber
+                    min={0}
+                    addonAfter="m²"
+                    style={{ width: "100%" }}
+                    placeholder="Nhập diện tích"
+                  />
+                </Form.Item>
+
+                <Form.Item
+                  name="phongNgu"
+                  label="Phòng ngủ"
+                  rules={[{ required: true, message: "Vui lòng nhập số phòng ngủ" }]}
+                >
+                  <InputNumber
+                    min={0}
+                    style={{ width: "100%" }}
+                    placeholder="Nhập số phòng ngủ"
+                  />
+                </Form.Item>
+
+                <Form.Item
+                  name="phuongThucThanhToan"
+                  label="Phương thức thanh toán"
+                  rules={[
+                    { required: true, message: "Vui lòng chọn phương thức thanh toán" },
+                  ]}
+                >
+                  <Select
+                    placeholder="Chọn phương thức thanh toán"
+                    options={[
+                      { label: "Tiền mặt", value: "Cash" },
+                      { label: "Chuyển khoản", value: "Transfer" },
+                    ]}
+                  />
+                </Form.Item>
+              </div>
+
+              <Form.Item
+                name="diaChiCuThe"
+                label="Địa chỉ cụ thể"
+                rules={[{ required: true, message: "Vui lòng nhập địa chỉ" }]}
+              >
+                <Input placeholder="Nhập địa chỉ cụ thể" />
+              </Form.Item>
+
+              <div className="edit-post-grid">
+                <Form.Item
+                  name="phuong"
+                  label="Phường"
+                  rules={[{ required: true, message: "Vui lòng nhập phường" }]}
+                >
+                  <Input placeholder="Nhập phường" />
+                </Form.Item>
+
+                <Form.Item
+                  name="huongCanHo"
+                  label="Hướng căn hộ"
+                  rules={[{ required: true, message: "Vui lòng chọn hướng căn hộ" }]}
+                >
+                  <Select
+                    placeholder="Chọn hướng căn hộ"
+                    options={[
+                      "Đông",
+                      "Tây",
+                      "Nam",
+                      "Bắc",
+                      "Đông Bắc",
+                      "Đông Nam",
+                      "Tây Bắc",
+                      "Tây Nam",
+                    ].map((item) => ({ label: item, value: item }))}
+                  />
+                </Form.Item>
+
+                <Form.Item name="lat" label="Latitude">
+                  <InputNumber style={{ width: "100%" }} placeholder="Vĩ độ" />
+                </Form.Item>
+
+                <Form.Item name="lng" label="Longitude">
+                  <InputNumber style={{ width: "100%" }} placeholder="Kinh độ" />
+                </Form.Item>
+              </div>
+
+              <Form.Item name="lienHe" label="Liên hệ">
+                <Input placeholder="Số điện thoại liên hệ" />
+              </Form.Item>
+            </Form>
+          </Modal>
+        </div>
       </div>
-
-      <Modal
-        title={`Sửa bài đăng ${editingPost?.postId || ""}`}
-        open={isEditModalOpen}
-        onCancel={closeEditModal}
-        onOk={handleSaveEdit}
-        okText="Lưu thay đổi"
-        cancelText="Hủy"
-        confirmLoading={isSavingEdit}
-        width={820}
-        destroyOnHidden
-      >
-        <Form form={form} layout="vertical" className="edit-post-form">
-          <Form.Item label="Danh mục">
-            <Select
-              disabled
-              value={editingPost?.maDanhMuc}
-              options={categories.map((category) => ({
-                label: category.tenDanhMuc,
-                value: category.maDanhMuc,
-              }))}
-              placeholder="BE hiện chưa hỗ trợ sửa danh mục"
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="tieuDe"
-            label="Tiêu đề"
-            rules={[{ required: true, message: "Vui lòng nhập tiêu đề" }]}
-          >
-            <Input placeholder="Nhập tiêu đề bài đăng" />
-          </Form.Item>
-
-          <Form.Item
-            name="noiDung"
-            label="Nội dung mô tả"
-            rules={[{ required: true, message: "Vui lòng nhập nội dung mô tả" }]}
-          >
-            <Input.TextArea rows={5} placeholder="Nhập nội dung mô tả" />
-          </Form.Item>
-
-          <div className="edit-post-grid">
-            <Form.Item
-              name="gia"
-              label="Giá cho thuê"
-              rules={[{ required: true, message: "Vui lòng nhập giá" }]}
-            >
-              <InputNumber
-                min={0}
-                addonAfter="đ/tháng"
-                style={{ width: "100%" }}
-                placeholder="Nhập giá"
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="dienTich"
-              label="Diện tích"
-              rules={[{ required: true, message: "Vui lòng nhập diện tích" }]}
-            >
-              <InputNumber
-                min={0}
-                addonAfter="m²"
-                style={{ width: "100%" }}
-                placeholder="Nhập diện tích"
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="phongNgu"
-              label="Phòng ngủ"
-              rules={[{ required: true, message: "Vui lòng nhập số phòng ngủ" }]}
-            >
-              <InputNumber
-                min={0}
-                style={{ width: "100%" }}
-                placeholder="Nhập số phòng ngủ"
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="phuongThucThanhToan"
-              label="Phương thức thanh toán"
-              rules={[
-                { required: true, message: "Vui lòng chọn phương thức thanh toán" },
-              ]}
-            >
-              <Select
-                placeholder="Chọn phương thức thanh toán"
-                options={[
-                  { label: "Tiền mặt", value: "Cash" },
-                  { label: "Chuyển khoản", value: "Transfer" },
-                ]}
-              />
-            </Form.Item>
-          </div>
-
-          <Form.Item
-            name="diaChiCuThe"
-            label="Địa chỉ cụ thể"
-            rules={[{ required: true, message: "Vui lòng nhập địa chỉ" }]}
-          >
-            <Input placeholder="Nhập địa chỉ cụ thể" />
-          </Form.Item>
-
-          <div className="edit-post-grid">
-            <Form.Item
-              name="phuong"
-              label="Phường"
-              rules={[{ required: true, message: "Vui lòng nhập phường" }]}
-            >
-              <Input placeholder="Nhập phường" />
-            </Form.Item>
-
-            <Form.Item
-              name="huongCanHo"
-              label="Hướng căn hộ"
-              rules={[{ required: true, message: "Vui lòng chọn hướng căn hộ" }]}
-            >
-              <Select
-                placeholder="Chọn hướng căn hộ"
-                options={[
-                  "Đông",
-                  "Tây",
-                  "Nam",
-                  "Bắc",
-                  "Đông Bắc",
-                  "Đông Nam",
-                  "Tây Bắc",
-                  "Tây Nam",
-                ].map((item) => ({ label: item, value: item }))}
-              />
-            </Form.Item>
-
-            <Form.Item name="lat" label="Latitude">
-              <InputNumber style={{ width: "100%" }} placeholder="Vĩ độ" />
-            </Form.Item>
-
-            <Form.Item name="lng" label="Longitude">
-              <InputNumber style={{ width: "100%" }} placeholder="Kinh độ" />
-            </Form.Item>
-          </div>
-
-          <Form.Item name="lienHe" label="Liên hệ">
-            <Input placeholder="Số điện thoại liên hệ" />
-          </Form.Item>
-        </Form>
-      </Modal>
     </div>
   );
 };

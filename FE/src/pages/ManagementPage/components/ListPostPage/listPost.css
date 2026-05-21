@@ -2,10 +2,26 @@
    List Post Page - Premium UI
    ============================================= */
 
-.post-container {
+.post-page-layout {
   background-color: #f4f6fb;
-  padding: 110px 16px 80px;
   min-height: 100vh;
+  padding: 100px 0 48px;
+  display: grid;
+  grid-template-columns: 265px minmax(0, 1fr);
+  align-items: start;
+}
+
+.post-content-area {
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+  padding: 0 40px;
+}
+
+.post-container {
+  width: 100%;
+  padding: 0 16px 80px;
+  min-height: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -404,6 +420,22 @@
 }
 
 /* ── Responsive ── */
+@media (max-width: 1100px) {
+  .post-page-layout {
+    grid-template-columns: 1fr;
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  .post-page-layout .navbar-management {
+    display: none;
+  }
+
+  .post-content-area {
+    padding: 0;
+  }
+}
+
 @media (max-width: 992px) {
   .post-thumbnail {
     width: 180px;
@@ -417,8 +449,12 @@
 }
 
 @media (max-width: 768px) {
+  .post-page-layout {
+    padding: 88px 14px 48px;
+  }
+
   .post-container {
-    padding: 100px 16px 40px;
+    padding: 0 0 40px;
   }
 
   .post-page-header {
