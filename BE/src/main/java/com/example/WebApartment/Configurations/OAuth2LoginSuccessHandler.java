@@ -5,6 +5,7 @@ import com.example.WebApartment.Models.NguoiDung;
 import com.example.WebApartment.Models.VaiTro;
 import com.example.WebApartment.Repository.NguoiDungRepository;
 import com.example.WebApartment.Repository.VaiTroRepository;
+import com.example.WebApartment.Service.NguoiDungCodeService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -26,6 +27,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
     private final NguoiDungRepository nguoiDungRepository;
     private final VaiTroRepository vaiTroRepository;
+    private final NguoiDungCodeService nguoiDungCodeService;
     private final JwtToken jwtToken;
 
     @Value("${app.oauth2.redirect-url}")
@@ -42,7 +44,6 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         String email = oauthUser.getAttribute("email");
         String name = oauthUser.getAttribute("name");
         String picture = oauthUser.getAttribute("picture");
-        String googleId = oauthUser.getAttribute("sub");
 
         if (email == null || email.isBlank()) {
             response.sendRedirect(redirectUrl + "?error=email_not_found");
@@ -50,8 +51,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         }
 
         NguoiDung nguoiDung = nguoiDungRepository.findByEmail(email)
-                .map(existingUser -> syncGoogleUser(existingUser, name, picture, googleId))
-                .orElseGet(() -> createGoogleUser(email, name, picture, googleId));
+                .map(existingUser -> syncGoogleUser(existingUser, name, picture))
+                .orElseGet(() -> createGoogleUser(email, name, picture));
 
         if (Boolean.FALSE.equals(nguoiDung.getTrangThai())) {
             response.sendRedirect(redirectUrl + "?error=account_locked");
@@ -70,33 +71,26 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         response.sendRedirect(redirectUrl + "?token=" + encodedToken);
     }
 
-    private NguoiDung createGoogleUser(String email, String name, String picture, String googleId) {
+    private NguoiDung createGoogleUser(String email, String name, String picture) {
         VaiTro vaiTroNguoiThue = vaiTroRepository.findById("2")
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy role Người Thuê"));
 
         NguoiDung newUser = NguoiDung.builder()
-                .maNguoiDung(generateMaNguoiDung())
+                .maNguoiDung(nguoiDungCodeService.generateMaNguoiDung())
                 .vaiTro(vaiTroNguoiThue)
                 .hoVaTen(name)
                 .email(email)
                 .soDienThoai("GG_" + UUID.randomUUID().toString().substring(0, 8))
                 .matKhau("")
                 .trangThai(true)
-                .googleAccount(googleId)
                 .anhDaiDien(picture)
                 .build();
 
         return nguoiDungRepository.save(newUser);
     }
 
-    private NguoiDung syncGoogleUser(NguoiDung nguoiDung, String name, String picture, String googleId) {
+    private NguoiDung syncGoogleUser(NguoiDung nguoiDung, String name, String picture) {
         boolean changed = false;
-
-        if ((nguoiDung.getGoogleAccount() == null || nguoiDung.getGoogleAccount().isBlank())
-                && googleId != null && !googleId.isBlank()) {
-            nguoiDung.setGoogleAccount(googleId);
-            changed = true;
-        }
 
         if ((nguoiDung.getAnhDaiDien() == null || nguoiDung.getAnhDaiDien().isBlank())
                 && picture != null && !picture.isBlank()) {
@@ -111,9 +105,5 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         }
 
         return changed ? nguoiDungRepository.save(nguoiDung) : nguoiDung;
-    }
-
-    private String generateMaNguoiDung() {
-        return "ND" + UUID.randomUUID().toString().replace("-", "").substring(0, 10).toUpperCase();
     }
 }
