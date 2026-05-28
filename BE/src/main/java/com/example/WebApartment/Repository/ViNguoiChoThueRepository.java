@@ -9,5 +9,5 @@ import java.util.Optional;
 @Repository
 public interface ViNguoiChoThueRepository extends JpaRepository<ViNguoiChoThue, String> {
 
-    Optional<ViNguoiChoThue> findByNguoiDung_MaNguoiDung(String maNguoiDung);
+    Optional<ViNguoiChoThue> findFirstByNguoiDung_MaNguoiDungOrderByNgayTaoAsc(String maNguoiDung);
 }
