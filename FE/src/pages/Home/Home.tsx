@@ -81,7 +81,6 @@ const recommendationTabs: Array<{ key: RecommendationTab; label: string }> = [
   { key: 'match', label: 'Match nhu cầu' },
   { key: 'price', label: 'Theo giá' },
   { key: 'location', label: 'Theo khu vực' },
-  { key: 'ai', label: 'AI suggest' },
 ];
 
 const needPreferenceLabels: Array<{ key: NeedPreferenceKey; label: string }> = [
@@ -716,7 +715,7 @@ const Home: React.FC = () => {
               <div className="site-home-section-heading site-home-section-heading--split">
                 <div>
                   <span className="site-home-eyebrow">Gợi ý căn hộ</span>
-                  <h2>Match nhu cầu user</h2>
+                  <h2>Danh sách gợi ý theo nhu cầu</h2>
                 </div>
                 <div className="site-home-recommendation-actions">
                   <button
