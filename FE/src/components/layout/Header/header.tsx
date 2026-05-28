@@ -90,7 +90,7 @@ const Header: React.FC = () => {
       {
         key: '3',
         label: 'Căn hộ cao cấp',
-        to: '/danh-muc/can-ho',
+        to: '/danh-muc/can-ho-cao-cap',
       },
       {
         key: '4',

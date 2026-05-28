@@ -199,6 +199,10 @@ export const uploadPostVideo = async (maBaiDang: string, file: File) => {
   return res.data;
 };
 
+export const deletePostMedia = async (maHinhAnhBaiDang: string) => {
+  await axiosClient.delete(`/api/v1/hinh-anh-bai-dang/${maHinhAnhBaiDang}`);
+};
+
 export const getFavoritePostsByUser = async (maNguoiDung: string) => {
   const res = await axiosClient.get<BaiDangYeuThichDTO[]>(
     `/api/v1/bai-dang-yeu-thich/nguoi-dung/${maNguoiDung}`
