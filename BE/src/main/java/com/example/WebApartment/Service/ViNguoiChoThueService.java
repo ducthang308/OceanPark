@@ -20,6 +20,7 @@ public class ViNguoiChoThueService {
     private final YeuCauRutTienRepository yeuCauRutTienRepo;
     private final NguoiDungRepository nguoiDungRepo;
     private final HoaDonRepository hoaDonRepo;
+    private final Object walletCreationLock = new Object();
 
     public ViNguoiChoThueDTO getByNguoiDung(String maNguoiDung) {
         ViNguoiChoThue vi = getOrCreateVi(maNguoiDung);
@@ -27,7 +28,8 @@ public class ViNguoiChoThueService {
     }
 
     public List<GiaoDichViDTO> getLichSuGiaoDich(String maNguoiDung) {
-        ViNguoiChoThue vi = getOrCreateVi(maNguoiDung);
+        ViNguoiChoThue vi = getExistingVi(maNguoiDung);
+        if (vi == null) return List.of();
 
         return giaoDichViRepo.findByVi_MaViOrderByNgayTaoDesc(vi.getMaVi())
                 .stream()
@@ -36,7 +38,8 @@ public class ViNguoiChoThueService {
     }
 
     public List<YeuCauRutTienDTO> getYeuCauRutTienByNguoiDung(String maNguoiDung) {
-        ViNguoiChoThue vi = getOrCreateVi(maNguoiDung);
+        ViNguoiChoThue vi = getExistingVi(maNguoiDung);
+        if (vi == null) return List.of();
 
         return yeuCauRutTienRepo.findByVi_MaViOrderByNgayTaoDesc(vi.getMaVi())
                 .stream()
@@ -196,23 +199,33 @@ public class ViNguoiChoThueService {
         giaoDichViRepo.save(gd);
     }
 
+    private ViNguoiChoThue getExistingVi(String maNguoiDung) {
+        return viRepo.findFirstByNguoiDung_MaNguoiDungOrderByNgayTaoAsc(maNguoiDung)
+                .orElse(null);
+    }
+
     private ViNguoiChoThue getOrCreateVi(String maNguoiDung) {
-        return viRepo.findByNguoiDung_MaNguoiDung(maNguoiDung)
-                .orElseGet(() -> {
-                    NguoiDung nguoiDung = nguoiDungRepo.findById(maNguoiDung)
-                            .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+        ViNguoiChoThue existing = getExistingVi(maNguoiDung);
+        if (existing != null) return existing;
 
-                    ViNguoiChoThue vi = ViNguoiChoThue.builder()
-                            .maVi(generateId("VI"))
-                            .nguoiDung(nguoiDung)
-                            .soDuKhaDung(0D)
-                            .soDuChoRut(0D)
-                            .tongDoanhThu(0D)
-                            .ngayTao(LocalDateTime.now())
-                            .build();
+        synchronized (walletCreationLock) {
+            existing = getExistingVi(maNguoiDung);
+            if (existing != null) return existing;
 
-                    return viRepo.save(vi);
-                });
+            NguoiDung nguoiDung = nguoiDungRepo.findById(maNguoiDung)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+
+            ViNguoiChoThue vi = ViNguoiChoThue.builder()
+                    .maVi(generateId("VI"))
+                    .nguoiDung(nguoiDung)
+                    .soDuKhaDung(0D)
+                    .soDuChoRut(0D)
+                    .tongDoanhThu(0D)
+                    .ngayTao(LocalDateTime.now())
+                    .build();
+
+            return viRepo.save(vi);
+        }
     }
 
     private ViNguoiChoThueDTO toViDto(ViNguoiChoThue vi) {
