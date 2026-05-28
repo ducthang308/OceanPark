@@ -53,6 +53,16 @@ public class ViNguoiChoThueService {
 
     @Transactional
     public YeuCauRutTienDTO createWithdrawRequest(CreateWithdrawRequest request) {
+        if (request == null || isBlank(request.getMaNguoiDung())) {
+            throw new RuntimeException("Thông tin người dùng không hợp lệ");
+        }
+
+        if (isBlank(request.getBankCode())
+                || isBlank(request.getBankAccount())
+                || isBlank(request.getAccountName())) {
+            throw new RuntimeException("Thông tin ngân hàng không được để trống");
+        }
+
         if (request.getSoTien() == null || request.getSoTien() <= 0) {
             throw new RuntimeException("Số tiền rút không hợp lệ");
         }
@@ -254,5 +264,9 @@ public class ViNguoiChoThueService {
                 .replace("-", "")
                 .substring(0, 10)
                 .toUpperCase();
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 }
