@@ -12,6 +12,10 @@ import java.time.LocalDateTime;
 public class YeuCauRutTienDTO {
     private String maYeuCauRutTien;
     private String maVi;
+    private String maNguoiDung;
+    private String tenNguoiDung;
+    private String emailNguoiDung;
+    private String soDienThoaiNguoiDung;
     private String bankCode;
     private String bankAccount;
     private String accountName;

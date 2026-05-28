@@ -8,6 +8,7 @@ import {
     BarChartOutlined,
     UserOutlined,
     LogoutOutlined,
+    WalletOutlined,
 } from '@ant-design/icons';
 import { Menu } from 'antd';
 import type { MenuProps } from 'antd';
@@ -49,12 +50,18 @@ const items: SidebarItem[] = [
     },
     {
         key: '5',
+        icon: <WalletOutlined />,
+        label: 'Ví người cho thuê',
+        allowedRoles: LANDLORD_ROLE_IDS,
+    },
+    {
+        key: '6',
         icon: <FileTextOutlined />,
         label: 'Quản lý giao dịch',
         allowedRoles: LANDLORD_ROLE_IDS,
     },
     {
-        key: '6',
+        key: '7',
         icon: <FolderOpenOutlined />,
         label: 'Gói đăng tin',
         allowedRoles: LANDLORD_ROLE_IDS,
@@ -107,13 +114,13 @@ const Navbar = () => {
                 navigate('/landlord-dashboard');
                 break;
             case '5':
-                navigate('/history?tab=package');
+                navigate('/landlord-wallet');
                 break;
             case '6':
-                navigate('/payment/all'); // Quản lý gói nạp
+                navigate('/history?tab=package');
                 break;
             case '7':
-                navigate('/payment/all');
+                navigate('/payment/all'); // Quản lý gói nạp
                 break;
             case '8':
                 navigate('/AccountManagement');
@@ -133,7 +140,8 @@ const Navbar = () => {
         if (location.pathname === '/listing') return ['1'];
         if (location.pathname === '/list-post') return ['2'];
         if (location.pathname === '/landlord-dashboard') return ['4'];
-        if (location.pathname === '/history') return ['5'];
+        if (location.pathname === '/landlord-wallet') return ['5'];
+        if (location.pathname === '/history') return ['6'];
         if (location.pathname === '/AccountManagement') return ['8'];
         if (location.pathname === '/tenant-transactions') return ['10'];
         return [];

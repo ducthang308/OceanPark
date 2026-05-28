@@ -23,6 +23,7 @@ import ListPost from './pages/ManagementPage/components/ListPostPage/listPost.ts
 import FavoritePostsPage from './pages/FavoritePostsPage/FavoritePostsPage';
 import ServicePrice from './components/sections/ServicePrice/servicePrice.tsx';
 import LandlordDashboardPage from './pages/LandlordDashboard/LandlordDashboardPage.tsx';
+import LandlordWalletPage from './pages/LandlordWallet/LandlordWalletPage.tsx';
 
 import AdminLayout from './pages/AdminStaff/components/AdminLayout.tsx';
 import AdminDashboard from './pages/AdminStaff/Dashboard/AdminDashboard.tsx';
@@ -33,6 +34,7 @@ import AdminAccountManagement from './pages/AdminStaff/AccountManagement/AdminAc
 import AdminPaymentApproval from './pages/AdminStaff/PaymentApproval/AdminPaymentApproval.tsx';
 import PostApprovalDetail from './pages/AdminStaff/PostApproval/PostApprovalDetail.tsx';
 import PaymentDetailPanel from './pages/AdminStaff/PaymentApproval/PaymentDetailPanel.tsx';
+import AdminWithdrawManagement from './pages/AdminStaff/WithdrawManagement/AdminWithdrawManagement.tsx';
 // Redundant imports removed
 
 import ForgotPasswordPage from './pages/ForgotPassword/ForgotPasswordPage';
@@ -108,6 +110,7 @@ function App() {
             <Route path="/listing" element={<Listing />} />
             <Route path="/list-post" element={<ListPost />} />
             <Route path="/landlord-dashboard" element={<LandlordDashboardPage />} />
+            <Route path="/landlord-wallet" element={<LandlordWalletPage />} />
           </Route>
         </Route>
 
@@ -122,6 +125,7 @@ function App() {
             <Route path="post-approval/:id" element={<PostApprovalDetail />} />
             <Route path="payment-approval/:id" element={<PaymentDetailPanel />} />
             <Route path="payments" element={<AdminPaymentApproval />} />
+            <Route path="withdrawals" element={<AdminWithdrawManagement />} />
             <Route path="chat" element={<ChatPage />} />
           </Route>
         </Route>

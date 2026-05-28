@@ -44,6 +44,13 @@ public class ViNguoiChoThueService {
                 .toList();
     }
 
+    public List<YeuCauRutTienDTO> getAllYeuCauRutTien() {
+        return yeuCauRutTienRepo.findAllByOrderByNgayTaoDesc()
+                .stream()
+                .map(this::toYeuCauDto)
+                .toList();
+    }
+
     @Transactional
     public YeuCauRutTienDTO createWithdrawRequest(CreateWithdrawRequest request) {
         if (request.getSoTien() == null || request.getSoTien() <= 0) {
@@ -99,15 +106,15 @@ public class ViNguoiChoThueService {
         vi.setSoDuChoRut(vi.getSoDuChoRut() - yc.getSoTien());
         viRepo.save(vi);
 
-        yc.setTrangThai("APPROVED");
+        yc.setTrangThai("SUCCESS");
         yc.setNgayXuLy(LocalDateTime.now());
 
         GiaoDichVi gd = GiaoDichVi.builder()
                 .maGiaoDichVi(generateId("GDV"))
                 .vi(vi)
-                .loaiGiaoDich("WITHDRAW_APPROVED")
+                .loaiGiaoDich("WITHDRAW_SUCCESS")
                 .soTien(0D)
-                .noiDung("Admin đã duyệt rút tiền: " + yc.getSoTien())
+                .noiDung("Admin xác nhận đã chuyển khoản rút tiền: " + yc.getSoTien())
                 .ngayTao(LocalDateTime.now())
                 .build();
 
@@ -222,9 +229,15 @@ public class ViNguoiChoThueService {
     }
 
     private YeuCauRutTienDTO toYeuCauDto(YeuCauRutTien yc) {
+        NguoiDung nguoiDung = yc.getVi() != null ? yc.getVi().getNguoiDung() : null;
+
         return YeuCauRutTienDTO.builder()
                 .maYeuCauRutTien(yc.getMaYeuCauRutTien())
                 .maVi(yc.getVi().getMaVi())
+                .maNguoiDung(nguoiDung != null ? nguoiDung.getMaNguoiDung() : null)
+                .tenNguoiDung(nguoiDung != null ? nguoiDung.getHoVaTen() : null)
+                .emailNguoiDung(nguoiDung != null ? nguoiDung.getEmail() : null)
+                .soDienThoaiNguoiDung(nguoiDung != null ? nguoiDung.getSoDienThoai() : null)
                 .bankCode(yc.getBankCode())
                 .bankAccount(yc.getBankAccount())
                 .accountName(yc.getAccountName())

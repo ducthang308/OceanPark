@@ -9,6 +9,8 @@ import java.util.List;
 @Repository
 public interface YeuCauRutTienRepository extends JpaRepository<YeuCauRutTien, String> {
 
+    List<YeuCauRutTien> findAllByOrderByNgayTaoDesc();
+
     List<YeuCauRutTien> findByVi_MaViOrderByNgayTaoDesc(String maVi);
 
     List<YeuCauRutTien> findByTrangThaiOrderByNgayTaoDesc(String trangThai);

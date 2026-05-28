@@ -99,6 +99,14 @@
   transform: none;
 }
 
+.tenant-primary-btn:disabled,
+.tenant-secondary-btn:disabled,
+.tenant-transaction-detail-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+}
+
 .tenant-transactions-alert {
   display: flex;
   align-items: center;

@@ -80,6 +80,9 @@ const getPaymentStatusColor = (status: string) => {
   }
 };
 
+const isInvoicePrintable = (invoice: HoaDonDTO) =>
+  normalizeStatus(invoice.trangThaiThanhToan) === "SUCCESS";
+
 const getPackageStatusColor = (status: string) => {
   switch (status) {
     case "Đang hoạt động":
@@ -194,6 +197,11 @@ const History = () => {
   };
 
   const handleExportInvoice = (invoice: HoaDonDTO) => {
+    if (!isInvoicePrintable(invoice)) {
+      message.warning("Chỉ có thể in hóa đơn khi giao dịch thành công");
+      return;
+    }
+
     const invoiceTitle =
       normalizeStatus(invoice.loaiHoaDon) === "DANG_BAI"
         ? "Hóa đơn thanh toán bài đăng"
@@ -299,7 +307,11 @@ const History = () => {
           <Button type="link" onClick={() => setSelectedInvoice(record.invoice)}>
             Chi tiết
           </Button>
-          <Button type="link" onClick={() => handleExportInvoice(record.invoice)}>
+          <Button
+            type="link"
+            disabled={!isInvoicePrintable(record.invoice)}
+            onClick={() => handleExportInvoice(record.invoice)}
+          >
             In hóa đơn
           </Button>
         </Space>
@@ -433,6 +445,7 @@ const History = () => {
                 <Button
                   key="export"
                   type="primary"
+                  disabled={!isInvoicePrintable(selectedInvoice)}
                   onClick={() => handleExportInvoice(selectedInvoice)}
                 >
                   In hóa đơn
