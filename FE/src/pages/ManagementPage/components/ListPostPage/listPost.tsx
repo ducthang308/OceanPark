@@ -136,6 +136,8 @@ const mapStatusText = (status?: string) => {
     case "HIDDEN":
     case "INACTIVE":
       return "ẨN TIN";
+    case "DA_THUE":
+      return "ĐÃ THUÊ";
     case "PENDING":
       return "CHỜ DUYỆT";
     case "REJECTED":
@@ -156,6 +158,8 @@ const getStatusColor = (status: string) => {
       return "processing";
     case "CHỜ THANH TOÁN":
       return "gold";
+    case "ĐÃ THUÊ":
+      return "purple";
     case "TỪ CHỐI":
     case "HẾT HẠN":
       return "red";
@@ -168,6 +172,7 @@ const getStatusColor = (status: string) => {
 
 const PENDING_POST_IDS_KEY_PREFIX = "pendingPostIds:";
 const PUBLIC_POST_STATUSES = new Set(["ACTIVE", "APPROVED"]);
+const FINAL_POST_STATUSES = new Set(["ĐÃ THUÊ", "TỪ CHỐI"]);
 
 const getLocalPendingPostIds = (maNguoiDung: string) => {
   const rawValue = localStorage.getItem(`${PENDING_POST_IDS_KEY_PREFIX}${maNguoiDung}`);
@@ -767,31 +772,42 @@ const ListPost = () => {
                       Sửa tin
                     </Button>
 
-                    <Button
-                      className={`status-btn ${
-                        post.status === "ĐANG HIỂN THỊ" ? "rented" : "available"
-                      }`}
-                      icon={<HomeOutlined />}
-                      loading={updatingId === post.id}
-                      disabled={post.status === "CHỜ DUYỆT"}
-                      onClick={(event) => {
-                        event.stopPropagation();
+                    {FINAL_POST_STATUSES.has(post.status) ? (
+                      <div
+                        className={`post-status-display ${
+                          post.status === "ĐÃ THUÊ" ? "rented" : "rejected"
+                        }`}
+                      >
+                        <HomeOutlined />
+                        <span>{post.status}</span>
+                      </div>
+                    ) : (
+                      <Button
+                        className={`status-btn ${
+                          post.status === "ĐANG HIỂN THỊ" ? "rented" : "available"
+                        }`}
+                        icon={<HomeOutlined />}
+                        loading={updatingId === post.id}
+                        disabled={post.status === "CHỜ DUYỆT"}
+                        onClick={(event) => {
+                          event.stopPropagation();
 
-                        if (post.status === "ĐANG HIỂN THỊ" || post.status === "ẨN TIN") {
-                          toggleVisibility(post);
-                        } else {
-                          navigate(`/payment/${post.id}`);
-                        }
-                      }}
-                    >
-                      {post.status === "ĐANG HIỂN THỊ"
-                        ? "Ẩn tin"
-                        : post.status === "CHỜ DUYỆT"
-                          ? "Chờ duyệt"
-                          : post.status === "ẨN TIN"
-                            ? "Gửi duyệt lại"
-                            : "Mua gói đăng tin"}
-                    </Button>
+                          if (post.status === "ĐANG HIỂN THỊ" || post.status === "ẨN TIN") {
+                            toggleVisibility(post);
+                          } else {
+                            navigate(`/payment/${post.id}`);
+                          }
+                        }}
+                      >
+                        {post.status === "ĐANG HIỂN THỊ"
+                          ? "Ẩn tin"
+                          : post.status === "CHỜ DUYỆT"
+                            ? "Chờ duyệt"
+                            : post.status === "ẨN TIN"
+                              ? "Gửi duyệt lại"
+                              : "Mua gói đăng tin"}
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))
@@ -993,7 +1009,6 @@ const ListPost = () => {
                           </div>
 
                           <Button
-                            type="primary"
                             icon={<UploadOutlined />}
                             onClick={() => imageInputRef.current?.click()}
                             disabled={isEditMediaLoading || isSavingEdit}
