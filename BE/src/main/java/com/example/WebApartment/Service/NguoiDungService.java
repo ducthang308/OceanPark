@@ -10,7 +10,6 @@ import com.example.WebApartment.Repository.NguoiDungRepository;
 import com.example.WebApartment.Repository.VaiTroRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -26,6 +25,7 @@ public class NguoiDungService {
 
     private final NguoiDungRepository nguoiDungRepository;
     private final VaiTroRepository vaiTroRepository;
+    private final NguoiDungCodeService nguoiDungCodeService;
     private final PasswordEncoder passwordEncoder;
     private final Cloudinary cloudinary;
 
@@ -61,7 +61,7 @@ public class NguoiDungService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy vai trò với id: " + dto.getMaVaiTro()));
 
         NguoiDung entity = buildNguoiDungFromDto(dto, vaiTro);
-        entity.setMaNguoiDung(generateMaNguoiDung());
+        entity.setMaNguoiDung(nguoiDungCodeService.generateMaNguoiDung());
         entity.setTrangThai(true);
         entity.setMatKhau(passwordEncoder.encode(dto.getMatKhau()));
 
@@ -78,7 +78,7 @@ public class NguoiDungService {
         NguoiDung entity = buildNguoiDungFromDto(dto, vaiTro);
 
         if (entity.getMaNguoiDung() == null || entity.getMaNguoiDung().isBlank()) {
-            entity.setMaNguoiDung(generateMaNguoiDung());
+            entity.setMaNguoiDung(nguoiDungCodeService.generateMaNguoiDung());
         }
 
         if (entity.getTrangThai() == null) {
@@ -280,19 +280,6 @@ public class NguoiDungService {
                 .googleAccount(entity.getGoogleAccount())
                 .anhDaiDien(entity.getAnhDaiDien())
                 .build();
-    }
-
-    private String generateMaNguoiDung() {
-        List<String> list = nguoiDungRepository.findTopMaNguoiDung(PageRequest.of(0, 1));
-
-        if (list.isEmpty()) {
-            return "ND1";
-        }
-
-        String lastId = list.get(0); // VD: ND15
-
-        int number = Integer.parseInt(lastId.replace("ND", ""));
-        return "ND" + (number + 1);
     }
 
     public void forgotPassword(String email) {

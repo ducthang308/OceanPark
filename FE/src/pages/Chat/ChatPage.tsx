@@ -44,6 +44,7 @@ const ChatPage: React.FC = () => {
     isConnected,
     recentRooms,
     markAllAsRead,
+    markRoomAsRead,
     loadRooms: loadGlobalRooms,
   } = useChatNotifications();
 
@@ -79,6 +80,8 @@ const ChatPage: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const pendingScrollBehaviorRef = useRef<ScrollBehavior | null>(null);
   const stickToBottomRef = useRef(true);
+  const selectRoomRequestRef = useRef(0);
+  const pendingClickedRoomIdRef = useRef<string | null>(null);
 
   // Phân biệt layout Admin hay Client
   const isAdminLayout = location.pathname.startsWith('/admin');
@@ -238,6 +241,13 @@ const ChatPage: React.FC = () => {
         const newMsg = JSON.parse(frame.body) as ChatMessageDTO;
         console.log('Received WebSocket message:', newMsg);
 
+        if (
+          activeSubscriptionRoomIdRef.current !== roomId ||
+          newMsg.maPhongChat !== roomId
+        ) {
+          return;
+        }
+
         appendMessage(newMsg);
 
         // Cập nhật tin nhắn cuối cùng trên danh sách phòng
@@ -270,6 +280,10 @@ const ChatPage: React.FC = () => {
 
   // Lựa chọn phòng để chat
   const handleSelectRoom = async (room: ChatRoomDTO) => {
+    const requestId = selectRoomRequestRef.current + 1;
+    selectRoomRequestRef.current = requestId;
+    pendingClickedRoomIdRef.current = room.maPhongChat;
+
     if (activeSubscriptionRef.current) {
       activeSubscriptionRef.current.unsubscribe();
       activeSubscriptionRef.current = null;
@@ -279,11 +293,19 @@ const ChatPage: React.FC = () => {
     setActiveRoom(room);
     setLoadingMessages(true);
     setApartmentDetails(null);
+    setLatestMessageId(null);
+    messagesRef.current = [];
+    pendingScrollBehaviorRef.current = 'auto';
+    setMessages([]);
+    clearSelectedImage();
+    markRoomAsRead(room.maPhongChat);
     setSearchParams({ room: room.maPhongChat }, { replace: true });
 
     try {
       // 1. Tải lịch sử tin nhắn
       const history = await getMessages(room.maPhongChat);
+      if (selectRoomRequestRef.current !== requestId) return;
+
       messagesRef.current = history;
       pendingScrollBehaviorRef.current = 'auto';
       setLatestMessageId(null);
@@ -291,17 +313,30 @@ const ChatPage: React.FC = () => {
 
       // 2. Tải thông tin chi tiết bài viết (nếu có đính kèm căn hộ)
       if (room.maBaiDang) {
-        void loadApartmentSnippet(room.maBaiDang);
+        void loadApartmentSnippet(room.maBaiDang, requestId);
       }
     } catch (error) {
-      console.error('Lỗi khi mở phòng chat:', error);
+      if (selectRoomRequestRef.current === requestId) {
+        console.error('Lỗi khi mở phòng chat:', error);
+      }
     } finally {
-      setLoadingMessages(false);
+      if (selectRoomRequestRef.current === requestId) {
+        setLoadingMessages(false);
+      }
     }
   };
 
   useEffect(() => {
     if (!targetRoomId || loadingRooms) return;
+
+    if (pendingClickedRoomIdRef.current) {
+      if (targetRoomId === pendingClickedRoomIdRef.current) {
+        pendingClickedRoomIdRef.current = null;
+      }
+
+      return;
+    }
+
     if (activeRoom?.maPhongChat === targetRoomId) return;
 
     const target = rooms.find((room) => room.maPhongChat === targetRoomId);
@@ -316,7 +351,7 @@ const ChatPage: React.FC = () => {
   }, [activeRoom?.maPhongChat, isConnected, stompClient, loadingMessages]);
 
   // Tải chi tiết căn hộ để hiển thị Horizontal Card
-  const loadApartmentSnippet = async (maBaiDang: string) => {
+  const loadApartmentSnippet = async (maBaiDang: string, requestId: number) => {
     try {
       const [detailRes, imagesRes, postRes] = await Promise.all([
         getApartmentDetailByPost(maBaiDang).catch(() => null),
@@ -332,9 +367,13 @@ const ChatPage: React.FC = () => {
         coverImage: imagesRes[0]?.thumbnailUrl || imagesRes[0]?.duongDan,
       };
 
-      setApartmentDetails(snippet);
+      if (selectRoomRequestRef.current === requestId) {
+        setApartmentDetails(snippet);
+      }
     } catch (e) {
-      console.error('Không tải được thông tin snippet căn hộ:', e);
+      if (selectRoomRequestRef.current === requestId) {
+        console.error('Không tải được thông tin snippet căn hộ:', e);
+      }
     }
   };
 
@@ -483,11 +522,20 @@ const ChatPage: React.FC = () => {
 
   // Nút quay lại danh sách trên mobile
   const handleBackToSidebar = () => {
+    selectRoomRequestRef.current += 1;
+    pendingClickedRoomIdRef.current = null;
     setActiveRoom(null);
+    setLoadingMessages(false);
+    setApartmentDetails(null);
+    setLatestMessageId(null);
+    messagesRef.current = [];
+    setMessages([]);
+    clearSelectedImage();
     setSearchParams({});
     if (activeSubscriptionRef.current) {
       activeSubscriptionRef.current.unsubscribe();
       activeSubscriptionRef.current = null;
+      activeSubscriptionRoomIdRef.current = null;
     }
   };
 

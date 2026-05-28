@@ -222,8 +222,10 @@ export const ChatNotificationProvider: React.FC<ChatNotificationProviderProps> =
         setIsConnected(true);
         void loadRoomsRef.current();
       },
-      (error) => {
-        console.error('Lỗi kết nối Chat Notification STOMP:', error);
+      () => {
+        setIsConnected(false);
+      },
+      () => {
         setIsConnected(false);
       },
     );

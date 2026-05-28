@@ -33,6 +33,7 @@ interface PostDetailView {
   title: string;
   priceText: string;
   areaText: string;
+  directionText: string;
   addressText: string;
   wardText: string;
   categoryLabel: string;
@@ -109,6 +110,7 @@ const findMockPost = (id?: string): PostDetailView | null => {
   return {
     ...post,
     id: String(post.id),
+    directionText: 'Đang cập nhật',
     gallery: post.gallery.length > 0 ? post.gallery : [post.coverImage || fallbackRoomImage],
     coverImage: post.coverImage || post.gallery[0] || fallbackRoomImage,
     ownerAvatar: null,
@@ -137,6 +139,7 @@ const buildApiPostDetail = (
   const sortedImages = [...images].sort((a, b) => (a.thuTu ?? 0) - (b.thuTu ?? 0));
   const gallery = getPostImageUrls(sortedImages);
   const videoUrls = getPostVideoUrls(sortedImages);
+  const directionText = detail?.huongCanHo?.trim() || 'Đang cập nhật';
   const wardText = detail?.phuong?.trim() || 'Đang cập nhật';
   const addressText =
     [detail?.diaChiCuThe, detail?.phuong].filter(Boolean).join(', ') ||
@@ -147,6 +150,7 @@ const buildApiPostDetail = (
     title: post.tieuDe?.trim() || 'Bài đăng chưa có tiêu đề',
     priceText: formatCurrency(detail?.gia),
     areaText: formatArea(detail?.dienTich),
+    directionText,
     addressText,
     wardText,
     categoryLabel: category?.tenDanhMuc || post.maDanhMuc || 'Danh mục',
@@ -351,6 +355,7 @@ const PostDetail: React.FC = () => {
     return [
       { label: 'Mức giá', value: post.priceText },
       { label: 'Diện tích', value: post.areaText },
+      { label: 'Hướng căn hộ', value: post.directionText },
       { label: 'Khu vực', value: post.wardText },
       { label: 'Loại tin', value: post.categoryLabel },
       { label: 'Đăng lúc', value: post.postedAtText },
@@ -392,13 +397,19 @@ const PostDetail: React.FC = () => {
       const payment = await createSepayPayment({
         maNguoiDung,
         maBaiDang: post.id,
+        // maBaiDangList: [post.id],
         loaiHoaDon: 'THUE_CAN_HO',
         soTien,
         ghiChu: `Thanh toán thuê căn hộ ${post.title}`,
       });
 
       navigate('/payment/sepay', {
-        state: payment,
+        state: {
+          ...payment,
+          loaiHoaDon: 'THUE_CAN_HO',
+          maBaiDang: post.id,
+          // maBaiDangList: [post.id],
+        },
       });
     } catch (error: any) {
       console.error(error);

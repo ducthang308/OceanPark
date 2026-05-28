@@ -1,4 +1,11 @@
-import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type KeyboardEvent,
+} from "react";
 import {
   Button,
   Form,
@@ -8,31 +15,42 @@ import {
   Modal,
   Select,
   Spin,
+  Tabs,
   Tag,
 } from "antd";
 import {
   CameraOutlined,
+  DeleteOutlined,
   EditOutlined,
   EyeOutlined,
   HomeOutlined,
+  PictureOutlined,
   SearchOutlined,
+  UploadOutlined,
+  VideoCameraOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../../../../components/layout/Navbar/navbar";
 import "./listPost.css";
 import cloverImg from "../../../../assets/img/co4la.png";
 import {
+  deletePostMedia,
   getApartmentDetailByPost,
   getCategories,
   getPostImages,
-  getPostImageUrls,
-  getPostVideoUrls,
+  getPostImageAssets,
+  getPostImageUrl,
+  getPostMediaUrl,
+  getPostVideoAssets,
   getPostById,
   getPosts,
   updatePost,
   updateApartmentDetail,
+  uploadPostImages,
+  uploadPostVideo,
   type DanhMucDTO,
   type BaiDangDTO,
+  type HinhAnhBaiDangDTO,
 } from "../../../../services/api/PostManagementService";
 
 interface PostItem {
@@ -45,6 +63,8 @@ interface PostItem {
   thumbnail?: string;
   imageCount: number;
   videoCount: number;
+  imageAssets: HinhAnhBaiDangDTO[];
+  videoAssets: HinhAnhBaiDangDTO[];
   status: string;
   type: string;
   createdAt?: string;
@@ -64,6 +84,18 @@ interface PostItem {
   rawLng?: number;
 }
 
+interface PendingImageUpload {
+  id: string;
+  file: File;
+  url: string;
+}
+
+interface PendingVideoUpload {
+  file: File;
+  url: string;
+  name: string;
+}
+
 interface EditPostFormValues {
   tieuDe: string;
   noiDung?: string;
@@ -78,6 +110,16 @@ interface EditPostFormValues {
   lat?: number;
   lng?: number;
 }
+
+const MAX_EDIT_IMAGE_COUNT = 20;
+const MAX_EDIT_IMAGE_SIZE = 10 * 1024 * 1024;
+const MAX_EDIT_VIDEO_SIZE = 50 * 1024 * 1024;
+
+const sortMediaByOrder = (media: HinhAnhBaiDangDTO[]) =>
+  [...media].sort((a, b) => (a.thuTu ?? 0) - (b.thuTu ?? 0));
+
+const getMediaKey = (media: HinhAnhBaiDangDTO, index: number) =>
+  media.maHinhAnhBaiDang || media.duongDan || media.thumbnailUrl || `media-${index}`;
 
 const formatDate = (dateStr?: string) => {
   if (!dateStr) return "Chưa có";
@@ -94,6 +136,8 @@ const mapStatusText = (status?: string) => {
     case "HIDDEN":
     case "INACTIVE":
       return "ẨN TIN";
+    case "DA_THUE":
+      return "ĐÃ THUÊ";
     case "PENDING":
       return "CHỜ DUYỆT";
     case "REJECTED":
@@ -114,6 +158,8 @@ const getStatusColor = (status: string) => {
       return "processing";
     case "CHỜ THANH TOÁN":
       return "gold";
+    case "ĐÃ THUÊ":
+      return "purple";
     case "TỪ CHỐI":
     case "HẾT HẠN":
       return "red";
@@ -126,6 +172,7 @@ const getStatusColor = (status: string) => {
 
 const PENDING_POST_IDS_KEY_PREFIX = "pendingPostIds:";
 const PUBLIC_POST_STATUSES = new Set(["ACTIVE", "APPROVED"]);
+const FINAL_POST_STATUSES = new Set(["ĐÃ THUÊ", "TỪ CHỐI"]);
 
 const getLocalPendingPostIds = (maNguoiDung: string) => {
   const rawValue = localStorage.getItem(`${PENDING_POST_IDS_KEY_PREFIX}${maNguoiDung}`);
@@ -174,6 +221,57 @@ const ListPost = () => {
   const [editingPost, setEditingPost] = useState<PostItem | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [isEditMediaLoading, setIsEditMediaLoading] = useState(false);
+  const [editingImages, setEditingImages] = useState<HinhAnhBaiDangDTO[]>([]);
+  const [editingVideos, setEditingVideos] = useState<HinhAnhBaiDangDTO[]>([]);
+  const [removedMediaIds, setRemovedMediaIds] = useState<string[]>([]);
+  const [newImages, setNewImages] = useState<PendingImageUpload[]>([]);
+  const [newVideo, setNewVideo] = useState<PendingVideoUpload | null>(null);
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
+  const videoInputRef = useRef<HTMLInputElement | null>(null);
+  const pendingObjectUrlsRef = useRef<Set<string>>(new Set());
+  const editMediaRequestRef = useRef(0);
+
+  const createPendingObjectUrl = (file: File) => {
+    const url = URL.createObjectURL(file);
+    pendingObjectUrlsRef.current.add(url);
+    return url;
+  };
+
+  const revokePendingObjectUrl = (url: string) => {
+    URL.revokeObjectURL(url);
+    pendingObjectUrlsRef.current.delete(url);
+  };
+
+  const revokeAllPendingObjectUrls = () => {
+    pendingObjectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    pendingObjectUrlsRef.current.clear();
+  };
+
+  const resetEditMediaState = () => {
+    editMediaRequestRef.current += 1;
+    revokeAllPendingObjectUrls();
+    setEditingImages([]);
+    setEditingVideos([]);
+    setRemovedMediaIds([]);
+    setNewImages([]);
+    setNewVideo(null);
+
+    if (imageInputRef.current) {
+      imageInputRef.current.value = "";
+    }
+
+    if (videoInputRef.current) {
+      videoInputRef.current.value = "";
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      pendingObjectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+      pendingObjectUrlsRef.current.clear();
+    };
+  }, []);
 
   const loadPosts = async () => {
     const maNguoiDung = localStorage.getItem("userId");
@@ -224,9 +322,9 @@ const ListPost = () => {
               : Promise.resolve(null),
             maBaiDang ? getPostImages(maBaiDang).catch(() => []) : Promise.resolve([]),
           ]);
-          const sortedMedia = [...images].sort((a, b) => (a.thuTu ?? 0) - (b.thuTu ?? 0));
-          const gallery = getPostImageUrls(sortedMedia);
-          const videoUrls = getPostVideoUrls(sortedMedia);
+          const sortedMedia = sortMediaByOrder(images);
+          const imageAssets = getPostImageAssets(sortedMedia);
+          const videoAssets = getPostVideoAssets(sortedMedia);
 
           return {
             id: maBaiDang,
@@ -237,9 +335,11 @@ const ListPost = () => {
             area: detail?.dienTich ? `${detail.dienTich} m²` : "Chưa có diện tích",
             location: detail?.diaChiCuThe || detail?.phuong || "Chưa có địa chỉ",
             postId: maBaiDang,
-            thumbnail: gallery[0],
-            imageCount: gallery.length,
-            videoCount: videoUrls.length,
+            thumbnail: imageAssets[0] ? getPostImageUrl(imageAssets[0]) : undefined,
+            imageCount: imageAssets.length,
+            videoCount: videoAssets.length,
+            imageAssets,
+            videoAssets,
             status: mapStatusText(post.trangThai),
             type:
               categoryMap.get(post.maDanhMuc || "") ||
@@ -320,8 +420,36 @@ const ListPost = () => {
     }
   };
 
+  const loadEditMedia = async (maBaiDang: string) => {
+    const requestId = editMediaRequestRef.current + 1;
+    editMediaRequestRef.current = requestId;
+
+    try {
+      setIsEditMediaLoading(true);
+      const media = await getPostImages(maBaiDang);
+      const sortedMedia = sortMediaByOrder(media);
+
+      if (requestId !== editMediaRequestRef.current) return;
+
+      setEditingImages(getPostImageAssets(sortedMedia));
+      setEditingVideos(getPostVideoAssets(sortedMedia));
+    } catch (error) {
+      if (requestId !== editMediaRequestRef.current) return;
+
+      console.error(error);
+      message.error("Không tải được ảnh và video của bài đăng");
+    } finally {
+      if (requestId === editMediaRequestRef.current) {
+        setIsEditMediaLoading(false);
+      }
+    }
+  };
+
   const openEditModal = (post: PostItem) => {
+    resetEditMediaState();
     setEditingPost(post);
+    setEditingImages(post.imageAssets);
+    setEditingVideos(post.videoAssets);
     form.setFieldsValue({
       tieuDe: post.title,
       noiDung: post.noiDung,
@@ -337,12 +465,132 @@ const ListPost = () => {
       lng: post.rawLng,
     });
     setIsEditModalOpen(true);
+    void loadEditMedia(post.id);
   };
 
   const closeEditModal = () => {
     setIsEditModalOpen(false);
     setEditingPost(null);
+    resetEditMediaState();
     form.resetFields();
+  };
+
+  const addRemovedMediaId = (mediaId?: string) => {
+    if (!mediaId) return;
+
+    setRemovedMediaIds((prev) => Array.from(new Set([...prev, mediaId])));
+  };
+
+  const handleSelectEditImages = (event: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+
+    if (files.length === 0) return;
+
+    if (editingImages.length + newImages.length + files.length > MAX_EDIT_IMAGE_COUNT) {
+      message.error(`Bạn chỉ được giữ tối đa ${MAX_EDIT_IMAGE_COUNT} ảnh trong một bài đăng`);
+      event.target.value = "";
+      return;
+    }
+
+    const invalidType = files.find((file) => file.type && !file.type.startsWith("image/"));
+    if (invalidType) {
+      message.error("Vui lòng chọn đúng định dạng ảnh");
+      event.target.value = "";
+      return;
+    }
+
+    const invalidSize = files.find((file) => file.size > MAX_EDIT_IMAGE_SIZE);
+    if (invalidSize) {
+      message.error("Dung lượng mỗi ảnh tối đa 10MB");
+      event.target.value = "";
+      return;
+    }
+
+    const pendingImages = files.map((file) => ({
+      id: Math.random().toString(36).slice(2, 11),
+      file,
+      url: createPendingObjectUrl(file),
+    }));
+
+    setNewImages((prev) => [...prev, ...pendingImages]);
+    event.target.value = "";
+  };
+
+  const handleRemoveExistingImage = (media: HinhAnhBaiDangDTO) => {
+    addRemovedMediaId(media.maHinhAnhBaiDang);
+    setEditingImages((prev) => prev.filter((item) => item !== media));
+  };
+
+  const handleRemoveNewImage = (imageId: string) => {
+    setNewImages((prev) => {
+      const target = prev.find((image) => image.id === imageId);
+      if (target) {
+        revokePendingObjectUrl(target.url);
+      }
+
+      return prev.filter((image) => image.id !== imageId);
+    });
+  };
+
+  const handleSelectEditVideo = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    if (file.type && !file.type.startsWith("video/")) {
+      message.error("Vui lòng chọn đúng định dạng video");
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > MAX_EDIT_VIDEO_SIZE) {
+      message.error("Dung lượng video tối đa 50MB");
+      event.target.value = "";
+      return;
+    }
+
+    if (newVideo?.url) {
+      revokePendingObjectUrl(newVideo.url);
+    }
+
+    if (editingVideos.length > 0) {
+      setRemovedMediaIds((prev) =>
+        Array.from(
+          new Set([
+            ...prev,
+            ...editingVideos
+              .map((video) => video.maHinhAnhBaiDang)
+              .filter((id): id is string => Boolean(id)),
+          ])
+        )
+      );
+      setEditingVideos([]);
+      message.info("Video hiện tại sẽ được thay thế khi lưu thay đổi");
+    }
+
+    setNewVideo({
+      file,
+      url: createPendingObjectUrl(file),
+      name: file.name,
+    });
+    event.target.value = "";
+  };
+
+  const handleRemoveExistingVideo = (media: HinhAnhBaiDangDTO) => {
+    addRemovedMediaId(media.maHinhAnhBaiDang);
+    setEditingVideos((prev) => prev.filter((item) => item !== media));
+  };
+
+  const handleRemoveNewVideo = () => {
+    if (newVideo?.url) {
+      revokePendingObjectUrl(newVideo.url);
+    }
+
+    setNewVideo(null);
+
+    if (videoInputRef.current) {
+      videoInputRef.current.value = "";
+    }
   };
 
   const handleSaveEdit = async () => {
@@ -370,6 +618,23 @@ const ListPost = () => {
           lat: values.lat,
           lng: values.lng,
         });
+      }
+
+      const mediaIdsToDelete = Array.from(new Set(removedMediaIds));
+
+      if (mediaIdsToDelete.length > 0) {
+        await Promise.all(mediaIdsToDelete.map((mediaId) => deletePostMedia(mediaId)));
+      }
+
+      if (newImages.length > 0) {
+        await uploadPostImages(
+          editingPost.id,
+          newImages.map((image) => image.file)
+        );
+      }
+
+      if (newVideo) {
+        await uploadPostVideo(editingPost.id, newVideo.file);
       }
 
       message.success("Cập nhật bài đăng thành công");
@@ -507,31 +772,42 @@ const ListPost = () => {
                       Sửa tin
                     </Button>
 
-                    <Button
-                      className={`status-btn ${
-                        post.status === "ĐANG HIỂN THỊ" ? "rented" : "available"
-                      }`}
-                      icon={<HomeOutlined />}
-                      loading={updatingId === post.id}
-                      disabled={post.status === "CHỜ DUYỆT"}
-                      onClick={(event) => {
-                        event.stopPropagation();
+                    {FINAL_POST_STATUSES.has(post.status) ? (
+                      <div
+                        className={`post-status-display ${
+                          post.status === "ĐÃ THUÊ" ? "rented" : "rejected"
+                        }`}
+                      >
+                        <HomeOutlined />
+                        <span>{post.status}</span>
+                      </div>
+                    ) : (
+                      <Button
+                        className={`status-btn ${
+                          post.status === "ĐANG HIỂN THỊ" ? "rented" : "available"
+                        }`}
+                        icon={<HomeOutlined />}
+                        loading={updatingId === post.id}
+                        disabled={post.status === "CHỜ DUYỆT"}
+                        onClick={(event) => {
+                          event.stopPropagation();
 
-                        if (post.status === "ĐANG HIỂN THỊ" || post.status === "ẨN TIN") {
-                          toggleVisibility(post);
-                        } else {
-                          navigate(`/payment/${post.id}`);
-                        }
-                      }}
-                    >
-                      {post.status === "ĐANG HIỂN THỊ"
-                        ? "Ẩn tin"
-                        : post.status === "CHỜ DUYỆT"
-                          ? "Chờ duyệt"
-                          : post.status === "ẨN TIN"
-                            ? "Gửi duyệt lại"
-                            : "Mua gói đăng tin"}
-                    </Button>
+                          if (post.status === "ĐANG HIỂN THỊ" || post.status === "ẨN TIN") {
+                            toggleVisibility(post);
+                          } else {
+                            navigate(`/payment/${post.id}`);
+                          }
+                        }}
+                      >
+                        {post.status === "ĐANG HIỂN THỊ"
+                          ? "Ẩn tin"
+                          : post.status === "CHỜ DUYỆT"
+                            ? "Chờ duyệt"
+                            : post.status === "ẨN TIN"
+                              ? "Gửi duyệt lại"
+                              : "Mua gói đăng tin"}
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))
@@ -550,144 +826,357 @@ const ListPost = () => {
             okText="Lưu thay đổi"
             cancelText="Hủy"
             confirmLoading={isSavingEdit}
-            width={820}
+            okButtonProps={{ disabled: isEditMediaLoading }}
+            width={1040}
+            className="edit-post-modal"
             destroyOnHidden
           >
-            <Form form={form} layout="vertical" className="edit-post-form">
-              <Form.Item label="Danh mục">
-                <Select
-                  disabled
-                  value={editingPost?.maDanhMuc}
-                  options={categories.map((category) => ({
-                    label: category.tenDanhMuc,
-                    value: category.maDanhMuc,
-                  }))}
-                  placeholder="BE hiện chưa hỗ trợ sửa danh mục"
-                />
-              </Form.Item>
-
-              <Form.Item
-                name="tieuDe"
-                label="Tiêu đề"
-                rules={[{ required: true, message: "Vui lòng nhập tiêu đề" }]}
-              >
-                <Input placeholder="Nhập tiêu đề bài đăng" />
-              </Form.Item>
-
-              <Form.Item
-                name="noiDung"
-                label="Nội dung mô tả"
-                rules={[{ required: true, message: "Vui lòng nhập nội dung mô tả" }]}
-              >
-                <Input.TextArea rows={5} placeholder="Nhập nội dung mô tả" />
-              </Form.Item>
-
-              <div className="edit-post-grid">
-                <Form.Item
-                  name="gia"
-                  label="Giá cho thuê"
-                  rules={[{ required: true, message: "Vui lòng nhập giá" }]}
-                >
-                  <InputNumber
-                    min={0}
-                    addonAfter="đ/tháng"
-                    style={{ width: "100%" }}
-                    placeholder="Nhập giá"
-                  />
-                </Form.Item>
-
-                <Form.Item
-                  name="dienTich"
-                  label="Diện tích"
-                  rules={[{ required: true, message: "Vui lòng nhập diện tích" }]}
-                >
-                  <InputNumber
-                    min={0}
-                    addonAfter="m²"
-                    style={{ width: "100%" }}
-                    placeholder="Nhập diện tích"
-                  />
-                </Form.Item>
-
-                <Form.Item
-                  name="phongNgu"
-                  label="Phòng ngủ"
-                  rules={[{ required: true, message: "Vui lòng nhập số phòng ngủ" }]}
-                >
-                  <InputNumber
-                    min={0}
-                    style={{ width: "100%" }}
-                    placeholder="Nhập số phòng ngủ"
-                  />
-                </Form.Item>
-
-                <Form.Item
-                  name="phuongThucThanhToan"
-                  label="Phương thức thanh toán"
-                  rules={[
-                    { required: true, message: "Vui lòng chọn phương thức thanh toán" },
-                  ]}
-                >
-                  <Select
-                    placeholder="Chọn phương thức thanh toán"
-                    options={[
-                      { label: "Tiền mặt", value: "Cash" },
-                      { label: "Chuyển khoản", value: "Transfer" },
-                    ]}
-                  />
-                </Form.Item>
+            <div className="edit-post-summary">
+              <div>
+                <span>Mã tin</span>
+                <strong>{editingPost?.postId || "Chưa có"}</strong>
               </div>
-
-              <Form.Item
-                name="diaChiCuThe"
-                label="Địa chỉ cụ thể"
-                rules={[{ required: true, message: "Vui lòng nhập địa chỉ" }]}
-              >
-                <Input placeholder="Nhập địa chỉ cụ thể" />
-              </Form.Item>
-
-              <div className="edit-post-grid">
-                <Form.Item
-                  name="phuong"
-                  label="Phường"
-                  rules={[{ required: true, message: "Vui lòng nhập phường" }]}
-                >
-                  <Input placeholder="Nhập phường" />
-                </Form.Item>
-
-                <Form.Item
-                  name="huongCanHo"
-                  label="Hướng căn hộ"
-                  rules={[{ required: true, message: "Vui lòng chọn hướng căn hộ" }]}
-                >
-                  <Select
-                    placeholder="Chọn hướng căn hộ"
-                    options={[
-                      "Đông",
-                      "Tây",
-                      "Nam",
-                      "Bắc",
-                      "Đông Bắc",
-                      "Đông Nam",
-                      "Tây Bắc",
-                      "Tây Nam",
-                    ].map((item) => ({ label: item, value: item }))}
-                  />
-                </Form.Item>
-
-                <Form.Item name="lat" label="Latitude">
-                  <InputNumber style={{ width: "100%" }} placeholder="Vĩ độ" />
-                </Form.Item>
-
-                <Form.Item name="lng" label="Longitude">
-                  <InputNumber style={{ width: "100%" }} placeholder="Kinh độ" />
-                </Form.Item>
+              <div>
+                <span>Trạng thái</span>
+                <Tag color={editingPost ? getStatusColor(editingPost.status) : "default"}>
+                  {editingPost?.status || "Chưa có"}
+                </Tag>
               </div>
+              <div>
+                <span>Media</span>
+                <strong>
+                  {editingImages.length + newImages.length} ảnh ·{" "}
+                  {editingVideos.length + (newVideo ? 1 : 0)} video
+                </strong>
+              </div>
+            </div>
 
-              <Form.Item name="lienHe" label="Liên hệ">
-                <Input placeholder="Số điện thoại liên hệ" />
-              </Form.Item>
-            </Form>
+            <Tabs
+              className="edit-post-tabs"
+              defaultActiveKey="info"
+              items={[
+                {
+                  key: "info",
+                  label: "Thông tin",
+                  children: (
+                    <Form form={form} layout="vertical" className="edit-post-form">
+                      <Form.Item label="Danh mục">
+                        <Select
+                          disabled
+                          value={editingPost?.maDanhMuc}
+                          options={categories.map((category) => ({
+                            label: category.tenDanhMuc,
+                            value: category.maDanhMuc,
+                          }))}
+                          placeholder="BE hiện chưa hỗ trợ sửa danh mục"
+                        />
+                      </Form.Item>
+
+                      <Form.Item
+                        name="tieuDe"
+                        label="Tiêu đề"
+                        rules={[{ required: true, message: "Vui lòng nhập tiêu đề" }]}
+                      >
+                        <Input placeholder="Nhập tiêu đề bài đăng" />
+                      </Form.Item>
+
+                      <Form.Item
+                        name="noiDung"
+                        label="Nội dung mô tả"
+                        rules={[{ required: true, message: "Vui lòng nhập nội dung mô tả" }]}
+                      >
+                        <Input.TextArea rows={5} placeholder="Nhập nội dung mô tả" />
+                      </Form.Item>
+
+                      <div className="edit-post-grid">
+                        <Form.Item
+                          name="gia"
+                          label="Giá cho thuê"
+                          rules={[{ required: true, message: "Vui lòng nhập giá" }]}
+                        >
+                          <InputNumber
+                            min={0}
+                            addonAfter="đ/tháng"
+                            style={{ width: "100%" }}
+                            placeholder="Nhập giá"
+                          />
+                        </Form.Item>
+
+                        <Form.Item
+                          name="dienTich"
+                          label="Diện tích"
+                          rules={[{ required: true, message: "Vui lòng nhập diện tích" }]}
+                        >
+                          <InputNumber
+                            min={0}
+                            addonAfter="m²"
+                            style={{ width: "100%" }}
+                            placeholder="Nhập diện tích"
+                          />
+                        </Form.Item>
+
+                        <Form.Item
+                          name="phongNgu"
+                          label="Phòng ngủ"
+                          rules={[{ required: true, message: "Vui lòng nhập số phòng ngủ" }]}
+                        >
+                          <InputNumber
+                            min={0}
+                            style={{ width: "100%" }}
+                            placeholder="Nhập số phòng ngủ"
+                          />
+                        </Form.Item>
+
+                        <Form.Item
+                          name="phuongThucThanhToan"
+                          label="Phương thức thanh toán"
+                          rules={[
+                            { required: true, message: "Vui lòng chọn phương thức thanh toán" },
+                          ]}
+                        >
+                          <Select
+                            placeholder="Chọn phương thức thanh toán"
+                            options={[
+                              { label: "Tiền mặt", value: "Cash" },
+                              { label: "Chuyển khoản", value: "Transfer" },
+                            ]}
+                          />
+                        </Form.Item>
+                      </div>
+
+                      <Form.Item
+                        name="diaChiCuThe"
+                        label="Địa chỉ cụ thể"
+                        rules={[{ required: true, message: "Vui lòng nhập địa chỉ" }]}
+                      >
+                        <Input placeholder="Nhập địa chỉ cụ thể" />
+                      </Form.Item>
+
+                      <div className="edit-post-grid">
+                        <Form.Item
+                          name="phuong"
+                          label="Phường"
+                          rules={[{ required: true, message: "Vui lòng nhập phường" }]}
+                        >
+                          <Input placeholder="Nhập phường" />
+                        </Form.Item>
+
+                        <Form.Item
+                          name="huongCanHo"
+                          label="Hướng căn hộ"
+                          rules={[{ required: true, message: "Vui lòng chọn hướng căn hộ" }]}
+                        >
+                          <Select
+                            placeholder="Chọn hướng căn hộ"
+                            options={[
+                              "Đông",
+                              "Tây",
+                              "Nam",
+                              "Bắc",
+                              "Đông Bắc",
+                              "Đông Nam",
+                              "Tây Bắc",
+                              "Tây Nam",
+                            ].map((item) => ({ label: item, value: item }))}
+                          />
+                        </Form.Item>
+
+                        <Form.Item name="lat" label="Latitude">
+                          <InputNumber style={{ width: "100%" }} placeholder="Vĩ độ" />
+                        </Form.Item>
+
+                        <Form.Item name="lng" label="Longitude">
+                          <InputNumber style={{ width: "100%" }} placeholder="Kinh độ" />
+                        </Form.Item>
+                      </div>
+
+                      <Form.Item name="lienHe" label="Liên hệ">
+                        <Input placeholder="Số điện thoại liên hệ" />
+                      </Form.Item>
+                    </Form>
+                  ),
+                },
+                {
+                  key: "media",
+                  label: "Ảnh & video",
+                  children: (
+                    <div className="edit-media-layout">
+                      <section className="edit-media-section">
+                        <div className="edit-media-header">
+                          <div>
+                            <h3>Hình ảnh</h3>
+                            <span>{editingImages.length + newImages.length}/20 ảnh</span>
+                          </div>
+
+                          <Button
+                            icon={<UploadOutlined />}
+                            onClick={() => imageInputRef.current?.click()}
+                            disabled={isEditMediaLoading || isSavingEdit}
+                          >
+                            Thêm ảnh
+                          </Button>
+                          <input
+                            ref={imageInputRef}
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            hidden
+                            onChange={handleSelectEditImages}
+                          />
+                        </div>
+
+                        <div className="edit-media-help">
+                          Tối đa 20 ảnh, mỗi ảnh không quá 10MB.
+                        </div>
+
+                        {isEditMediaLoading ? (
+                          <div className="edit-media-loading">
+                            <Spin />
+                          </div>
+                        ) : editingImages.length + newImages.length > 0 ? (
+                          <div className="edit-image-grid">
+                            {editingImages.map((image, index) => (
+                              <div
+                                key={getMediaKey(image, index)}
+                                className="edit-image-card"
+                              >
+                                <img
+                                  src={getPostImageUrl(image) || cloverImg}
+                                  alt={`Ảnh bài đăng ${index + 1}`}
+                                  onError={(event) => {
+                                    event.currentTarget.src = cloverImg;
+                                  }}
+                                />
+                                <Tag color="blue" className="edit-media-tag">
+                                  Hiện có
+                                </Tag>
+                                <Button
+                                  danger
+                                  type="primary"
+                                  shape="circle"
+                                  icon={<DeleteOutlined />}
+                                  aria-label="Xóa ảnh"
+                                  className="edit-media-delete"
+                                  onClick={() => handleRemoveExistingImage(image)}
+                                />
+                              </div>
+                            ))}
+
+                            {newImages.map((image, index) => (
+                              <div
+                                key={image.id}
+                                className="edit-image-card edit-image-card--new"
+                              >
+                                <img src={image.url} alt={`Ảnh mới ${index + 1}`} />
+                                <Tag color="green" className="edit-media-tag">
+                                  Mới
+                                </Tag>
+                                <Button
+                                  danger
+                                  type="primary"
+                                  shape="circle"
+                                  icon={<DeleteOutlined />}
+                                  aria-label="Xóa ảnh mới"
+                                  className="edit-media-delete"
+                                  onClick={() => handleRemoveNewImage(image.id)}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="edit-media-empty">
+                            <PictureOutlined />
+                            <span>Chưa có ảnh nào</span>
+                          </div>
+                        )}
+                      </section>
+
+                      <section className="edit-media-section">
+                        <div className="edit-media-header">
+                          <div>
+                            <h3>Video</h3>
+                            <span>{editingVideos.length + (newVideo ? 1 : 0)}/1 video</span>
+                          </div>
+
+                          <Button
+                            icon={<VideoCameraOutlined />}
+                            onClick={() => videoInputRef.current?.click()}
+                            disabled={isEditMediaLoading || isSavingEdit}
+                          >
+                            {editingVideos.length > 0 || newVideo ? "Thay video" : "Thêm video"}
+                          </Button>
+                          <input
+                            ref={videoInputRef}
+                            type="file"
+                            accept="video/*"
+                            hidden
+                            onChange={handleSelectEditVideo}
+                          />
+                        </div>
+
+                        <div className="edit-media-help">
+                          Tối đa 1 video, dung lượng không quá 50MB.
+                        </div>
+
+                        {isEditMediaLoading ? (
+                          <div className="edit-media-loading">
+                            <Spin />
+                          </div>
+                        ) : editingVideos.length + (newVideo ? 1 : 0) > 0 ? (
+                          <div className="edit-video-list">
+                            {editingVideos.map((video, index) => (
+                              <div
+                                key={getMediaKey(video, index)}
+                                className="edit-video-card"
+                              >
+                                <video
+                                  src={getPostMediaUrl(video)}
+                                  poster={video.thumbnailUrl}
+                                  controls
+                                  preload="metadata"
+                                />
+                                <div className="edit-video-meta">
+                                  <Tag color="geekblue">Hiện có</Tag>
+                                  <Button
+                                    danger
+                                    icon={<DeleteOutlined />}
+                                    onClick={() => handleRemoveExistingVideo(video)}
+                                  >
+                                    Xóa video
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+
+                            {newVideo && (
+                              <div className="edit-video-card edit-video-card--new">
+                                <video src={newVideo.url} controls preload="metadata" />
+                                <div className="edit-video-meta">
+                                  <Tag color="green">Mới</Tag>
+                                  <strong>{newVideo.name}</strong>
+                                  <Button
+                                    danger
+                                    icon={<DeleteOutlined />}
+                                    onClick={handleRemoveNewVideo}
+                                  >
+                                    Xóa video
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="edit-media-empty">
+                            <VideoCameraOutlined />
+                            <span>Chưa có video</span>
+                          </div>
+                        )}
+                      </section>
+                    </div>
+                  ),
+                },
+              ]}
+            />
           </Modal>
         </div>
       </div>

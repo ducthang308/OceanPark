@@ -90,7 +90,7 @@ const Header: React.FC = () => {
       {
         key: '3',
         label: 'Căn hộ cao cấp',
-        to: '/danh-muc/can-ho',
+        to: '/danh-muc/can-ho-cao-cap',
       },
       {
         key: '4',
@@ -157,12 +157,12 @@ const Header: React.FC = () => {
         to: '/history?tab=recharge',
         allowedRoles: LANDLORD_ROLE_IDS,
       },
-      {
-        key: 'topup',
-        label: 'Nạp tiền',
-        to: '/recharge/payoo',
-        allowedRoles: LANDLORD_ROLE_IDS,
-      },
+      // {
+      //   key: 'topup',
+      //   label: 'Nạp tiền',
+      //   to: '/recharge/payoo',
+      //   allowedRoles: LANDLORD_ROLE_IDS,
+      // },
       { key: 'logout', label: 'Đăng xuất', action: 'logout' },
     ],
     [],

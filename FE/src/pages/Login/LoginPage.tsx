@@ -132,13 +132,6 @@ const LoginPage = () => {
                                     />
                                     Google
                                 </button>
-                                <button className="facebook-btn">
-                                    <img
-                                        src="https://img.icons8.com/color/24/000000/facebook-new.png"
-                                        alt="Facebook"
-                                    />
-                                    Facebook
-                                </button>
                             </div>
                         </>
                     ) : (

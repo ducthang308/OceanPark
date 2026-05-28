@@ -95,6 +95,7 @@ export class StompClient {
   private subCounter = 0;
   private onConnectCallback?: () => void;
   private onErrorCallback?: (err: any) => void;
+  private onDisconnectCallback?: () => void;
   private reconnectTimeout?: number;
   private isDisconnecting = false;
   private reconnectDelay = 2000;
@@ -110,10 +111,11 @@ export class StompClient {
   /**
    * Kết nối tới STOMP broker qua WebSocket
    */
-  public connect(onConnect?: () => void, onError?: (err: any) => void) {
+  public connect(onConnect?: () => void, onError?: (err: any) => void, onDisconnect?: () => void) {
     this.isDisconnecting = false;
     this.onConnectCallback = onConnect;
     this.onErrorCallback = onError;
+    this.onDisconnectCallback = onDisconnect;
 
     try {
       this.ws = new WebSocket(this.url);
@@ -250,12 +252,19 @@ export class StompClient {
 
   private handleClose() {
     this.connected = false;
-    if (!this.isDisconnecting) {
-      this.triggerReconnect();
+
+    if (this.isDisconnecting) return;
+
+    if (this.onDisconnectCallback) {
+      this.onDisconnectCallback();
     }
+
+    this.triggerReconnect();
   }
 
   private handleError(err: any) {
+    if (this.isDisconnecting) return;
+
     console.error('STOMP WebSocket error:', err);
     if (this.onErrorCallback) {
       this.onErrorCallback(err);
@@ -273,7 +282,7 @@ export class StompClient {
       console.log(`Reconnecting to WebSocket at ${this.url}...`);
       // Nhân đôi thời gian chờ cho các lần sau (max 16s)
       this.reconnectDelay = Math.min(this.reconnectDelay * 2, 16000);
-      this.connect(this.onConnectCallback, this.onErrorCallback);
+      this.connect(this.onConnectCallback, this.onErrorCallback, this.onDisconnectCallback);
     }, this.reconnectDelay);
   }
 }
