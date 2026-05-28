@@ -82,6 +82,7 @@ export const getAllWithdrawRequests = async () => {
 export const approveWithdrawRequest = async (maYeuCauRutTien: string) => {
   const res = await axiosClient.put<YeuCauRutTienDTO>(
     `/api/v1/vi-nguoi-cho-thue/rut-tien/${maYeuCauRutTien}/approve`,
+    {},
   );
   return res.data;
 };
@@ -89,6 +90,7 @@ export const approveWithdrawRequest = async (maYeuCauRutTien: string) => {
 export const rejectWithdrawRequest = async (maYeuCauRutTien: string) => {
   const res = await axiosClient.put<YeuCauRutTienDTO>(
     `/api/v1/vi-nguoi-cho-thue/rut-tien/${maYeuCauRutTien}/reject`,
+    {},
   );
   return res.data;
 };

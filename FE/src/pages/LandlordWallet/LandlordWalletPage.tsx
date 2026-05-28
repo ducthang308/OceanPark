@@ -373,7 +373,7 @@ const LandlordWalletPage = () => {
             <div className="landlord-wallet-panel__header">
               <div>
                 <h2>Tạo yêu cầu rút tiền</h2>
-                <p>Số tiền sẽ chuyển từ khả dụng sang chờ rút sau khi gửi yêu cầu.</p>
+                <p>Số tiền sẽ chuyển từ khả dụng sang chờ rút sau khi gửi yêu cầu. Admin sẽ chuyển khoản thủ công theo thông tin ngân hàng của bạn.</p>
               </div>
               <BankOutlined />
             </div>

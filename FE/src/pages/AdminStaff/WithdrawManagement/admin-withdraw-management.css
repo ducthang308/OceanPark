@@ -48,6 +48,11 @@
   margin-bottom: 18px;
 }
 
+.admin-withdraw-note {
+  margin-bottom: 18px;
+  border-radius: 8px;
+}
+
 .admin-withdraw-summary-card {
   min-height: 144px;
   padding: 18px;
