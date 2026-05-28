@@ -142,7 +142,7 @@ const RegisterForm = ({ onRegisterSuccess }: RegisterFormProps) => {
                     <a href="#"> quy định sử dụng</a> cũng như
                     <a href="#"> chính sách bảo mật</a> của chúng tôi
                 </p>
-                <p>Bản quyền © 2015 - 2025 PhongtroHuyThang.com</p>
+                <p>Bản quyền © 2025 - 2035 WebApartment.com</p>
             </div>
         </form>
     );
