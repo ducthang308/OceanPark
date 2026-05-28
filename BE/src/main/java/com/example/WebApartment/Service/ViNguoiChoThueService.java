@@ -44,8 +44,25 @@ public class ViNguoiChoThueService {
                 .toList();
     }
 
+    public List<YeuCauRutTienDTO> getAllYeuCauRutTien() {
+        return yeuCauRutTienRepo.findAllByOrderByNgayTaoDesc()
+                .stream()
+                .map(this::toYeuCauDto)
+                .toList();
+    }
+
     @Transactional
     public YeuCauRutTienDTO createWithdrawRequest(CreateWithdrawRequest request) {
+        if (request == null || isBlank(request.getMaNguoiDung())) {
+            throw new RuntimeException("Thông tin người dùng không hợp lệ");
+        }
+
+        if (isBlank(request.getBankCode())
+                || isBlank(request.getBankAccount())
+                || isBlank(request.getAccountName())) {
+            throw new RuntimeException("Thông tin ngân hàng không được để trống");
+        }
+
         if (request.getSoTien() == null || request.getSoTien() <= 0) {
             throw new RuntimeException("Số tiền rút không hợp lệ");
         }
@@ -99,15 +116,15 @@ public class ViNguoiChoThueService {
         vi.setSoDuChoRut(vi.getSoDuChoRut() - yc.getSoTien());
         viRepo.save(vi);
 
-        yc.setTrangThai("APPROVED");
+        yc.setTrangThai("SUCCESS");
         yc.setNgayXuLy(LocalDateTime.now());
 
         GiaoDichVi gd = GiaoDichVi.builder()
                 .maGiaoDichVi(generateId("GDV"))
                 .vi(vi)
-                .loaiGiaoDich("WITHDRAW_APPROVED")
+                .loaiGiaoDich("WITHDRAW_SUCCESS")
                 .soTien(0D)
-                .noiDung("Admin đã duyệt rút tiền: " + yc.getSoTien())
+                .noiDung("Admin xác nhận đã chuyển khoản rút tiền: " + yc.getSoTien())
                 .ngayTao(LocalDateTime.now())
                 .build();
 
@@ -222,9 +239,15 @@ public class ViNguoiChoThueService {
     }
 
     private YeuCauRutTienDTO toYeuCauDto(YeuCauRutTien yc) {
+        NguoiDung nguoiDung = yc.getVi() != null ? yc.getVi().getNguoiDung() : null;
+
         return YeuCauRutTienDTO.builder()
                 .maYeuCauRutTien(yc.getMaYeuCauRutTien())
                 .maVi(yc.getVi().getMaVi())
+                .maNguoiDung(nguoiDung != null ? nguoiDung.getMaNguoiDung() : null)
+                .tenNguoiDung(nguoiDung != null ? nguoiDung.getHoVaTen() : null)
+                .emailNguoiDung(nguoiDung != null ? nguoiDung.getEmail() : null)
+                .soDienThoaiNguoiDung(nguoiDung != null ? nguoiDung.getSoDienThoai() : null)
                 .bankCode(yc.getBankCode())
                 .bankAccount(yc.getBankAccount())
                 .accountName(yc.getAccountName())
@@ -241,5 +264,9 @@ public class ViNguoiChoThueService {
                 .replace("-", "")
                 .substring(0, 10)
                 .toUpperCase();
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 }

@@ -48,6 +48,12 @@ public class ViNguoiChoThueController {
         return ResponseEntity.ok(service.createWithdrawRequest(request));
     }
 
+    @GetMapping("/rut-tien")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<YeuCauRutTienDTO>> getAllYeuCauRutTien() {
+        return ResponseEntity.ok(service.getAllYeuCauRutTien());
+    }
+
     @PutMapping("/rut-tien/{maYeuCauRutTien}/approve")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<YeuCauRutTienDTO> approveWithdraw(

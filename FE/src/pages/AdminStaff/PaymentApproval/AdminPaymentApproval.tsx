@@ -4,14 +4,18 @@ import {
   CheckCircleOutlined,
   ClockCircleOutlined,
   CreditCardOutlined,
+  DownloadOutlined,
   ExclamationCircleOutlined,
   SearchOutlined,
 } from '@ant-design/icons';
+import { message } from 'antd';
 import { getAllInvoices, type HoaDonDTO } from '../../../services/api/AdminPaymentService';
 import { getAllUsers, type AdminUserDTO } from '../../../services/api/AdminAccountService';
 import AdminPagination from '../components/AdminPagination';
 import { formatCurrency } from '../../../utils/currency';
 import { formatDate } from '../../../utils/date';
+import { openInvoicePrintWindow } from '../../../utils/invoicePrint';
+import type { InvoicePrintRow } from '../../../utils/invoicePrint';
 import './admin-payment-approval.css';
 
 const paymentStatusMap: Record<string, { text: string; className: string }> = {
@@ -44,6 +48,9 @@ const getLoaiHoaDonLabel = (type: string): string => {
   if (clean === 'MUA_GOI') return 'Mua gói bài đăng';
   return `Thanh toán ${type}`;
 };
+
+const isInvoicePrintable = (invoice: HoaDonDTO) =>
+  getUIStatus(invoice.trangThaiThanhToan) === 'DA_THANH_TOAN';
 
 const AdminPaymentApproval: React.FC = () => {
   const navigate = useNavigate();
@@ -129,6 +136,43 @@ const AdminPaymentApproval: React.FC = () => {
 
   const handleViewDetail = (id: string) => {
     navigate(`/admin/payment-approval/${id}`);
+  };
+
+  const handlePrintInvoice = (invoice: HoaDonDTO) => {
+    if (!isInvoicePrintable(invoice)) {
+      message.warning('Chỉ có thể in hóa đơn khi giao dịch thành công');
+      return;
+    }
+
+    const user = invoice.maNguoiDung ? users[invoice.maNguoiDung] : null;
+    const rows: InvoicePrintRow[] = [
+      ['Mã hóa đơn', invoice.maHoaDon],
+      ['Khách hàng', user?.hoVaTen || invoice.maNguoiDung || '-'],
+      ['Email', user?.email || '-'],
+      ['Bài đăng', invoice.maBaiDang || '-'],
+      ['Loại giao dịch', getLoaiHoaDonLabel(invoice.loaiHoaDon)],
+      ['Số tiền', formatCurrency(invoice.soTien)],
+      ['Trạng thái thanh toán', paymentStatusMap[getUIStatus(invoice.trangThaiThanhToan)].text],
+      ['Mã chuyển khoản', invoice.noiDungChuyenKhoan || '-'],
+      ['Ghi chú', invoice.ghiChu || '-'],
+      ['Ngày tạo', formatDate(invoice.ngayTao)],
+      ['Ngày thanh toán', formatDate(invoice.ngayThanhToan || undefined)],
+      ['Ngày bắt đầu', formatDate(invoice.ngayBatDau || undefined)],
+      ['Ngày kết thúc', formatDate(invoice.ngayKetThuc || undefined)],
+    ];
+
+    const didOpen = openInvoicePrintWindow({
+      title: 'Hóa đơn thanh toán',
+      documentTitle: `Hóa đơn ${invoice.maHoaDon}`,
+      generatedAt: formatDate(new Date()),
+      rows,
+      footer: 'Hóa đơn được xuất từ hệ thống quản trị DThang Home.',
+      signerLabel: 'Chữ ký khách hàng',
+    });
+
+    if (!didOpen) {
+      message.error('Trình duyệt đang chặn cửa sổ xuất hóa đơn');
+    }
   };
 
   if (loading) {
@@ -259,7 +303,7 @@ const AdminPaymentApproval: React.FC = () => {
                     <th style={{ padding: '12px 8px', color: '#475569', fontSize: '0.85rem', fontWeight: 600, width: '14%' }}>Số tiền</th>
                     <th style={{ padding: '12px 8px', color: '#475569', fontSize: '0.85rem', fontWeight: 600, width: '12%' }}>Thời gian</th>
                     <th style={{ padding: '12px 8px', color: '#475569', fontSize: '0.85rem', fontWeight: 600, width: '10%' }}>Trạng thái</th>
-                    <th style={{ padding: '12px 8px', color: '#475569', fontSize: '0.85rem', fontWeight: 600, width: '8%', textAlign: 'center' }}>Thao tác</th>
+                    <th style={{ padding: '12px 8px', color: '#475569', fontSize: '0.85rem', fontWeight: 600, width: '12%', textAlign: 'center' }}>Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -303,13 +347,24 @@ const AdminPaymentApproval: React.FC = () => {
                           <span className={`admin-badge ${badge.className}`} style={{ display: 'inline-block' }}>{badge.text}</span>
                         </td>
                         <td style={{ padding: '16px 8px', verticalAlign: 'middle', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
-                          <button
-                            className="admin-btn ghost"
-                            style={{ padding: '6px 12px', fontSize: '0.8rem', borderRadius: '4px' }}
-                            onClick={() => handleViewDetail(item.maHoaDon)}
-                          >
-                            Chi tiết
-                          </button>
+                          <div style={{ display: 'flex', justifyContent: 'center', gap: 6, flexWrap: 'wrap' }}>
+                            <button
+                              className="admin-btn ghost"
+                              style={{ padding: '6px 12px', fontSize: '0.8rem', borderRadius: '4px' }}
+                              onClick={() => handleViewDetail(item.maHoaDon)}
+                            >
+                              Chi tiết
+                            </button>
+                            <button
+                              className="admin-btn ghost"
+                              style={{ padding: '6px 12px', fontSize: '0.8rem', borderRadius: '4px' }}
+                              disabled={!isInvoicePrintable(item)}
+                              onClick={() => handlePrintInvoice(item)}
+                            >
+                              <DownloadOutlined />
+                              In
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );

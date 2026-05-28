@@ -84,6 +84,9 @@ const getPaymentStatusTone = (status?: string | null) => {
   }
 };
 
+const isInvoicePrintable = (invoice: HoaDonDTO) =>
+  normalizeStatus(invoice.trangThaiThanhToan) === 'SUCCESS';
+
 const getEffectiveStatusLabel = (status?: string | null) => {
   switch (normalizeStatus(status)) {
     case 'DANG_HIEU_LUC':
@@ -186,6 +189,11 @@ const TenantTransactionsPage = () => {
   };
 
   const handleExportInvoice = (invoice: HoaDonDTO) => {
+    if (!isInvoicePrintable(invoice)) {
+      message.warning('Chỉ có thể in hóa đơn khi giao dịch thành công');
+      return;
+    }
+
     const invoiceRows: InvoicePrintRow[] = [
       ['Mã hóa đơn', invoice.maHoaDon],
       ['Người dùng', invoice.maNguoiDung || '-'],
@@ -403,6 +411,7 @@ const TenantTransactionsPage = () => {
                   <button
                     type="button"
                     className="tenant-primary-btn"
+                    disabled={!isInvoicePrintable(selectedInvoice)}
                     onClick={() => handleExportInvoice(selectedInvoice)}
                   >
                     <i className="fas fa-file-invoice"></i>

@@ -4,14 +4,18 @@ import {
   ArrowLeftOutlined,
   CheckCircleOutlined,
   CreditCardOutlined,
+  DownloadOutlined,
   FileTextOutlined,
   MailOutlined,
   WalletOutlined,
 } from '@ant-design/icons';
+import { message } from 'antd';
 import { getInvoiceById, type HoaDonDTO } from '../../../services/api/AdminPaymentService';
 import { getUserById, type UserProfileResponse } from '../../../services/api/UserService';
 import { formatCurrency } from '../../../utils/currency';
 import { formatDate } from '../../../utils/date';
+import { openInvoicePrintWindow } from '../../../utils/invoicePrint';
+import type { InvoicePrintRow } from '../../../utils/invoicePrint';
 import './admin-payment-detail.css';
 
 const paymentStatusMap: Record<string, { text: string; className: string }> = {
@@ -44,6 +48,9 @@ const getLoaiHoaDonLabel = (type: string): string => {
   if (clean === 'MUA_GOI') return 'Mua gói bài đăng';
   return `Thanh toán ${type}`;
 };
+
+const isInvoicePrintable = (invoice: HoaDonDTO) =>
+  getUIStatus(invoice.trangThaiThanhToan) === 'DA_THANH_TOAN';
 
 const PaymentDetailPanel: React.FC = () => {
   const navigate = useNavigate();
@@ -114,16 +121,63 @@ const PaymentDetailPanel: React.FC = () => {
     className: 'info',
   };
 
+  const handlePrintInvoice = () => {
+    if (!isInvoicePrintable(payment)) {
+      message.warning('Chỉ có thể in hóa đơn khi giao dịch thành công');
+      return;
+    }
+
+    const rows: InvoicePrintRow[] = [
+      ['Mã hóa đơn', payment.maHoaDon],
+      ['Người thanh toán', user?.hoVaTen || payment.maNguoiDung || '-'],
+      ['Email', user?.email || '-'],
+      ['Số điện thoại', user?.soDienThoai || '-'],
+      ['Bài đăng', payment.maBaiDang || '-'],
+      ['Loại giao dịch', getLoaiHoaDonLabel(payment.loaiHoaDon)],
+      ['Số tiền', formatCurrency(payment.soTien)],
+      ['Trạng thái thanh toán', badge.text],
+      ['Mã chuyển khoản', payment.noiDungChuyenKhoan || '-'],
+      ['Ghi chú', payment.ghiChu || '-'],
+      ['Ngày tạo', formatDate(payment.ngayTao)],
+      ['Ngày thanh toán', formatDate(payment.ngayThanhToan || undefined)],
+      ['Ngày bắt đầu', formatDate(payment.ngayBatDau || undefined)],
+      ['Ngày kết thúc', formatDate(payment.ngayKetThuc || undefined)],
+    ];
+
+    const didOpen = openInvoicePrintWindow({
+      title: 'Hóa đơn thanh toán',
+      documentTitle: `Hóa đơn ${payment.maHoaDon}`,
+      generatedAt: formatDate(new Date()),
+      rows,
+      footer: 'Hóa đơn được xuất từ hệ thống quản trị DThang Home.',
+      signerLabel: 'Chữ ký khách hàng',
+    });
+
+    if (!didOpen) {
+      message.error('Trình duyệt đang chặn cửa sổ xuất hóa đơn');
+    }
+  };
+
   return (
     <div className="payment-detail-page">
-      <button
-        className="payment-detail-back"
-        style={{ marginBottom: '1.5rem' }}
-        onClick={() => navigate('/admin/payments')}
-      >
-        <ArrowLeftOutlined />
-        <span>Quay lại danh sách</span>
-      </button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
+        <button
+          className="payment-detail-back"
+          onClick={() => navigate('/admin/payments')}
+        >
+          <ArrowLeftOutlined />
+          <span>Quay lại danh sách</span>
+        </button>
+
+        <button
+          className="payment-detail-back"
+          disabled={!isInvoicePrintable(payment)}
+          onClick={handlePrintInvoice}
+        >
+          <DownloadOutlined />
+          <span>In hóa đơn</span>
+        </button>
+      </div>
 
       <section className="payment-detail-hero" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '2rem', flexWrap: 'wrap', marginBottom: '2rem', paddingBottom: '1.5rem', borderBottom: '1px solid #e2e8f0' }}>
         <div className="payment-detail-hero__left" style={{ flex: '1', minWidth: '280px' }}>

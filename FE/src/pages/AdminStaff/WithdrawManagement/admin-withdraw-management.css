@@ -1,0 +1,257 @@
+.admin-withdraw-page {
+  max-width: 1400px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  background: #f6f7f9;
+}
+
+.admin-withdraw-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 20px;
+  margin-bottom: 24px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.admin-withdraw-kicker {
+  margin-bottom: 8px;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-withdraw-hero h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 30px;
+  line-height: 1.2;
+  font-weight: 800;
+}
+
+.admin-withdraw-hero p {
+  max-width: 680px;
+  margin: 10px 0 0;
+  color: #64748b;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.admin-withdraw-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.admin-withdraw-summary-card {
+  min-height: 144px;
+  padding: 18px;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #2563eb;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+}
+
+.admin-withdraw-summary-card.pending {
+  border-left-color: #d97706;
+}
+
+.admin-withdraw-summary-card.success {
+  border-left-color: #059669;
+}
+
+.admin-withdraw-summary-card.rejected {
+  border-left-color: #dc2626;
+}
+
+.admin-withdraw-summary-card > .anticon {
+  color: #2563eb;
+  font-size: 24px;
+}
+
+.admin-withdraw-summary-card.pending > .anticon {
+  color: #d97706;
+}
+
+.admin-withdraw-summary-card.success > .anticon {
+  color: #059669;
+}
+
+.admin-withdraw-summary-card.rejected > .anticon {
+  color: #dc2626;
+}
+
+.admin-withdraw-summary-card span {
+  display: block;
+  margin-top: 14px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.admin-withdraw-summary-card strong {
+  display: block;
+  margin-top: 8px;
+  color: #0f172a;
+  font-size: 28px;
+  line-height: 1.15;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.admin-withdraw-summary-card p {
+  margin: 8px 0 0;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.admin-withdraw-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+  padding: 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+}
+
+.admin-withdraw-search {
+  width: min(100%, 520px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.admin-withdraw-search > .anticon {
+  color: #94a3b8;
+}
+
+.admin-withdraw-search .ant-input-affix-wrapper,
+.admin-withdraw-search .ant-input {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.admin-withdraw-filter {
+  width: 200px;
+}
+
+.admin-withdraw-filter .ant-select-selector {
+  min-height: 40px;
+  border-radius: 8px !important;
+}
+
+.admin-withdraw-table-card {
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+}
+
+.admin-withdraw-table-card__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+  padding: 20px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.admin-withdraw-table-card__head h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.admin-withdraw-table-card__head p {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.admin-withdraw-table-card__head > .anticon {
+  color: #1d4ed8;
+  font-size: 24px;
+}
+
+.admin-withdraw-table-card .ant-table-thead > tr > th {
+  background: #f8fafc;
+  color: #334155;
+  font-weight: 800;
+}
+
+.admin-withdraw-request-cell,
+.admin-withdraw-user-cell,
+.admin-withdraw-bank-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-withdraw-request-cell strong,
+.admin-withdraw-user-cell strong,
+.admin-withdraw-bank-cell strong {
+  color: #0f172a;
+}
+
+.admin-withdraw-request-cell span,
+.admin-withdraw-user-cell span,
+.admin-withdraw-bank-cell span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.admin-withdraw-money {
+  color: #0f766e;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.admin-withdraw-pagination {
+  padding: 16px 20px;
+  border-top: 1px solid #f1f5f9;
+}
+
+@media (max-width: 1180px) {
+  .admin-withdraw-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .admin-withdraw-page {
+    padding: 1rem;
+  }
+
+  .admin-withdraw-hero,
+  .admin-withdraw-toolbar,
+  .admin-withdraw-table-card__head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-withdraw-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-withdraw-search,
+  .admin-withdraw-filter {
+    width: 100%;
+  }
+}

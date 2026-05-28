@@ -1,0 +1,249 @@
+.landlord-wallet-page {
+  display: flex;
+  align-items: flex-start;
+  min-height: 100vh;
+  padding-top: 100px;
+  background: #f4f6fb;
+}
+
+.landlord-wallet-content {
+  flex: 1;
+  min-width: 0;
+  padding: 0 40px 48px;
+}
+
+.landlord-wallet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.landlord-wallet-eyebrow {
+  margin: 0 0 8px;
+  color: #0f766e;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.landlord-wallet-header h1 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 30px;
+  line-height: 1.2;
+  font-weight: 800;
+}
+
+.landlord-wallet-header span {
+  display: block;
+  margin-top: 8px;
+  color: #64748b;
+  font-size: 15px;
+}
+
+.landlord-wallet-alert {
+  margin-bottom: 18px;
+}
+
+.landlord-wallet-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.landlord-wallet-kpi {
+  min-height: 140px;
+  padding: 18px;
+  display: flex;
+  gap: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+}
+
+.landlord-wallet-kpi__icon {
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 20px;
+  background: #2563eb;
+}
+
+.landlord-wallet-kpi.available .landlord-wallet-kpi__icon {
+  background: #0f766e;
+}
+
+.landlord-wallet-kpi.pending .landlord-wallet-kpi__icon {
+  background: #d97706;
+}
+
+.landlord-wallet-kpi.revenue .landlord-wallet-kpi__icon {
+  background: #7c3aed;
+}
+
+.landlord-wallet-kpi span {
+  display: block;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.landlord-wallet-kpi strong {
+  display: block;
+  margin-top: 8px;
+  color: #0f172a;
+  font-size: 24px;
+  line-height: 1.15;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.landlord-wallet-kpi p {
+  margin: 8px 0 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.landlord-wallet-grid {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.8fr) minmax(0, 1.4fr);
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.landlord-wallet-panel {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 20px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+}
+
+.landlord-wallet-panel--wide {
+  margin-bottom: 18px;
+}
+
+.landlord-wallet-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.landlord-wallet-panel__header h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 20px;
+  line-height: 1.25;
+  font-weight: 800;
+}
+
+.landlord-wallet-panel__header p {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.landlord-wallet-panel__header > .anticon {
+  color: #0f766e;
+  font-size: 24px;
+}
+
+.landlord-wallet-form .ant-input,
+.landlord-wallet-form .ant-input-number,
+.landlord-wallet-form .ant-input-number-group-wrapper {
+  width: 100%;
+}
+
+.landlord-wallet-form .ant-input,
+.landlord-wallet-form .ant-input-number,
+.landlord-wallet-form .ant-input-number-group-addon {
+  min-height: 40px;
+  border-radius: 8px;
+}
+
+.landlord-wallet-money {
+  color: #0f172a;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.landlord-wallet-money--positive {
+  color: #0f766e;
+}
+
+.landlord-wallet-money--negative {
+  color: #dc2626;
+}
+
+.landlord-wallet-bank-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.landlord-wallet-bank-cell strong {
+  color: #0f172a;
+}
+
+.landlord-wallet-bank-cell span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.landlord-wallet-panel .ant-table-wrapper {
+  overflow: hidden;
+}
+
+.landlord-wallet-panel .ant-table-thead > tr > th {
+  background: #f8fafc;
+  color: #334155;
+  font-weight: 800;
+}
+
+@media (max-width: 1180px) {
+  .landlord-wallet-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 992px) {
+  .landlord-wallet-page {
+    display: block;
+  }
+
+  .landlord-wallet-page .navbar-management {
+    display: none;
+  }
+
+  .landlord-wallet-content {
+    padding: 0 18px 40px;
+  }
+
+  .landlord-wallet-kpis {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .landlord-wallet-header,
+  .landlord-wallet-panel__header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .landlord-wallet-header h1 {
+    font-size: 24px;
+  }
+}
