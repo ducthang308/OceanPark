@@ -7,6 +7,7 @@ import {
   getPostImageUrls,
   getPosts,
   getPostVideoUrls,
+  getRecommendedPosts,
 } from './PostManagementService';
 import type {
   BaiDangDTO,
@@ -349,7 +350,39 @@ const buildPostCard = (
     hasVideo: videoUrls.length > 0,
     isFeatured: false,
     isNew: false,
+    recommendationScore: post.recommendationScore,
+    recommendationReasons: post.recommendationReasons ?? [],
+    aiSuggestion: post.aiSuggestion,
   };
+};
+
+const buildHomePostCards = async (
+  postsResponse: BaiDangDTO[],
+  categoryLookup: Map<string, IHomeCategory>,
+) => {
+  const mappedPosts: Array<IHomePostCard | null> = await Promise.all(
+    postsResponse.filter(isPublicPost).map(async (post, index) => {
+      const postId = post.maBaiDang?.trim();
+      const [detail, images, likeCount] = postId
+        ? await Promise.all([
+            getApartmentDetailByPost(postId).catch(() => null),
+            getPostImages(postId).catch(() => [] as HinhAnhBaiDangDTO[]),
+            getFavoriteCountByPost(postId).catch(() => 0),
+          ])
+        : [null, [] as HinhAnhBaiDangDTO[], 0];
+
+      const postCard = buildPostCard(post, detail, images, categoryLookup, index);
+
+      return postCard
+        ? {
+            ...postCard,
+            likeCount,
+          }
+        : null;
+    }),
+  );
+
+  return mappedPosts.filter((post): post is IHomePostCard => Boolean(post));
 };
 
 const buildDistricts = (posts: IHomePostCard[]): IHomeDistrict[] =>
@@ -387,30 +420,7 @@ export const getRentalListingData = async (): Promise<ListingData> => {
   const categories = apiCategories.length > 0 ? apiCategories : DEFAULT_HOME_CATEGORIES;
   const categoryLookup = createCategoryLookup(categories);
 
-  const mappedPosts: Array<IHomePostCard | null> = await Promise.all(
-    postsResponse.filter(isPublicPost).map(async (post, index) => {
-      const postId = post.maBaiDang?.trim();
-      const [detail, images, likeCount] = postId
-        ? await Promise.all([
-            getApartmentDetailByPost(postId).catch(() => null),
-            getPostImages(postId).catch(() => [] as HinhAnhBaiDangDTO[]),
-            getFavoriteCountByPost(postId).catch(() => 0),
-          ])
-        : [null, [] as HinhAnhBaiDangDTO[], 0];
-
-      const postCard = buildPostCard(post, detail, images, categoryLookup, index);
-
-      return postCard
-        ? {
-            ...postCard,
-            likeCount,
-          }
-        : null;
-    }),
-  );
-
-  const posts = mappedPosts
-    .filter((post): post is IHomePostCard => Boolean(post))
+  const posts = (await buildHomePostCards(postsResponse, categoryLookup))
     .sort((a, b) => (b.createdAtTime ?? 0) - (a.createdAtTime ?? 0))
     .map((post, index) => ({
       ...post,
@@ -425,6 +435,20 @@ export const getRentalListingData = async (): Promise<ListingData> => {
     posts,
     stats: buildStats(posts, districts, postsResponse.filter(isPublicPost)),
   };
+};
+
+export const getRecommendedHomePosts = async (maNguoiDung: string) => {
+  const [postsResponse, categoriesResponse] = await Promise.all([
+    getRecommendedPosts(maNguoiDung),
+    getCategories().catch(() => [] as DanhMucDTO[]),
+  ]);
+  const apiCategories = categoriesResponse.map(mapCategoryDto);
+  const categories = apiCategories.length > 0 ? apiCategories : DEFAULT_HOME_CATEGORIES;
+  const categoryLookup = createCategoryLookup(categories);
+
+  return (await buildHomePostCards(postsResponse, categoryLookup))
+    .sort((a, b) => (b.recommendationScore ?? 0) - (a.recommendationScore ?? 0))
+    .slice(0, 6);
 };
 
 export const createDefaultHomePageData = (): IHomePageData => ({

@@ -43,6 +43,9 @@ export interface IHomePostCard {
   hasVideo?: boolean;
   isFeatured?: boolean;
   isNew?: boolean;
+  recommendationScore?: number;
+  recommendationReasons?: string[];
+  aiSuggestion?: string;
 }
 
 export interface IHomePageData {

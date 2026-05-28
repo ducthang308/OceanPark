@@ -11,6 +11,9 @@ export interface BaiDangDTO {
   lienHe?: string;
   hinhThucThanhToan?: string;
   luotXem?: number;
+  recommendationScore?: number;
+  recommendationReasons?: string[];
+  aiSuggestion?: string;
 }
 
 export interface ChiTietCanHoDTO {
