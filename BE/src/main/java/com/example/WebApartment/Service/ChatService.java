@@ -1,14 +1,18 @@
 package com.example.WebApartment.Service;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import com.example.WebApartment.DTO.*;
 import com.example.WebApartment.Models.*;
 import com.example.WebApartment.Repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -19,6 +23,7 @@ public class ChatService {
     private final TinNhanRepository tinNhanRepository;
     private final NguoiDungRepository nguoiDungRepository;
     private final BaiDangRepository baiDangRepository;
+    private final Cloudinary cloudinary;
 
     @Transactional
     public ChatRoomDTO getOrCreateRoom(CreateChatRoomRequest request) {
@@ -83,6 +88,15 @@ public class ChatService {
                 .toList();
     }
 
+    /**
+     * Lấy thông tin phòng chat
+     */
+    public ChatRoomDTO getRoomById(String maPhongChat) {
+        PhongChat room = phongChatRepository.findById(maPhongChat)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy phòng chat: " + maPhongChat));
+        return toRoomDTO(room);
+    }
+
     @Transactional
     public ChatMessageDTO sendMessage(SendMessageRequest request) {
         PhongChat room = phongChatRepository.findById(request.getMaPhongChat())
@@ -141,6 +155,62 @@ public class ChatService {
                 .trangThai(message.getTrangThai())
                 .thoiGianGui(message.getThoiGianGui())
                 .build();
+    }
+
+    /**
+     * Convert TinNhan to ChatNotificationDTO để broadcast
+     */
+    public ChatNotificationDTO toNotificationDTO(TinNhan message) {
+        PhongChat room = message.getPhongChat();
+        return ChatNotificationDTO.builder()
+                .maPhongChat(room != null ? room.getMaPhongChat() : null)
+                .maTinNhan(message.getMaTinNhan())
+                .maNguoiGui(message.getNguoiGui() != null ? message.getNguoiGui().getMaNguoiDung() : null)
+                .tenNguoiGui(message.getNguoiGui() != null ? message.getNguoiGui().getHoVaTen() : null)
+                .noiDung(message.getNoiDung())
+                .loaiTinNhan(message.getLoaiTinNhan())
+                .thoiGianGui(message.getThoiGianGui())
+                .tieuDeBaiDang(room != null && room.getBaiDang() != null ? room.getBaiDang().getTieuDe() : null)
+                .build();
+    }
+
+    public ChatAttachmentDTO uploadChatImage(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new RuntimeException("File ảnh không được để trống");
+        }
+
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.toLowerCase().startsWith("image/")) {
+            throw new RuntimeException("Vui lòng chọn đúng định dạng ảnh");
+        }
+
+        if (file.getSize() > 10 * 1024 * 1024) {
+            throw new RuntimeException("Ảnh không được vượt quá 10MB");
+        }
+
+        try {
+            Map uploadResult = cloudinary.uploader().upload(
+                    file.getBytes(),
+                    ObjectUtils.asMap(
+                            "folder", "web-apartment/chat",
+                            "resource_type", "image"
+                    )
+            );
+
+            Object secureUrlValue = uploadResult.get("secure_url");
+            if (secureUrlValue == null) {
+                throw new RuntimeException("Cloudinary không trả về URL");
+            }
+
+            return ChatAttachmentDTO.builder()
+                    .url(secureUrlValue.toString())
+                    .originalName(file.getOriginalFilename())
+                    .contentType(contentType)
+                    .size(file.getSize())
+                    .build();
+        } catch (Exception e) {
+            throw new RuntimeException("Upload ảnh chat thất bại: " + e.getMessage());
+        }
     }
 
     private String generateId(String prefix) {

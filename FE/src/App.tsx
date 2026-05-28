@@ -5,6 +5,7 @@ import ProtectedRoute from './components/auth/ProtectedRoute.tsx';
 import Header from './components/layout/Header/header.tsx';
 import Footer from './components/layout/Footer/footer.tsx';
 import ChatBox from './components/common/ChatBox/ChatBox.tsx';
+import { ChatNotificationProvider } from './contexts/ChatNotificationProvider.tsx';
 // import Navbar from "./components/layout/Navbar/navbar.tsx";
 
 import LoginPage from './pages/Login/LoginPage.tsx';
@@ -42,6 +43,7 @@ import OAuth2RedirectPage from './pages/Auth/OAuth2RedirectPage.tsx';
 import { AUTHENTICATED_ROLE_IDS, LANDLORD_ROLE_IDS, ROLE_ID } from './constants/roles.ts';
 import './assets/styles/Global.css';
 import SepayPaymentPage from './pages/SepayPayment/SepayPaymentPage.tsx';
+import ChatPage from './pages/Chat/ChatPage.tsx';
 
 function UserLayout() {
   return (
@@ -69,9 +71,10 @@ function ScrollToTop() {
 
 function App() {
   return (
-    <Router>
-      <ScrollToTop />
-      <Routes>
+    <ChatNotificationProvider>
+      <Router>
+        <ScrollToTop />
+        <Routes>
         {/* User routes */}
         <Route element={<UserLayout />}>
           <Route path="/" element={<Home />} />
@@ -91,6 +94,7 @@ function App() {
             <Route path="/payment/:type" element={<PaymentPage />} />
             <Route path="/payment/sepay" element={<SepayPaymentPage />} />
             <Route path="/favorite-posts" element={<FavoritePostsPage />} />
+            <Route path="/chat" element={<ChatPage />} />
           </Route>
 
           <Route element={<ProtectedRoute allowedRoles={[ROLE_ID.NGUOI_THUE]} />}>
@@ -118,10 +122,12 @@ function App() {
             <Route path="post-approval/:id" element={<PostApprovalDetail />} />
             <Route path="payment-approval/:id" element={<PaymentDetailPanel />} />
             <Route path="payments" element={<AdminPaymentApproval />} />
+            <Route path="chat" element={<ChatPage />} />
           </Route>
         </Route>
       </Routes>
-    </Router>
+      </Router>
+    </ChatNotificationProvider>
   );
 }
 

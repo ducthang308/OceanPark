@@ -24,8 +24,10 @@ const isBusinessErrorReturnedAsUnauthorized = (data: unknown) => {
     );
 };
 
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8082';
+
 const axiosClient = axios.create({
-    baseURL: 'http://localhost:8082',
+    baseURL: API_BASE_URL,
     headers: {
         'Content-Type': 'application/json',
     },

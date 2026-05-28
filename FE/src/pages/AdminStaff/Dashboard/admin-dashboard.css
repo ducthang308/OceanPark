@@ -279,6 +279,9 @@
   display: grid;
   grid-template-rows: 1fr 28px;
   align-items: end;
+  border-radius: 8px;
+  outline: none;
+  cursor: crosshair;
 }
 
 .admin-dashboard-css-chart__bars {
@@ -300,6 +303,15 @@
 .admin-dashboard-css-chart__bar:hover {
   filter: brightness(1.05);
   transform: translateY(-2px);
+}
+
+.admin-dashboard-css-chart__column:hover .admin-dashboard-css-chart__bar,
+.admin-dashboard-css-chart__column:focus-visible .admin-dashboard-css-chart__bar {
+  filter: brightness(1.05);
+}
+
+.admin-dashboard-css-chart__column:focus-visible {
+  box-shadow: inset 0 0 0 2px rgba(15, 118, 110, 0.28);
 }
 
 .admin-dashboard-css-chart__label {
@@ -337,12 +349,75 @@
   display: inline-block;
 }
 
+.admin-dashboard-hover-tooltip {
+  position: absolute;
+  z-index: 8;
+  width: max-content;
+  min-width: 190px;
+  max-width: min(280px, calc(100% - 24px));
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background: rgba(17, 24, 39, 0.96);
+  color: #ffffff;
+  padding: 10px 12px;
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.24);
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 12px));
+}
+
+.admin-dashboard-hover-tooltip strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #ffffff;
+  font-size: 13px;
+  line-height: 1.3;
+  font-weight: 950;
+  overflow-wrap: anywhere;
+}
+
+.admin-dashboard-hover-tooltip span {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  color: #d1d5db;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.admin-dashboard-hover-tooltip span + span {
+  margin-top: 6px;
+}
+
+.admin-dashboard-hover-tooltip i {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.admin-dashboard-hover-tooltip em {
+  min-width: 0;
+  color: #e5e7eb;
+  font-style: normal;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.admin-dashboard-hover-tooltip b {
+  color: #ffffff;
+  font-weight: 950;
+  text-align: right;
+  white-space: nowrap;
+}
+
 .admin-dashboard-panel--pie,
 .admin-dashboard-panel--pending {
   min-height: 360px;
 }
 
 .admin-dashboard-pie-layout {
+  position: relative;
   min-height: 260px;
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr);
@@ -357,6 +432,19 @@
   display: grid;
   place-items: center;
   box-shadow: 0 16px 32px rgba(15, 23, 42, 0.08);
+  outline: none;
+  cursor: crosshair;
+  transition: filter 0.16s ease, transform 0.16s ease;
+}
+
+.admin-dashboard-pie:hover,
+.admin-dashboard-pie:focus-visible {
+  filter: saturate(1.08);
+  transform: translateY(-1px);
+}
+
+.admin-dashboard-pie:focus-visible {
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.08), 0 0 0 3px rgba(15, 118, 110, 0.22);
 }
 
 .admin-dashboard-pie__center {
@@ -401,6 +489,15 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  outline: none;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+}
+
+.admin-dashboard-pie-legend__item:hover,
+.admin-dashboard-pie-legend__item:focus-visible {
+  border-color: #cbd5e1;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.07);
+  transform: translateY(-1px);
 }
 
 .admin-dashboard-pie-legend__item span {

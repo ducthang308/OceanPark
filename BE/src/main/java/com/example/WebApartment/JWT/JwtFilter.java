@@ -39,7 +39,8 @@ public class JwtFilter extends OncePerRequestFilter {
 
         if (path.startsWith("/oauth2/")
                 || path.startsWith("/login/oauth2/")
-                || path.equals("/login")) {
+                || path.equals("/login")
+                || isWebSocketEndpoint(path)) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -101,7 +102,9 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     private boolean isByPassToken(@NotNull HttpServletRequest request) {
-        if ("OPTIONS".equalsIgnoreCase(request.getMethod()) || isPublicGetRequest(request)) {
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())
+                || isWebSocketEndpoint(request.getServletPath())
+                || isPublicGetRequest(request)) {
             return true;
         }
 
@@ -141,5 +144,11 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private boolean isPathOrChild(String path, String publicPath) {
         return path.equals(publicPath) || path.startsWith(publicPath + "/");
+    }
+
+    private boolean isWebSocketEndpoint(String path) {
+        return isPathOrChild(path, "/ws-chat")
+                || isPathOrChild(path, "/ws-chat-sockjs")
+                || isPathOrChild(path, "/ws");
     }
 }

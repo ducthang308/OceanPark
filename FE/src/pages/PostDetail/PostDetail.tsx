@@ -26,6 +26,7 @@ import { homeMockData } from '../../services/mock/home.mock';
 import { getUserById } from '../../services/api/UserService';
 import type { UserProfileResponse } from '../../services/api/UserService';
 import { getAuthSession } from '../../utils/storage';
+import { getOrCreateRoom } from '../../services/api/ChatService';
 
 interface PostDetailView {
   id: string;
@@ -48,6 +49,7 @@ interface PostDetailView {
   hasVideo: boolean;
   isFeatured: boolean;
   isNew: boolean;
+  ownerId?: string;
 }
 
 const PUBLIC_POST_STATUSES = new Set(['ACTIVE', 'APPROVED']);
@@ -161,6 +163,7 @@ const buildApiPostDetail = (
     hasVideo: videoUrls.length > 0,
     isFeatured: true,
     isNew: true,
+    ownerId: post.maNguoiDung,
   };
 };
 
@@ -406,6 +409,48 @@ const PostDetail: React.FC = () => {
     }
   };
 
+  const handleChatWithOwner = async () => {
+    const currentUserId = getAuthSession()?.user.maNguoiDung;
+    if (!currentUserId) {
+      alert('Vui lòng đăng nhập để nhắn tin với chủ nhà');
+      navigate('/login', {
+        state: {
+          from: {
+            pathname: location.pathname,
+            search: location.search,
+          },
+        },
+      });
+      return;
+    }
+
+    if (!post?.ownerId) {
+      alert('Không tìm thấy thông tin chủ nhà.');
+      return;
+    }
+
+    if (currentUserId === post.ownerId) {
+      alert('Bạn không thể nhắn tin với chính mình.');
+      return;
+    }
+
+    try {
+      const room = await getOrCreateRoom({
+        maNguoiDung1: currentUserId,
+        maNguoiDung2: post.ownerId,
+        maBaiDang: post.id,
+        loaiPhongChat: 'USER_HOST',
+      });
+      navigate(`/chat?room=${room.maPhongChat}`);
+    } catch (error: any) {
+      console.error('Lỗi khi tạo phòng chat:', error);
+      alert(
+        error?.response?.data?.message ||
+        'Không thể kết nối trò chuyện. Vui lòng thử lại sau!'
+      );
+    }
+  };
+
   if (loading) {
     return (
       <div className="rental-detail-page">
@@ -613,6 +658,16 @@ const PostDetail: React.FC = () => {
                 >
                   Nhắn Zalo
                 </button>
+
+                {maNguoiDung !== post?.ownerId && (
+                  <button
+                    type="button"
+                    className="rental-detail-btn rental-detail-btn--chat"
+                    onClick={handleChatWithOwner}
+                  >
+                    Nhắn tin chủ nhà
+                  </button>
+                )}
 
                 <button
                   type="button"
