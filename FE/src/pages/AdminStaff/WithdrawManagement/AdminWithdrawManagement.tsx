@@ -9,12 +9,13 @@ import {
   SearchOutlined,
   WalletOutlined,
 } from "@ant-design/icons";
-import { Button, Input, Modal, Select, Space, Table, Tag, message } from "antd";
+import { Alert, Button, Input, Select, Space, Table, Tag, message } from "antd";
 import type { TableProps } from "antd";
 
 import AdminPagination from "../components/AdminPagination";
 import { formatCurrency } from "../../../utils/currency";
 import { formatDate } from "../../../utils/date";
+import { getApiErrorMessage } from "../../../services/api/apiError";
 import {
   approveWithdrawRequest,
   getAllWithdrawRequests,
@@ -121,59 +122,42 @@ const AdminWithdrawManagement = () => {
     };
   }, [requests]);
 
-  const handleApprove = (request: YeuCauRutTienDTO) => {
+  const handleApprove = async (request: YeuCauRutTienDTO) => {
     if (!isPending(request.trangThai)) {
       message.warning("Chỉ xử lý yêu cầu đang chờ");
       return;
     }
 
-    Modal.confirm({
-      title: "Xác nhận đã chuyển khoản?",
-      content: `Yêu cầu ${request.maYeuCauRutTien} sẽ chuyển sang trạng thái thành công.`,
-      okText: "Xác nhận",
-      cancelText: "Hủy",
-      onOk: async () => {
-        try {
-          setProcessingId(request.maYeuCauRutTien);
-          await approveWithdrawRequest(request.maYeuCauRutTien);
-          message.success("Đã xác nhận chuyển khoản");
-          await loadRequests();
-        } catch (err) {
-          console.error("Approve withdraw failed:", err);
-          message.error("Không xác nhận được yêu cầu rút tiền");
-        } finally {
-          setProcessingId(null);
-        }
-      },
-    });
+    try {
+      setProcessingId(request.maYeuCauRutTien);
+      await approveWithdrawRequest(request.maYeuCauRutTien);
+      message.success("Đã ghi nhận chuyển khoản thành công");
+      await loadRequests();
+    } catch (err) {
+      console.error("Approve withdraw failed:", err);
+      message.error(getApiErrorMessage(err, "Không xác nhận được yêu cầu rút tiền"));
+    } finally {
+      setProcessingId(null);
+    }
   };
 
-  const handleReject = (request: YeuCauRutTienDTO) => {
+  const handleReject = async (request: YeuCauRutTienDTO) => {
     if (!isPending(request.trangThai)) {
       message.warning("Chỉ xử lý yêu cầu đang chờ");
       return;
     }
 
-    Modal.confirm({
-      title: "Từ chối yêu cầu rút tiền?",
-      content: `Số tiền ${formatCurrency(safeNumber(request.soTien))} sẽ được hoàn về số dư khả dụng.`,
-      okText: "Từ chối",
-      okButtonProps: { danger: true },
-      cancelText: "Hủy",
-      onOk: async () => {
-        try {
-          setProcessingId(request.maYeuCauRutTien);
-          await rejectWithdrawRequest(request.maYeuCauRutTien);
-          message.success("Đã từ chối và hoàn tiền về ví");
-          await loadRequests();
-        } catch (err) {
-          console.error("Reject withdraw failed:", err);
-          message.error("Không từ chối được yêu cầu rút tiền");
-        } finally {
-          setProcessingId(null);
-        }
-      },
-    });
+    try {
+      setProcessingId(request.maYeuCauRutTien);
+      await rejectWithdrawRequest(request.maYeuCauRutTien);
+      message.success("Đã từ chối và hoàn tiền về ví");
+      await loadRequests();
+    } catch (err) {
+      console.error("Reject withdraw failed:", err);
+      message.error(getApiErrorMessage(err, "Không từ chối được yêu cầu rút tiền"));
+    } finally {
+      setProcessingId(null);
+    }
   };
 
   const handlePrint = (request: YeuCauRutTienDTO) => {
@@ -266,7 +250,7 @@ const AdminWithdrawManagement = () => {
               loading={isProcessing}
               onClick={() => handleApprove(record)}
             >
-              Xác nhận
+              Đã chuyển khoản
             </Button>
             <Button
               size="small"
@@ -298,7 +282,7 @@ const AdminWithdrawManagement = () => {
           <div className="admin-withdraw-kicker">Ví người cho thuê</div>
           <h2>Quản lý yêu cầu rút tiền</h2>
           <p>
-            Kiểm tra thông tin ngân hàng, xác nhận chuyển khoản hoặc từ chối yêu cầu đang chờ xử lý.
+            Kiểm tra thông tin ngân hàng, ghi nhận đã chuyển khoản hoặc từ chối yêu cầu đang chờ xử lý.
           </p>
         </div>
 
@@ -338,6 +322,14 @@ const AdminWithdrawManagement = () => {
           <p>Đã hoàn về ví khả dụng</p>
         </article>
       </section>
+
+      <Alert
+        type="info"
+        showIcon
+        className="admin-withdraw-note"
+        message="Lưu ý về chuyển tiền"
+        description="Hệ thống hiện chỉ quản lý sổ ví nội bộ. Admin cần chuyển khoản thật bên ngoài hệ thống theo thông tin ngân hàng, sau đó bấm Đã chuyển khoản để đổi yêu cầu sang SUCCESS và trừ số dư chờ rút."
+      />
 
       <section className="admin-withdraw-toolbar">
         <div className="admin-withdraw-search">
