@@ -259,7 +259,7 @@ const ChartPanel: React.FC<ChartPanelProps> = ({
         label,
         entries,
         x: boxRect
-          ? clampNumber(rawX - boxRect.left, 110, Math.max(110, boxRect.width - 110))
+          ? clampNumber(rawX - boxRect.left, 150, Math.max(150, boxRect.width - 150))
           : 0,
         y: boxRect
           ? clampNumber(rawY - boxRect.top, 110, Math.max(110, boxRect.height - 18))

@@ -7,6 +7,7 @@ import {
   getPostImageUrls,
   getPosts,
   getPostVideoUrls,
+  getRecommendedPosts,
 } from './PostManagementService';
 import type {
   BaiDangDTO,
@@ -153,62 +154,35 @@ export const slugify = (value: string) =>
     .replace(/^-+|-+$/g, '') || 'danh-muc';
 
 export const WARD_OPTIONS = [
-  { name: 'Hải Châu 1', districtId: 'hai-chau' },
-  { name: 'Hải Châu 2', districtId: 'hai-chau' },
-  { name: 'Thạch Thang', districtId: 'hai-chau' },
-  { name: 'Thanh Bình', districtId: 'hai-chau' },
-  { name: 'Thuận Phước', districtId: 'hai-chau' },
-  { name: 'Hòa Thuận Đông', districtId: 'hai-chau' },
-  { name: 'Hòa Thuận Tây', districtId: 'hai-chau' },
-  { name: 'Bình Hiên', districtId: 'hai-chau' },
-  { name: 'Bình Thuận', districtId: 'hai-chau' },
-  { name: 'Nam Dương', districtId: 'hai-chau' },
-  { name: 'Phước Ninh', districtId: 'hai-chau' },
-  { name: 'Hòa Cường Bắc', districtId: 'hai-chau' },
-  { name: 'Hòa Cường Nam', districtId: 'hai-chau' },
-  { name: 'An Hải Bắc', districtId: 'son-tra' },
-  { name: 'An Hải Tây', districtId: 'son-tra' },
-  { name: 'An Hải Đông', districtId: 'son-tra' },
-  { name: 'Mân Thái', districtId: 'son-tra' },
-  { name: 'Nại Hiên Đông', districtId: 'son-tra' },
-  { name: 'Phước Mỹ', districtId: 'son-tra' },
-  { name: 'Thọ Quang', districtId: 'son-tra' },
-  { name: 'Mỹ An', districtId: 'ngu-hanh-son' },
-  { name: 'Khuê Mỹ', districtId: 'ngu-hanh-son' },
-  { name: 'Hòa Hải', districtId: 'ngu-hanh-son' },
-  { name: 'Hòa Quý', districtId: 'ngu-hanh-son' },
-  { name: 'Tam Thuận', districtId: 'thanh-khe' },
-  { name: 'Thanh Khê Đông', districtId: 'thanh-khe' },
-  { name: 'Thanh Khê Tây', districtId: 'thanh-khe' },
-  { name: 'Xuân Hà', districtId: 'thanh-khe' },
-  { name: 'Tân Chính', districtId: 'thanh-khe' },
-  { name: 'Chính Gián', districtId: 'thanh-khe' },
-  { name: 'Vĩnh Trung', districtId: 'thanh-khe' },
-  { name: 'Thạc Gián', districtId: 'thanh-khe' },
+  // Hải Châu
+  { name: 'Hải Châu', districtId: 'hai-chau' },
+  { name: 'Hòa Cường', districtId: 'hai-chau' },
+
+  // Sơn Trà
+  { name: 'An Hải', districtId: 'son-tra' },
+  { name: 'Sơn Trà', districtId: 'son-tra' },
+
+  // Ngũ Hành Sơn
+  { name: 'Ngũ Hành Sơn', districtId: 'ngu-hanh-son' },
+
+  // Thanh Khê
+  { name: 'Thanh Khê', districtId: 'thanh-khe' },
   { name: 'An Khê', districtId: 'thanh-khe' },
-  { name: 'Hòa Khê', districtId: 'thanh-khe' },
-  { name: 'Hòa Minh', districtId: 'lien-chieu' },
-  { name: 'Hòa Khánh Bắc', districtId: 'lien-chieu' },
-  { name: 'Hòa Khánh Nam', districtId: 'lien-chieu' },
-  { name: 'Hòa Hiệp Bắc', districtId: 'lien-chieu' },
-  { name: 'Hòa Hiệp Nam', districtId: 'lien-chieu' },
-  { name: 'Khuê Trung', districtId: 'cam-le' },
-  { name: 'Hòa An', districtId: 'cam-le' },
-  { name: 'Hòa Phát', districtId: 'cam-le' },
-  { name: 'Hòa Thọ Đông', districtId: 'cam-le' },
-  { name: 'Hòa Thọ Tây', districtId: 'cam-le' },
+
+  // Liên Chiểu
+  { name: 'Hòa Khánh', districtId: 'lien-chieu' },
+  { name: 'Liên Chiểu', districtId: 'lien-chieu' },
+  { name: 'Hải Vân', districtId: 'lien-chieu' },
+
+  // Cẩm Lệ
+  { name: 'Cẩm Lệ', districtId: 'cam-le' },
   { name: 'Hòa Xuân', districtId: 'cam-le' },
-  { name: 'Hòa Phong', districtId: 'hoa-vang' },
-  { name: 'Hòa Phú', districtId: 'hoa-vang' },
-  { name: 'Hòa Châu', districtId: 'hoa-vang' },
+
+  // Hòa Vang
+  { name: 'Hòa Vang', districtId: 'hoa-vang' },
   { name: 'Hòa Tiến', districtId: 'hoa-vang' },
   { name: 'Hòa Phước', districtId: 'hoa-vang' },
-  { name: 'Hòa Nhơn', districtId: 'hoa-vang' },
-  { name: 'Hòa Sơn', districtId: 'hoa-vang' },
-  { name: 'Hòa Liên', districtId: 'hoa-vang' },
   { name: 'Hòa Bắc', districtId: 'hoa-vang' },
-  { name: 'Hòa Khương', districtId: 'hoa-vang' },
-  { name: 'Hòa Ninh', districtId: 'hoa-vang' },
 ] as const;
 
 const WARD_TO_DISTRICT = new Map(
@@ -349,7 +323,39 @@ const buildPostCard = (
     hasVideo: videoUrls.length > 0,
     isFeatured: false,
     isNew: false,
+    recommendationScore: post.recommendationScore,
+    recommendationReasons: post.recommendationReasons ?? [],
+    aiSuggestion: post.aiSuggestion,
   };
+};
+
+const buildHomePostCards = async (
+  postsResponse: BaiDangDTO[],
+  categoryLookup: Map<string, IHomeCategory>,
+) => {
+  const mappedPosts: Array<IHomePostCard | null> = await Promise.all(
+    postsResponse.filter(isPublicPost).map(async (post, index) => {
+      const postId = post.maBaiDang?.trim();
+      const [detail, images, likeCount] = postId
+        ? await Promise.all([
+          getApartmentDetailByPost(postId).catch(() => null),
+          getPostImages(postId).catch(() => [] as HinhAnhBaiDangDTO[]),
+          getFavoriteCountByPost(postId).catch(() => 0),
+        ])
+        : [null, [] as HinhAnhBaiDangDTO[], 0];
+
+      const postCard = buildPostCard(post, detail, images, categoryLookup, index);
+
+      return postCard
+        ? {
+          ...postCard,
+          likeCount,
+        }
+        : null;
+    }),
+  );
+
+  return mappedPosts.filter((post): post is IHomePostCard => Boolean(post));
 };
 
 const buildDistricts = (posts: IHomePostCard[]): IHomeDistrict[] =>
@@ -392,19 +398,19 @@ export const getRentalListingData = async (): Promise<ListingData> => {
       const postId = post.maBaiDang?.trim();
       const [detail, images, likeCount] = postId
         ? await Promise.all([
-            getApartmentDetailByPost(postId).catch(() => null),
-            getPostImages(postId).catch(() => [] as HinhAnhBaiDangDTO[]),
-            getFavoriteCountByPost(postId).catch(() => 0),
-          ])
+          getApartmentDetailByPost(postId).catch(() => null),
+          getPostImages(postId).catch(() => [] as HinhAnhBaiDangDTO[]),
+          getFavoriteCountByPost(postId).catch(() => 0),
+        ])
         : [null, [] as HinhAnhBaiDangDTO[], 0];
 
       const postCard = buildPostCard(post, detail, images, categoryLookup, index);
 
       return postCard
         ? {
-            ...postCard,
-            likeCount,
-          }
+          ...postCard,
+          likeCount,
+        }
         : null;
     }),
   );
@@ -425,6 +431,20 @@ export const getRentalListingData = async (): Promise<ListingData> => {
     posts,
     stats: buildStats(posts, districts, postsResponse.filter(isPublicPost)),
   };
+};
+
+export const getRecommendedHomePosts = async (maNguoiDung: string) => {
+  const [postsResponse, categoriesResponse] = await Promise.all([
+    getRecommendedPosts(maNguoiDung),
+    getCategories().catch(() => [] as DanhMucDTO[]),
+  ]);
+  const apiCategories = categoriesResponse.map(mapCategoryDto);
+  const categories = apiCategories.length > 0 ? apiCategories : DEFAULT_HOME_CATEGORIES;
+  const categoryLookup = createCategoryLookup(categories);
+
+  return (await buildHomePostCards(postsResponse, categoryLookup))
+    .sort((a, b) => (b.recommendationScore ?? 0) - (a.recommendationScore ?? 0))
+    .slice(0, 6);
 };
 
 export const createDefaultHomePageData = (): IHomePageData => ({

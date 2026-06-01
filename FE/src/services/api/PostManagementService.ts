@@ -11,6 +11,9 @@ export interface BaiDangDTO {
   lienHe?: string;
   hinhThucThanhToan?: string;
   luotXem?: number;
+  recommendationScore?: number;
+  recommendationReasons?: string[];
+  aiSuggestion?: string;
 }
 
 export interface ChiTietCanHoDTO {
@@ -197,6 +200,10 @@ export const uploadPostVideo = async (maBaiDang: string, file: File) => {
   );
 
   return res.data;
+};
+
+export const deletePostMedia = async (maHinhAnhBaiDang: string) => {
+  await axiosClient.delete(`/api/v1/hinh-anh-bai-dang/${maHinhAnhBaiDang}`);
 };
 
 export const getFavoritePostsByUser = async (maNguoiDung: string) => {

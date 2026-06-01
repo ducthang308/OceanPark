@@ -7,6 +7,7 @@ type InvoicePrintOptions = {
   rows: InvoicePrintRow[];
   footer: string;
   signerLabel: string;
+  printButtonLabel?: string;
 };
 
 const escapeHtml = (value: string) =>
@@ -24,6 +25,7 @@ export const openInvoicePrintWindow = ({
   rows,
   footer,
   signerLabel,
+  printButtonLabel = "In hóa đơn",
 }: InvoicePrintOptions) => {
   const rowsHtml = rows
     .map(
@@ -31,6 +33,8 @@ export const openInvoicePrintWindow = ({
         `<tr><th>${escapeHtml(label)}</th><td>${escapeHtml(value)}</td></tr>`,
     )
     .join("");
+  const printButtonLabelHtml = escapeHtml(printButtonLabel);
+  const printButtonLabelScript = JSON.stringify(printButtonLabel);
 
   const printWindow = window.open("", "_blank", "width=980,height=780");
 
@@ -252,7 +256,7 @@ export const openInvoicePrintWindow = ({
       </head>
       <body>
         <div class="invoice-toolbar no-print">
-          <button type="button" class="invoice-toolbar__print" id="printInvoice">In hóa đơn</button>
+          <button type="button" class="invoice-toolbar__print" id="printInvoice">${printButtonLabelHtml}</button>
           <button type="button" class="invoice-toolbar__clear" id="clearToolbar">Ký lại</button>
           <span>Ký trực tiếp vào ô chữ ký trước khi in.</span>
         </div>
@@ -348,7 +352,7 @@ export const openInvoicePrintWindow = ({
               ctx.stroke();
               hasSignature = true;
               hint.style.display = 'none';
-              meta.textContent = 'Đã ký, bấm In hóa đơn để lưu chữ ký vào bản in.';
+              meta.textContent = 'Đã ký, bấm ' + ${printButtonLabelScript} + ' để lưu chữ ký vào bản in.';
             }
 
             function endDraw() {

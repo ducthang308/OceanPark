@@ -28,6 +28,7 @@ public class SepayService {
     private final PhuongThucThanhToanRepository phuongThucThanhToanRepository;
     private final GoiDangBaiRepository goiDangBaiRepository;
     private final ObjectMapper objectMapper;
+    private final ViNguoiChoThueService viNguoiChoThueService;
 
     @Value("${sepay.bank-code}")
     private String bankCode;
@@ -194,8 +195,17 @@ public class SepayService {
             }
         }
 
-        if ("THUE_CAN_HO".equalsIgnoreCase(hoaDon.getLoaiHoaDon()) && hoaDon.getBaiDang() != null) {
+        if ("THUE_CAN_HO".equalsIgnoreCase(hoaDon.getLoaiHoaDon())
+                && hoaDon.getBaiDang() != null) {
+
             BaiDang baiDang = hoaDon.getBaiDang();
+
+            viNguoiChoThueService.congDoanhThuChoNguoiChoThue(
+                    baiDang.getNguoiDung().getMaNguoiDung(),
+                    hoaDon.getMaHoaDon(),
+                    hoaDon.getSoTien()
+            );
+
             baiDang.setTrangThai("DA_THUE");
             baiDangRepository.save(baiDang);
         }

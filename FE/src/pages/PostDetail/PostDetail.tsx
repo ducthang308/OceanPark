@@ -397,7 +397,7 @@ const PostDetail: React.FC = () => {
       const payment = await createSepayPayment({
         maNguoiDung,
         maBaiDang: post.id,
-        maBaiDangList: [post.id],
+        // maBaiDangList: [post.id],
         loaiHoaDon: 'THUE_CAN_HO',
         soTien,
         ghiChu: `Thanh toán thuê căn hộ ${post.title}`,
@@ -408,7 +408,7 @@ const PostDetail: React.FC = () => {
           ...payment,
           loaiHoaDon: 'THUE_CAN_HO',
           maBaiDang: post.id,
-          maBaiDangList: [post.id],
+          // maBaiDangList: [post.id],
         },
       });
     } catch (error: any) {

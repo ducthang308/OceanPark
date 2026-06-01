@@ -4,6 +4,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   BankOutlined,
   BellOutlined,
+  BulbOutlined,
+  EditOutlined,
   EnvironmentOutlined,
   FireFilled,
   HeartFilled,
@@ -19,6 +21,7 @@ import {
   createDefaultHomePageData,
   createListingPath,
   getHomePageData,
+  getRecommendedHomePosts,
   normalizeText,
 } from '../../services/api/HomeService';
 import type { IHomeCategory, IHomePageData, IHomePostCard } from '../../services/types/home.types';
@@ -29,6 +32,18 @@ import { LANDLORD_ROLE_IDS } from '../../constants/roles';
 import UserNeedDialog from '../../components/common/UserNeedDialog/UserNeedDialog';
 
 type FeaturedTab = 'featured' | 'newest' | 'budget' | 'large';
+type RecommendationTab = 'match' | 'price' | 'location' | 'ai';
+type NeedPreferenceKey =
+  | 'dayDuNoiThat'
+  | 'coMayLanh'
+  | 'coThangMay'
+  | 'coMayGiat'
+  | 'coNhaXe'
+  | 'coTuLanh'
+  | 'gioGiacTuDo'
+  | 'coBanCong'
+  | 'ganTrungTam'
+  | 'ganBien';
 
 interface SearchFilters {
   categorySlug: string;
@@ -62,6 +77,25 @@ const featuredTabs: Array<{ key: FeaturedTab; label: string }> = [
   { key: 'large', label: 'Diện tích lớn' },
 ];
 
+const recommendationTabs: Array<{ key: RecommendationTab; label: string }> = [
+  { key: 'match', label: 'Match nhu cầu' },
+  { key: 'price', label: 'Theo giá' },
+  { key: 'location', label: 'Theo khu vực' },
+];
+
+const needPreferenceLabels: Array<{ key: NeedPreferenceKey; label: string }> = [
+  { key: 'dayDuNoiThat', label: 'Đầy đủ nội thất' },
+  { key: 'coMayLanh', label: 'Máy lạnh' },
+  { key: 'coThangMay', label: 'Thang máy' },
+  { key: 'coMayGiat', label: 'Máy giặt' },
+  { key: 'coNhaXe', label: 'Nhà xe' },
+  { key: 'coTuLanh', label: 'Tủ lạnh' },
+  { key: 'gioGiacTuDo', label: 'Giờ giấc tự do' },
+  { key: 'coBanCong', label: 'Ban công' },
+  { key: 'ganTrungTam', label: 'Gần trung tâm' },
+  { key: 'ganBien', label: 'Gần biển' },
+];
+
 const getPostPrice = (post: IHomePostCard) =>
   typeof post.price === 'number' ? post.price : Number.MAX_SAFE_INTEGER;
 
@@ -76,6 +110,22 @@ const formatCompactCurrency = (value?: number | null) => {
   }
 
   return `${new Intl.NumberFormat('vi-VN').format(value)}đ`;
+};
+
+const formatNeedCurrency = (value?: number | null) => {
+  if (typeof value !== 'number' || Number.isNaN(value) || value <= 0) return '';
+  return formatCompactCurrency(value);
+};
+
+const formatNeedPriceRange = (minPrice?: number | null, maxPrice?: number | null) => {
+  const minText = formatNeedCurrency(minPrice);
+  const maxText = formatNeedCurrency(maxPrice);
+
+  if (minText && maxText) return `${minText} - ${maxText}`;
+  if (minText) return `từ ${minText}`;
+  if (maxText) return `đến ${maxText}`;
+
+  return '';
 };
 
 const getUniquePosts = (posts: IHomePostCard[]) =>
@@ -158,6 +208,9 @@ const Home: React.FC = () => {
   const [homeData, setHomeData] = useState<IHomePageData>(() => createDefaultHomePageData());
   const [homeLoading, setHomeLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<FeaturedTab>('featured');
+  const [recommendationTab, setRecommendationTab] = useState<RecommendationTab>('match');
+  const [recommendedPosts, setRecommendedPosts] = useState<IHomePostCard[]>([]);
+  const [recommendationLoading, setRecommendationLoading] = useState(false);
   const [savedPostIds, setSavedPostIds] = useState<Array<string | number>>([]);
   const [notifyEnabled, setNotifyEnabled] = useState(false);
   const [showPriceRangeError, setShowPriceRangeError] = useState(false);
@@ -213,6 +266,36 @@ const Home: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    let ignore = false;
+
+    const loadRecommendations = async () => {
+      if (!canManageUserNeed || !hasNeed || !maNguoiDung) {
+        setRecommendedPosts([]);
+        setRecommendationLoading(false);
+        return;
+      }
+
+      setRecommendationLoading(true);
+
+      try {
+        const data = await getRecommendedHomePosts(maNguoiDung);
+        if (!ignore) setRecommendedPosts(data);
+      } catch (error) {
+        console.error(error);
+        if (!ignore) setRecommendedPosts([]);
+      } finally {
+        if (!ignore) setRecommendationLoading(false);
+      }
+    };
+
+    loadRecommendations();
+
+    return () => {
+      ignore = true;
+    };
+  }, [canManageUserNeed, hasNeed, maNguoiDung, initialValues]);
+
   const allHomePosts = useMemo(
     () =>
       homeData.allPosts.length > 0
@@ -261,6 +344,66 @@ const Home: React.FC = () => {
         .slice(0, 3),
     [allHomePosts],
   );
+  const needSummaryChips = useMemo(() => {
+    const chips: string[] = [];
+    const priceRangeText = formatNeedPriceRange(initialValues?.minPrice, initialValues?.maxPrice);
+
+    if (priceRangeText) chips.push(`Giá ${priceRangeText}`);
+    if (initialValues?.phuong) chips.push(`Khu vực ${initialValues.phuong}`);
+    if (initialValues?.loaiCanHo) chips.push(initialValues.loaiCanHo);
+
+    needPreferenceLabels
+      .filter((item) => Boolean(initialValues?.[item.key]))
+      .slice(0, 4)
+      .forEach((item) => chips.push(item.label));
+
+    return chips;
+  }, [initialValues]);
+  const recommendationPostsToShow = useMemo(() => {
+    const matchesNeedPrice = (post: IHomePostCard) => {
+      const minPrice = initialValues?.minPrice;
+      const maxPrice = initialValues?.maxPrice;
+
+      if (!minPrice && !maxPrice) return true;
+      if (typeof post.price !== 'number') return false;
+
+      const aboveMin = typeof minPrice !== 'number' || post.price >= minPrice;
+      const belowMax = typeof maxPrice !== 'number' || post.price <= maxPrice;
+
+      return aboveMin && belowMax;
+    };
+    const matchesNeedLocation = (post: IHomePostCard) => {
+      const ward = initialValues?.phuong?.trim();
+      if (!ward) return true;
+
+      return normalizeText(`${post.wardText} ${post.addressText}`).includes(normalizeText(ward));
+    };
+    const byScore = (a: IHomePostCard, b: IHomePostCard) =>
+      (b.recommendationScore ?? 0) - (a.recommendationScore ?? 0);
+
+    if (recommendationTab === 'price') {
+      return [...recommendedPosts]
+        .filter(matchesNeedPrice)
+        .sort((a, b) => getPostPrice(a) - getPostPrice(b))
+        .slice(0, 3);
+    }
+
+    if (recommendationTab === 'location') {
+      return [...recommendedPosts]
+        .filter(matchesNeedLocation)
+        .sort(byScore)
+        .slice(0, 3);
+    }
+
+    if (recommendationTab === 'ai') {
+      return [...recommendedPosts]
+        .filter((post) => Boolean(post.aiSuggestion))
+        .sort(byScore)
+        .slice(0, 3);
+    }
+
+    return [...recommendedPosts].sort(byScore).slice(0, 3);
+  }, [initialValues, recommendationTab, recommendedPosts]);
 
   const updateSearchFilter = (key: keyof SearchFilters, value: string) => {
     if (key === 'minPrice' || key === 'maxPrice') {
@@ -317,6 +460,63 @@ const Home: React.FC = () => {
     );
   };
 
+  const renderPostCard = (post: IHomePostCard, showRecommendation = false) => (
+    <Link
+      key={post.id}
+      to={`/posts/${post.id}`}
+      className={`site-home-post ${showRecommendation ? 'site-home-post--recommendation' : ''}`}
+    >
+      <div className="site-home-post__image-wrap">
+        <img src={post.coverImage} alt={post.title} loading="lazy" decoding="async" />
+        {showRecommendation && typeof post.recommendationScore === 'number' && (
+          <span className="site-home-post__score">{post.recommendationScore}% match</span>
+        )}
+        <span className="site-home-post__favorite-count">
+          <HeartFilled />
+          {post.likeCount ?? 0}
+        </span>
+        <button
+          type="button"
+          className={`site-home-save-btn ${savedPostIds.includes(post.id) ? 'is-saved' : ''}`}
+          aria-label="Lưu tin"
+          onClick={(event) => {
+            event.preventDefault();
+            toggleSavedPost(post.id);
+          }}
+        >
+          {savedPostIds.includes(post.id) ? <HeartFilled /> : <HeartOutlined />}
+        </button>
+      </div>
+      <div className="site-home-post__body">
+        <span>{post.categoryLabel}</span>
+        <h3>{post.title}</h3>
+        <p>{post.addressText}</p>
+        <div className="site-home-post__meta">
+          <strong>{post.priceText}</strong>
+          <small>{post.areaText}</small>
+        </div>
+        {showRecommendation && post.recommendationReasons && post.recommendationReasons.length > 0 && (
+          <div className="site-home-post__reasons">
+            {post.recommendationReasons.slice(0, 3).map((reason) => (
+              <small key={reason}>{reason}</small>
+            ))}
+          </div>
+        )}
+        {showRecommendation && post.aiSuggestion && (
+          <div className="site-home-post__ai">
+            <BulbOutlined />
+            <span>{post.aiSuggestion}</span>
+          </div>
+        )}
+        <div className="site-home-post__signals">
+          <small>{post.postedAtText}</small>
+          <small>{post.likeCount ?? 0} lượt lưu</small>
+          {post.hasVideo && <small>Có video</small>}
+        </div>
+      </div>
+    </Link>
+  );
+
   return (
     <>
       <main className="site-home-page">
@@ -339,6 +539,7 @@ const Home: React.FC = () => {
                     className="site-home-btn site-home-btn--ghost"
                     onClick={() => void openDialog()}
                   >
+                    <EditOutlined />
                     Sửa nhu cầu
                   </button>
                 )}
@@ -509,6 +710,67 @@ const Home: React.FC = () => {
         </section>
 
         <section className="site-home-section">
+          {canManageUserNeed && hasNeed && (
+            <div className="site-home-recommendations">
+              <div className="site-home-section-heading site-home-section-heading--split">
+                <div>
+                  <span className="site-home-eyebrow">Gợi ý căn hộ</span>
+                  <h2>Danh sách gợi ý theo nhu cầu</h2>
+                </div>
+                <div className="site-home-recommendation-actions">
+                  <button
+                    type="button"
+                    className="site-home-link"
+                    onClick={() => void openDialog()}
+                  >
+                    <EditOutlined />
+                    Sửa nhu cầu
+                  </button>
+                </div>
+              </div>
+
+              {needSummaryChips.length > 0 && (
+                <div className="site-home-recommendation-chips" aria-label="Nhu cầu đã lưu">
+                  {needSummaryChips.map((chip) => (
+                    <span key={chip}>{chip}</span>
+                  ))}
+                </div>
+              )}
+
+              <div className="site-home-section-heading site-home-section-heading--split site-home-recommendation-toolbar">
+                <p>
+                  {recommendedPosts.length > 0
+                    ? `Score cao nhất: ${recommendedPosts[0].recommendationScore ?? 0}%`
+                    : 'Đang chờ dữ liệu gợi ý'}
+                </p>
+                <div className="site-home-post-tabs" role="tablist" aria-label="Lọc gợi ý căn hộ">
+                  {recommendationTabs.map((tab) => (
+                    <button
+                      key={tab.key}
+                      type="button"
+                      className={recommendationTab === tab.key ? 'is-active' : ''}
+                      onClick={() => setRecommendationTab(tab.key)}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {recommendationLoading ? (
+                <div className="site-home-empty">Đang phân tích nhu cầu và tải gợi ý phù hợp...</div>
+              ) : recommendationPostsToShow.length > 0 ? (
+                <div className="site-home-post-grid">
+                  {recommendationPostsToShow.map((post) => renderPostCard(post, true))}
+                </div>
+              ) : (
+                <div className="site-home-empty">
+                  Chưa có căn hộ nào match nhu cầu hiện tại. Bạn có thể chỉnh lại giá hoặc khu vực để mở rộng gợi ý.
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="site-home-section-heading site-home-section-heading--split">
             <div>
               <span className="site-home-eyebrow">Gợi ý dành cho bạn</span>
@@ -530,42 +792,7 @@ const Home: React.FC = () => {
 
           {featuredPosts.length > 0 ? (
             <div className="site-home-post-grid">
-              {featuredPosts.map((post) => (
-                <Link key={post.id} to={`/posts/${post.id}`} className="site-home-post">
-                <div className="site-home-post__image-wrap">
-                  <img src={post.coverImage} alt={post.title} loading="lazy" decoding="async" />
-                  <span className="site-home-post__favorite-count">
-                    <HeartFilled />
-                    {post.likeCount ?? 0}
-                  </span>
-                  <button
-                    type="button"
-                    className={`site-home-save-btn ${savedPostIds.includes(post.id) ? 'is-saved' : ''}`}
-                    aria-label="Lưu tin"
-                    onClick={(event) => {
-                      event.preventDefault();
-                      toggleSavedPost(post.id);
-                    }}
-                  >
-                    {savedPostIds.includes(post.id) ? <HeartFilled /> : <HeartOutlined />}
-                  </button>
-                </div>
-                <div className="site-home-post__body">
-                  <span>{post.categoryLabel}</span>
-                  <h3>{post.title}</h3>
-                  <p>{post.addressText}</p>
-                  <div className="site-home-post__meta">
-                    <strong>{post.priceText}</strong>
-                    <small>{post.areaText}</small>
-                  </div>
-                  <div className="site-home-post__signals">
-                    <small>{post.postedAtText}</small>
-                    <small>{post.likeCount ?? 0} lượt lưu</small>
-                    {post.hasVideo && <small>Có video</small>}
-                  </div>
-                </div>
-                </Link>
-              ))}
+              {featuredPosts.map((post) => renderPostCard(post))}
             </div>
           ) : (
             <div className="site-home-empty">
