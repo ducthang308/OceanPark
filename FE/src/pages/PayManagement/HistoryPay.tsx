@@ -340,7 +340,7 @@ const History = () => {
         <div className="content-area">
           <main className="history-content">
             <div className="history-header">
-              <h1>Quản lý tài chính</h1>
+              <h1>Quản lý giao dịch</h1>
               <Link to="/payment/all">
                 <Button type="primary" size="large">Mua gói tin ngay</Button>
               </Link>

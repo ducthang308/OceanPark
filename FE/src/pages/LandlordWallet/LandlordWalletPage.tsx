@@ -328,13 +328,12 @@ const LandlordWalletPage = () => {
       <main className="landlord-wallet-content">
         <section className="landlord-wallet-header">
           <div>
-            <p className="landlord-wallet-eyebrow">Ví người cho thuê</p>
             <h1>Quản lý số dư và rút tiền</h1>
             <span>
               Theo dõi doanh thu thuê căn hộ, yêu cầu rút tiền và chứng từ đã xử lý.
             </span>
           </div>
-
+{/* 
           <Button
             type="primary"
             size="large"
@@ -343,7 +342,7 @@ const LandlordWalletPage = () => {
             onClick={() => void loadWalletData()}
           >
             Làm mới
-          </Button>
+          </Button> */}
         </section>
 
         {error && (
