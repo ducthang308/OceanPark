@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { createSepayPayment } from '../../services/api/PostManagementService';
-import { getAuthSession } from '../../utils/storage';
+import {
+  AUTH_SESSION_CHANGED_EVENT,
+  AUTH_SESSION_CLEARED_EVENT,
+  getAuthSession,
+} from '../../utils/storage';
 import {
   APARTMENT_CART_CHANGED_EVENT,
   clearApartmentCart,
@@ -26,8 +30,16 @@ const ApartmentCartPage = () => {
   useEffect(() => {
     loadCart();
     window.addEventListener(APARTMENT_CART_CHANGED_EVENT, loadCart);
+    window.addEventListener(AUTH_SESSION_CHANGED_EVENT, loadCart);
+    window.addEventListener(AUTH_SESSION_CLEARED_EVENT, loadCart);
+    window.addEventListener('storage', loadCart);
 
-    return () => window.removeEventListener(APARTMENT_CART_CHANGED_EVENT, loadCart);
+    return () => {
+      window.removeEventListener(APARTMENT_CART_CHANGED_EVENT, loadCart);
+      window.removeEventListener(AUTH_SESSION_CHANGED_EVENT, loadCart);
+      window.removeEventListener(AUTH_SESSION_CLEARED_EVENT, loadCart);
+      window.removeEventListener('storage', loadCart);
+    };
   }, []);
 
   const totalAmount = useMemo(
@@ -105,7 +117,6 @@ const ApartmentCartPage = () => {
       <div className="apartment-cart-shell">
         <div className="apartment-cart-header">
           <div>
-            <p>Người thuê</p>
             <h1>Giỏ hàng căn hộ</h1>
           </div>
           <button type="button" onClick={() => navigate('/posts')}>

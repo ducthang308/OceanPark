@@ -3,7 +3,12 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import './header.css';
 import { LANDLORD_ROLE_IDS, ROLE_ID } from '../../../constants/roles';
 import type { RoleId } from '../../../constants/roles';
-import { clearAuthSession, getAuthSession } from '../../../utils/storage';
+import {
+  AUTH_SESSION_CHANGED_EVENT,
+  AUTH_SESSION_CLEARED_EVENT,
+  clearAuthSession,
+  getAuthSession,
+} from '../../../utils/storage';
 import { getFavoritePostsByUser } from '../../../services/api/PostManagementService';
 import { useChatNotifications } from '../../../contexts/ChatNotificationProvider';
 import { MessageSquare, ShoppingCart } from 'lucide-react';
@@ -196,7 +201,14 @@ const Header: React.FC = () => {
   useEffect(() => {
     const syncUser = () => setCurrentUser(getUserFromStorage());
     window.addEventListener('storage', syncUser);
-    return () => window.removeEventListener('storage', syncUser);
+    window.addEventListener(AUTH_SESSION_CHANGED_EVENT, syncUser);
+    window.addEventListener(AUTH_SESSION_CLEARED_EVENT, syncUser);
+
+    return () => {
+      window.removeEventListener('storage', syncUser);
+      window.removeEventListener(AUTH_SESSION_CHANGED_EVENT, syncUser);
+      window.removeEventListener(AUTH_SESSION_CLEARED_EVENT, syncUser);
+    };
   }, []);
 
   // Cập nhật lại user mỗi khi chuyển trang (sau khi login navigate về /)
@@ -240,13 +252,17 @@ const Header: React.FC = () => {
 
     syncCartTotal();
     window.addEventListener(APARTMENT_CART_CHANGED_EVENT, syncCartTotal);
+    window.addEventListener(AUTH_SESSION_CHANGED_EVENT, syncCartTotal);
+    window.addEventListener(AUTH_SESSION_CLEARED_EVENT, syncCartTotal);
     window.addEventListener('storage', syncCartTotal);
 
     return () => {
       window.removeEventListener(APARTMENT_CART_CHANGED_EVENT, syncCartTotal);
+      window.removeEventListener(AUTH_SESSION_CHANGED_EVENT, syncCartTotal);
+      window.removeEventListener(AUTH_SESSION_CLEARED_EVENT, syncCartTotal);
       window.removeEventListener('storage', syncCartTotal);
     };
-  }, [location.pathname]);
+  }, [location.pathname, currentUser?.maNguoiDung]);
 
   useEffect(() => {
     const handleScroll = () => {

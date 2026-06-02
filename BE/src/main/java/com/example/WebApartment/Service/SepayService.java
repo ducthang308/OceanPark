@@ -33,6 +33,7 @@ public class SepayService {
     private final ChiTietHoaDonRepository chiTietHoaDonRepository;
     private final ObjectMapper objectMapper;
     private final ViNguoiChoThueService viNguoiChoThueService;
+    private final EmailService emailService;
 
     @Value("${sepay.bank-code}")
     private String bankCode;
@@ -245,6 +246,8 @@ public class SepayService {
 
         giaoDichRepository.save(giaoDich);
 
+        sendPaymentSuccessEmailSafely(hoaDon);
+
         return Map.of(
                 "success", true,
                 "message", "Thanh toán thành công",
@@ -446,6 +449,20 @@ public class SepayService {
                 .ghiChu(line.ghiChu())
                 .tieuDeBaiDang(line.baiDang().getTieuDe())
                 .build();
+    }
+
+    private void sendPaymentSuccessEmailSafely(HoaDon hoaDon) {
+        try {
+            emailService.sendPaymentSuccessEmail(
+                    hoaDon,
+                    chiTietHoaDonRepository.findByHoaDon_MaHoaDon(hoaDon.getMaHoaDon())
+            );
+        } catch (Exception e) {
+            System.err.println("Không gửi được email thanh toán thành công cho hóa đơn "
+                    + hoaDon.getMaHoaDon()
+                    + ": "
+                    + e.getMessage());
+        }
     }
 
     private String buildVietQrUrl(Double amount, String content) {

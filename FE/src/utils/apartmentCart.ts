@@ -10,12 +10,35 @@ export type ApartmentCartItem = {
   coverImage?: string;
 };
 
-const APARTMENT_CART_KEY = 'apartmentCartItems';
+const APARTMENT_CART_KEY_PREFIX = 'apartmentCartItems';
+const LEGACY_APARTMENT_CART_KEY = 'apartmentCartItems';
+const GUEST_CART_OWNER = 'guest';
 
 export const APARTMENT_CART_CHANGED_EVENT = 'apartment-cart:changed';
 
 const notifyCartChanged = () => {
   window.dispatchEvent(new Event(APARTMENT_CART_CHANGED_EVENT));
+};
+
+const getCurrentCartOwner = () =>
+  localStorage.getItem('userId') ||
+  (() => {
+    const rawUser = localStorage.getItem('user');
+    if (!rawUser) return '';
+
+    try {
+      const user = JSON.parse(rawUser) as { maNguoiDung?: string };
+      return user.maNguoiDung || '';
+    } catch {
+      return '';
+    }
+  })() ||
+  GUEST_CART_OWNER;
+
+const getApartmentCartKey = () => `${APARTMENT_CART_KEY_PREFIX}:${getCurrentCartOwner()}`;
+
+const cleanupLegacyCart = () => {
+  localStorage.removeItem(LEGACY_APARTMENT_CART_KEY);
 };
 
 const normalizeQuantity = (quantity: number, availableQuantity: number) => {
@@ -25,7 +48,10 @@ const normalizeQuantity = (quantity: number, availableQuantity: number) => {
 };
 
 export const getApartmentCartItems = (): ApartmentCartItem[] => {
-  const raw = localStorage.getItem(APARTMENT_CART_KEY);
+  cleanupLegacyCart();
+
+  const key = getApartmentCartKey();
+  const raw = localStorage.getItem(key);
   if (!raw) return [];
 
   try {
@@ -42,13 +68,14 @@ export const getApartmentCartItems = (): ApartmentCartItem[] => {
       }))
       .filter((item) => item.quantity > 0);
   } catch {
-    localStorage.removeItem(APARTMENT_CART_KEY);
+    localStorage.removeItem(key);
     return [];
   }
 };
 
 export const saveApartmentCartItems = (items: ApartmentCartItem[]) => {
-  localStorage.setItem(APARTMENT_CART_KEY, JSON.stringify(items));
+  cleanupLegacyCart();
+  localStorage.setItem(getApartmentCartKey(), JSON.stringify(items));
   notifyCartChanged();
 };
 
@@ -103,7 +130,8 @@ export const removeApartmentCartItem = (maBaiDang: string) => {
 };
 
 export const clearApartmentCart = () => {
-  localStorage.removeItem(APARTMENT_CART_KEY);
+  cleanupLegacyCart();
+  localStorage.removeItem(getApartmentCartKey());
   notifyCartChanged();
 };
 
