@@ -152,7 +152,6 @@ public class SepayService {
                 getString(payload, "code"),
                 getString(payload, "transaction_content")
         );
-
         Double transferAmount = getDouble(payload, "transferAmount");
         if (transferAmount == null) transferAmount = getDouble(payload, "transfer_amount");
         if (transferAmount == null) transferAmount = getDouble(payload, "amount");
@@ -209,8 +208,6 @@ public class SepayService {
                 goi.setNgayKetThuc(now.plusMonths(1));
                 goiDangBaiRepository.save(goi);
             }
-
-            emailService.sendPostPackagePaymentSuccess(hoaDon);
         }
 
         if ("THUE_CAN_HO".equalsIgnoreCase(hoaDon.getLoaiHoaDon())) {
@@ -535,7 +532,6 @@ public class SepayService {
             return null;
         }
     }
-
     private record RentPaymentLine(
             BaiDang baiDang,
             int soLuong,
