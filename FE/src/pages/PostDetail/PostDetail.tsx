@@ -707,12 +707,12 @@ const PostDetail: React.FC = () => {
                   Gọi ngay
                 </a>
 
-                <button
+                {/* <button
                   type="button"
                   className="rental-detail-btn rental-detail-btn--zalo"
                 >
                   Nhắn Zalo
-                </button>
+                </button> */}
 
                 {maNguoiDung !== post?.ownerId && (
                   <button

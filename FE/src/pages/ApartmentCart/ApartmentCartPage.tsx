@@ -207,7 +207,7 @@ const ApartmentCartPage = () => {
                 disabled={submitting}
                 onClick={handleCheckout}
               >
-                {submitting ? 'Đang tạo thanh toán...' : 'Thanh toán SePay một lần'}
+                {submitting ? 'Đang tạo thanh toán...' : 'Thanh toán'}
               </button>
 
               <button
