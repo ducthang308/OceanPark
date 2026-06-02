@@ -3,6 +3,7 @@ package com.example.WebApartment.DTO;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -31,4 +32,6 @@ public class HoaDonDTO {
 
     private LocalDateTime ngayTao;
     private LocalDateTime ngayThanhToan;
+
+    private List<ChiTietHoaDonDTO> chiTietHoaDon;
 }

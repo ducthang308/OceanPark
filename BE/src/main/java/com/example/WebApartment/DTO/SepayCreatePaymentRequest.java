@@ -2,6 +2,8 @@ package com.example.WebApartment.DTO;
 
 import lombok.*;
 
+import java.util.List;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -13,4 +15,5 @@ public class SepayCreatePaymentRequest {
     private String loaiHoaDon;
     private Double soTien;
     private String ghiChu;
+    private List<ChiTietHoaDonDTO> chiTietHoaDon;
 }

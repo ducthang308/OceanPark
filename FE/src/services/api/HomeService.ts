@@ -320,6 +320,7 @@ const buildPostCard = (
     districtId: resolveDistrictId(addressText, wardText),
     createdAtTime: getDateTime(post.ngayDang) || index,
     likeCount: 0,
+    availableQuantity: Math.max(detail?.soLuongTrong ?? 1, 0),
     hasVideo: videoUrls.length > 0,
     isFeatured: false,
     isNew: false,
