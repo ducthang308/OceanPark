@@ -29,6 +29,7 @@ public class SepayService {
     private final GoiDangBaiRepository goiDangBaiRepository;
     private final ObjectMapper objectMapper;
     private final ViNguoiChoThueService viNguoiChoThueService;
+    private final EmailService emailService;
 
     @Value("${sepay.bank-code}")
     private String bankCode;
@@ -193,6 +194,8 @@ public class SepayService {
                 goi.setNgayKetThuc(now.plusMonths(1));
                 goiDangBaiRepository.save(goi);
             }
+
+            emailService.sendPostPackagePaymentSuccess(hoaDon);
         }
 
         if ("THUE_CAN_HO".equalsIgnoreCase(hoaDon.getLoaiHoaDon())
@@ -208,6 +211,9 @@ public class SepayService {
 
             baiDang.setTrangThai("DA_THUE");
             baiDangRepository.save(baiDang);
+
+            emailService.sendPaymentSuccessToTenant(hoaDon);
+            emailService.sendPaymentSuccessToLandlord(hoaDon);
         }
 
         PhuongThucThanhToan phuongThuc = phuongThucThanhToanRepository.findByProvider("SEPAY")
