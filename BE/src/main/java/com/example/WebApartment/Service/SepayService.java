@@ -208,6 +208,11 @@ public class SepayService {
                 goi.setNgayKetThuc(now.plusMonths(1));
                 goiDangBaiRepository.save(goi);
             }
+
+            emailService.sendPaymentSuccessEmail(
+                    hoaDon,
+                    List.of()
+            );
         }
 
         if ("THUE_CAN_HO".equalsIgnoreCase(hoaDon.getLoaiHoaDon())) {
@@ -452,15 +457,31 @@ public class SepayService {
 
     private void sendPaymentSuccessEmailSafely(HoaDon hoaDon) {
         try {
+
+            List<ChiTietHoaDon> details =
+                    chiTietHoaDonRepository.findByHoaDon_MaHoaDon(
+                            hoaDon.getMaHoaDon()
+                    );
+
             emailService.sendPaymentSuccessEmail(
                     hoaDon,
-                    chiTietHoaDonRepository.findByHoaDon_MaHoaDon(hoaDon.getMaHoaDon())
+                    details
             );
+
+            if ("THUE_CAN_HO".equalsIgnoreCase(hoaDon.getLoaiHoaDon())) {
+                emailService.sendLandlordRentSuccessEmails(
+                        hoaDon,
+                        details
+                );
+            }
+
         } catch (Exception e) {
-            System.err.println("Không gửi được email thanh toán thành công cho hóa đơn "
-                    + hoaDon.getMaHoaDon()
-                    + ": "
-                    + e.getMessage());
+            System.err.println(
+                    "Không gửi được email thanh toán thành công cho hóa đơn "
+                            + hoaDon.getMaHoaDon()
+                            + ": "
+                            + e.getMessage()
+            );
         }
     }
 
