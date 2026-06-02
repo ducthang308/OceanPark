@@ -3,12 +3,17 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { getHoaDonById } from '../../services/api/PostManagementService';
 import type { SepayCreatePaymentResponse } from '../../services/api/PostManagementService';
 import Navbar from '../../components/layout/Navbar/navbar';
+import { clearApartmentCartItems } from '../../utils/apartmentCart';
 import './SepayPaymentPage.css';
+
+type SepayPaymentState = SepayCreatePaymentResponse & {
+    cartCheckoutPostIds?: string[];
+};
 
 const SepayPaymentPage: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const payment = location.state as SepayCreatePaymentResponse | null;
+    const payment = location.state as SepayPaymentState | null;
 
     const [status, setStatus] = useState('PENDING');
     const [title, setTitle] = useState('Thanh toán');
@@ -43,6 +48,9 @@ const SepayPaymentPage: React.FC = () => {
                     }
 
                     if (hoaDon.loaiHoaDon === 'THUE_CAN_HO') {
+                        if (payment.cartCheckoutPostIds?.length) {
+                            clearApartmentCartItems(payment.cartCheckoutPostIds);
+                        }
                         alert('Thanh toán thuê căn hộ thành công!');
                         navigate('/tenant-transactions');
                         return;

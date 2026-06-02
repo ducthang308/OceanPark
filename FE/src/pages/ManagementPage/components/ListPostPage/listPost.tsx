@@ -82,6 +82,7 @@ interface PostItem {
   rawPhuong?: string;
   rawLat?: number;
   rawLng?: number;
+  rawSoLuongTrong?: number;
 }
 
 interface PendingImageUpload {
@@ -109,6 +110,7 @@ interface EditPostFormValues {
   huongCanHo?: string;
   lat?: number;
   lng?: number;
+  soLuongTrong?: number;
 }
 
 const MAX_EDIT_IMAGE_COUNT = 20;
@@ -360,6 +362,7 @@ const ListPost = () => {
             rawPhuong: detail?.phuong,
             rawLat: detail?.lat,
             rawLng: detail?.lng,
+            rawSoLuongTrong: detail?.soLuongTrong,
           };
         })
       );
@@ -463,6 +466,7 @@ const ListPost = () => {
       huongCanHo: post.rawHuongCanHo,
       lat: post.rawLat,
       lng: post.rawLng,
+      soLuongTrong: post.rawSoLuongTrong,
     });
     setIsEditModalOpen(true);
     void loadEditMedia(post.id);
@@ -617,6 +621,7 @@ const ListPost = () => {
           huongCanHo: values.huongCanHo,
           lat: values.lat,
           lng: values.lng,
+          soLuongTrong: values.soLuongTrong,
         });
       }
 
@@ -745,6 +750,11 @@ const ListPost = () => {
                       <div className="post-detail-item">
                         <span className="label">Trạng thái</span>
                         <strong>{post.status}</strong>
+                      </div>
+
+                      <div className="post-detail-item">
+                        <span className="label">Còn trống</span>
+                        <strong>{post.rawSoLuongTrong ?? 0}</strong>
                       </div>
                     </div>
                   </div>
@@ -924,6 +934,18 @@ const ListPost = () => {
                             min={0}
                             style={{ width: "100%" }}
                             placeholder="Nhập số phòng ngủ"
+                          />
+                        </Form.Item>
+
+                        <Form.Item
+                          name="soLuongTrong"
+                          label="Số lượng phòng trống"
+                          rules={[{ required: true, message: "Vui lòng nhập số lượng trống" }]}
+                        >
+                          <InputNumber
+                            min={0}
+                            style={{ width: "100%" }}
+                            placeholder="Nhập số lượng trống"
                           />
                         </Form.Item>
 

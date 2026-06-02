@@ -68,6 +68,7 @@ public class ChiTietCanHoService {
                 .phuong(dto.getPhuong())
                 .lat(dto.getLat())
                 .lng(dto.getLng())
+                .soLuongTrong(normalizeSoLuongTrong(dto.getSoLuongTrong()))
                 .ngayTao(LocalDateTime.now())
                 .build();
 
@@ -90,6 +91,12 @@ public class ChiTietCanHoService {
         if (dto.getPhuong() != null) existing.setPhuong(dto.getPhuong());
         if (dto.getLat() != null) existing.setLat(dto.getLat());
         if (dto.getLng() != null) existing.setLng(dto.getLng());
+        if (dto.getSoLuongTrong() != null) {
+            if (dto.getSoLuongTrong() < 0) {
+                throw new RuntimeException("Số lượng trống không được nhỏ hơn 0");
+            }
+            existing.setSoLuongTrong(dto.getSoLuongTrong());
+        }
 
         return toDto(repo.save(existing));
     }
@@ -115,7 +122,16 @@ public class ChiTietCanHoService {
                 .phuong(entity.getPhuong())
                 .lat(entity.getLat())
                 .lng(entity.getLng())
+                .soLuongTrong(entity.getSoLuongTrong())
                 .ngayTao(entity.getNgayTao())
                 .build();
+    }
+
+    private Integer normalizeSoLuongTrong(Integer soLuongTrong) {
+        if (soLuongTrong == null) return 1;
+        if (soLuongTrong < 0) {
+            throw new RuntimeException("Số lượng trống không được nhỏ hơn 0");
+        }
+        return soLuongTrong;
     }
 }

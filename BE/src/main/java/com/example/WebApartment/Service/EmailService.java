@@ -1,8 +1,7 @@
 package com.example.WebApartment.Service;
 
-import com.example.WebApartment.Models.BaiDang;
+import com.example.WebApartment.Models.ChiTietHoaDon;
 import com.example.WebApartment.Models.HoaDon;
-import com.example.WebApartment.Models.NguoiDung;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +9,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.*;
 import org.springframework.stereotype.Service;
+
+import java.text.NumberFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -48,112 +53,134 @@ public class EmailService {
         }
     }
 
-    public void sendPaymentSuccessToTenant(HoaDon hoaDon) {
-        NguoiDung nguoiThue = hoaDon.getNguoiDung();
+    public void sendPaymentSuccessEmail(HoaDon hoaDon, List<ChiTietHoaDon> chiTietHoaDon) {
+        if (hoaDon == null || hoaDon.getNguoiDung() == null) return;
 
-        if (nguoiThue == null || nguoiThue.getEmail() == null || nguoiThue.getEmail().isBlank()) {
-            return;
-        }
+        String to = hoaDon.getNguoiDung().getEmail();
+        if (to == null || to.isBlank()) return;
 
-        BaiDang baiDang = hoaDon.getBaiDang();
-
-        String subject = "Thanh toán thuê căn hộ thành công";
-
-        String body = """
-                Xin chào %s,
-
-                Hệ thống đã ghi nhận thanh toán thuê căn hộ thành công.
-
-                Mã hóa đơn: %s
-                Số tiền: %,.0f VNĐ
-                Bài đăng: %s
-                Trạng thái: SUCCESS
-
-                Cảm ơn bạn đã sử dụng dịch vụ.
-                """.formatted(
-                nguoiThue.getHoVaTen(),
-                hoaDon.getMaHoaDon(),
-                hoaDon.getSoTien(),
-                baiDang != null ? baiDang.getTieuDe() : "Không có"
-        );
-
-        sendSimpleEmail(nguoiThue.getEmail(), subject, body);
-    }
-
-    public void sendPaymentSuccessToLandlord(HoaDon hoaDon) {
-        BaiDang baiDang = hoaDon.getBaiDang();
-
-        if (baiDang == null || baiDang.getNguoiDung() == null) {
-            return;
-        }
-
-        NguoiDung nguoiChoThue = baiDang.getNguoiDung();
-
-        if (nguoiChoThue.getEmail() == null || nguoiChoThue.getEmail().isBlank()) {
-            return;
-        }
-
-        String subject = "Căn hộ của bạn đã được thuê";
-
-        String body = """
-                Xin chào %s,
-
-                Một người thuê đã thanh toán thành công cho bài đăng của bạn.
-
-                Mã hóa đơn: %s
-                Bài đăng: %s
-                Số tiền: %,.0f VNĐ
-                Trạng thái bài đăng: ĐÃ THUÊ
-
-                Doanh thu đã được ghi nhận vào ví người cho thuê của bạn.
-                """.formatted(
-                nguoiChoThue.getHoVaTen(),
-                hoaDon.getMaHoaDon(),
-                baiDang.getTieuDe(),
-                hoaDon.getSoTien()
-        );
-
-        sendSimpleEmail(nguoiChoThue.getEmail(), subject, body);
-    }
-
-    public void sendPostPackagePaymentSuccess(HoaDon hoaDon) {
-        NguoiDung nguoiDung = hoaDon.getNguoiDung();
-
-        if (nguoiDung == null || nguoiDung.getEmail() == null || nguoiDung.getEmail().isBlank()) {
-            return;
-        }
-
-        String subject = "Thanh toán gói đăng bài thành công";
-
-        String body = """
-                Xin chào %s,
-
-                Bạn đã thanh toán gói đăng bài thành công.
-
-                Mã hóa đơn: %s
-                Số tiền: %,.0f VNĐ
-                Thời hạn hiệu lực: 1 tháng
-
-                Bạn có thể bắt đầu đăng bài cho thuê căn hộ.
-                """.formatted(
-                nguoiDung.getHoVaTen(),
-                hoaDon.getMaHoaDon(),
-                hoaDon.getSoTien()
-        );
-
-        sendSimpleEmail(nguoiDung.getEmail(), subject, body);
-    }
-
-    private void sendSimpleEmail(String to, String subject, String body) {
         try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setTo(to);
-            message.setSubject(subject);
-            message.setText(body);
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
 
+            helper.setFrom(from);
+            helper.setTo(to);
+            helper.setSubject("Thanh toán thành công - Hóa đơn " + hoaDon.getMaHoaDon());
+
+            String customerName = hoaDon.getNguoiDung().getHoVaTen() == null
+                    ? "bạn"
+                    : hoaDon.getNguoiDung().getHoVaTen();
+            String html = """
+                <div style="font-family:Arial,sans-serif;line-height:1.6;color:#111827">
+                    <p>Xin chào %s,</p>
+                    <p>Thanh toán của bạn đã được xác nhận thành công.</p>
+
+                    <table style="border-collapse:collapse;width:100%%;max-width:680px;margin:16px 0">
+                        <tr>
+                            <th style="text-align:left;border:1px solid #e5e7eb;padding:10px;background:#f8fafc">Mã hóa đơn</th>
+                            <td style="border:1px solid #e5e7eb;padding:10px">%s</td>
+                        </tr>
+                        <tr>
+                            <th style="text-align:left;border:1px solid #e5e7eb;padding:10px;background:#f8fafc">Loại thanh toán</th>
+                            <td style="border:1px solid #e5e7eb;padding:10px">%s</td>
+                        </tr>
+                        <tr>
+                            <th style="text-align:left;border:1px solid #e5e7eb;padding:10px;background:#f8fafc">Số tiền</th>
+                            <td style="border:1px solid #e5e7eb;padding:10px"><strong>%s</strong></td>
+                        </tr>
+                        <tr>
+                            <th style="text-align:left;border:1px solid #e5e7eb;padding:10px;background:#f8fafc">Ngày thanh toán</th>
+                            <td style="border:1px solid #e5e7eb;padding:10px">%s</td>
+                        </tr>
+                        <tr>
+                            <th style="text-align:left;border:1px solid #e5e7eb;padding:10px;background:#f8fafc">Nội dung chuyển khoản</th>
+                            <td style="border:1px solid #e5e7eb;padding:10px">%s</td>
+                        </tr>
+                    </table>
+
+                    %s
+
+                    <p>Cảm ơn bạn đã sử dụng DThang Home.</p>
+                </div>
+            """.formatted(
+                    escapeHtml(customerName),
+                    escapeHtml(hoaDon.getMaHoaDon()),
+                    escapeHtml(formatInvoiceType(hoaDon.getLoaiHoaDon())),
+                    escapeHtml(formatCurrency(hoaDon.getSoTien())),
+                    escapeHtml(formatDateTime(hoaDon.getNgayThanhToan())),
+                    escapeHtml(hoaDon.getNoiDungChuyenKhoan()),
+                    buildInvoiceDetailHtml(chiTietHoaDon)
+            );
+
+            helper.setText(html, true);
             mailSender.send(message);
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (MessagingException e) {
+            throw new RuntimeException("Không gửi được email thanh toán thành công");
         }
+    }
+
+    private String buildInvoiceDetailHtml(List<ChiTietHoaDon> chiTietHoaDon) {
+        if (chiTietHoaDon == null || chiTietHoaDon.isEmpty()) return "";
+
+        String rows = chiTietHoaDon.stream()
+                .map(item -> """
+                    <tr>
+                        <td style="border:1px solid #e5e7eb;padding:10px">%s</td>
+                        <td style="border:1px solid #e5e7eb;padding:10px">%s</td>
+                        <td style="border:1px solid #e5e7eb;padding:10px;text-align:center">%s</td>
+                        <td style="border:1px solid #e5e7eb;padding:10px;text-align:right">%s</td>
+                        <td style="border:1px solid #e5e7eb;padding:10px;text-align:right">%s</td>
+                    </tr>
+                """.formatted(
+                        escapeHtml(item.getBaiDang() != null ? item.getBaiDang().getMaBaiDang() : "-"),
+                        escapeHtml(item.getBaiDang() != null ? item.getBaiDang().getTieuDe() : "-"),
+                        escapeHtml(String.valueOf(item.getSoLuong() != null ? item.getSoLuong() : 1)),
+                        escapeHtml(formatCurrency(item.getDonGia())),
+                        escapeHtml(formatCurrency(item.getThanhTien()))
+                ))
+                .reduce("", String::concat);
+
+        return """
+            <h3 style="margin:20px 0 10px">Chi tiết căn hộ</h3>
+            <table style="border-collapse:collapse;width:100%%;max-width:760px;margin:0 0 16px">
+                <thead>
+                    <tr>
+                        <th style="text-align:left;border:1px solid #e5e7eb;padding:10px;background:#f8fafc">Mã bài</th>
+                        <th style="text-align:left;border:1px solid #e5e7eb;padding:10px;background:#f8fafc">Căn hộ</th>
+                        <th style="text-align:center;border:1px solid #e5e7eb;padding:10px;background:#f8fafc">SL</th>
+                        <th style="text-align:right;border:1px solid #e5e7eb;padding:10px;background:#f8fafc">Đơn giá</th>
+                        <th style="text-align:right;border:1px solid #e5e7eb;padding:10px;background:#f8fafc">Thành tiền</th>
+                    </tr>
+                </thead>
+                <tbody>%s</tbody>
+            </table>
+        """.formatted(rows);
+    }
+
+    private String formatInvoiceType(String loaiHoaDon) {
+        if ("DANG_BAI".equalsIgnoreCase(loaiHoaDon)) return "Thanh toán gói đăng bài";
+        if ("THUE_CAN_HO".equalsIgnoreCase(loaiHoaDon)) return "Thanh toán thuê căn hộ";
+        return loaiHoaDon == null ? "-" : loaiHoaDon;
+    }
+
+    private String formatCurrency(Double value) {
+        if (value == null) return "0 đ";
+        NumberFormat formatter = NumberFormat.getNumberInstance(new Locale("vi", "VN"));
+        return formatter.format(value) + " đ";
+    }
+
+    private String formatDateTime(LocalDateTime value) {
+        if (value == null) return "-";
+        return value.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+    }
+
+    private String escapeHtml(String value) {
+        if (value == null) return "";
+        return value
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#039;");
     }
 }

@@ -80,6 +80,7 @@ interface RoomPostCard {
   area: number | null;
   districtId?: string;
   likeCount?: number;
+  availableQuantity: number;
 }
 
 const formatCurrency = (value?: number) => {
@@ -205,6 +206,7 @@ const buildPostCard = (
     area,
     districtId: resolveDistrictId(addressText, wardText),
     likeCount: 0,
+    availableQuantity: Math.max(detail?.soLuongTrong ?? 1, 0),
   };
 };
 
@@ -787,6 +789,7 @@ const RoomList: React.FC = () => {
                             <strong>{item.priceText}</strong>
                             <span>{item.areaText}</span>
                             <span>{item.wardText}</span>
+                            <span>Còn {item.availableQuantity} căn</span>
                           </div>
 
                           <p className="room-list-featured-card__address">{item.addressText}</p>
