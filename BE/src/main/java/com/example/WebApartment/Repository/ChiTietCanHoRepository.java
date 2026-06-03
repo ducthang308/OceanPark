@@ -2,6 +2,7 @@ package com.example.WebApartment.Repository;
 
 import com.example.WebApartment.Models.ChiTietCanHo;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -29,5 +30,19 @@ public interface ChiTietCanHoRepository extends JpaRepository<ChiTietCanHo, Stri
     List<ChiTietCanHo> findByGiaLessThanEqualAndPhuongContainingIgnoreCase(
             Double gia,
             String phuong
+    );
+
+    @Query("""
+            select c from ChiTietCanHo c
+            join c.baiDang b
+            where upper(b.trangThai) = 'ACTIVE'
+              and (:maxPrice is null or c.gia <= :maxPrice)
+              and (:phuong is null or lower(c.phuong) like lower(concat('%', :phuong, '%')))
+            order by c.ngayTao desc
+            """)
+    List<ChiTietCanHo> searchActiveForChatbot(
+            @Param("maxPrice") Double maxPrice,
+            @Param("phuong") String phuong,
+            Pageable pageable
     );
 }

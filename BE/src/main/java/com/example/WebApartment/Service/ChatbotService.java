@@ -5,6 +5,7 @@ import com.example.WebApartment.Models.BaiDang;
 import com.example.WebApartment.Models.ChiTietCanHo;
 import com.example.WebApartment.Repository.ChiTietCanHoRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -15,13 +16,18 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class ChatbotService {
 
+    private static final int SEARCH_RESULT_LIMIT = 5;
+    private static final int RAG_CONTEXT_LIMIT = 12;
+    private static final int MARKET_CONTEXT_LIMIT = 8;
+
     private final ChiTietCanHoRepository chiTietCanHoRepository;
     private final AiMarketPriceService aiMarketPriceService;
 
     public ChatbotResponseDTO ask(ChatbotRequestDTO request) {
-        String message = request.getMessage() == null
+        String originalMessage = request.getMessage() == null
                 ? ""
-                : request.getMessage().toLowerCase();
+                : request.getMessage().trim();
+        String message = originalMessage.toLowerCase(Locale.ROOT);
 
         if (!isRealEstateRelated(message)) {
             return ChatbotResponseDTO.builder()
@@ -32,10 +38,10 @@ public class ChatbotService {
         }
 
         if (isPriceAdviceIntent(message)) {
-            return adviseMarketPrice(message);
+            return adviseMarketPrice(originalMessage, message);
         }
 
-        return searchApartments(message);
+        return searchApartments(originalMessage, message);
     }
 
     private boolean isRealEstateRelated(String message) {
@@ -50,27 +56,23 @@ public class ChatbotService {
         return keywords.stream().anyMatch(message::contains);
     }
 
-    private ChatbotResponseDTO searchApartments(String message) {
+    private ChatbotResponseDTO searchApartments(String originalMessage, String message) {
         Double maxPrice = extractPrice(message);
+        Double area = extractArea(message);
         String phuong = extractLocation(message);
 
-        List<ChiTietCanHo> results;
+        List<ChiTietCanHo> results = chiTietCanHoRepository.searchActiveForChatbot(
+                maxPrice,
+                normalizeSearchText(phuong),
+                PageRequest.of(0, RAG_CONTEXT_LIMIT)
+        );
 
-        if (maxPrice != null && phuong != null) {
-            results = chiTietCanHoRepository
-                    .findByGiaLessThanEqualAndPhuongContainingIgnoreCase(maxPrice, phuong);
-        } else if (maxPrice != null) {
-            results = chiTietCanHoRepository.findByGiaLessThanEqual(maxPrice);
-        } else if (phuong != null) {
-            results = chiTietCanHoRepository.findByPhuongContainingIgnoreCase(phuong);
-        } else {
-            results = chiTietCanHoRepository.findAll();
-        }
+        List<ChiTietCanHo> rankedResults = rankApartmentResults(results, maxPrice, area, phuong)
+                .stream()
+                .limit(SEARCH_RESULT_LIMIT)
+                .toList();
 
-        List<ChatbotSuggestionDTO> suggestions = results.stream()
-                .filter(ct -> ct.getBaiDang() != null)
-                .filter(ct -> "ACTIVE".equalsIgnoreCase(ct.getBaiDang().getTrangThai()))
-                .limit(5)
+        List<ChatbotSuggestionDTO> suggestions = rankedResults.stream()
                 .map(this::toSuggestion)
                 .toList();
 
@@ -80,6 +82,14 @@ public class ChatbotService {
             answer = "Mình chưa tìm thấy căn hộ phù hợp với yêu cầu này. Bạn có thể thử khoảng giá hoặc khu vực khác nhé.";
         } else {
             answer = "Mình tìm thấy một số căn hộ phù hợp với nhu cầu của bạn:";
+            String aiAnswer = aiMarketPriceService.answerApartmentSearch(
+                    originalMessage,
+                    buildApartmentContext(rankedResults)
+            );
+
+            if (!aiAnswer.isBlank()) {
+                answer = aiAnswer;
+            }
         }
 
         return ChatbotResponseDTO.builder()
@@ -89,8 +99,18 @@ public class ChatbotService {
                 .build();
     }
 
-    private ChatbotResponseDTO adviseMarketPrice(String message) {
-        String answer = aiMarketPriceService.advisePrice(message);
+    private ChatbotResponseDTO adviseMarketPrice(String originalMessage, String message) {
+        String phuong = extractLocation(message);
+        List<ChiTietCanHo> marketContext = chiTietCanHoRepository.searchActiveForChatbot(
+                null,
+                normalizeSearchText(phuong),
+                PageRequest.of(0, MARKET_CONTEXT_LIMIT)
+        );
+
+        String answer = aiMarketPriceService.advisePrice(
+                originalMessage,
+                buildApartmentContext(marketContext)
+        );
 
         return ChatbotResponseDTO.builder()
                 .intent("PRICE_ADVICE")
@@ -173,6 +193,99 @@ public class ChatbotService {
         }
 
         return null;
+    }
+
+    private String normalizeSearchText(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+
+        return value.trim();
+    }
+
+    private List<ChiTietCanHo> rankApartmentResults(
+            List<ChiTietCanHo> results,
+            Double maxPrice,
+            Double area,
+            String phuong
+    ) {
+        return results.stream()
+                .filter(ct -> ct.getBaiDang() != null)
+                .sorted(Comparator.comparingDouble(
+                        ct -> calculateMatchPenalty(ct, maxPrice, area, phuong)
+                ))
+                .toList();
+    }
+
+    private double calculateMatchPenalty(
+            ChiTietCanHo ct,
+            Double maxPrice,
+            Double area,
+            String phuong
+    ) {
+        double penalty = 0;
+
+        if (maxPrice != null) {
+            penalty += ct.getGia() == null
+                    ? 10_000
+                    : Math.abs(maxPrice - ct.getGia()) / 100_000;
+        }
+
+        if (area != null) {
+            penalty += ct.getDienTich() == null
+                    ? 1_000
+                    : Math.abs(area - ct.getDienTich()) * 10;
+        }
+
+        if (phuong != null && (ct.getPhuong() == null ||
+                !ct.getPhuong().toLowerCase(Locale.ROOT).contains(phuong))) {
+            penalty += 1_000;
+        }
+
+        return penalty;
+    }
+
+    private String buildApartmentContext(List<ChiTietCanHo> apartments) {
+        if (apartments == null || apartments.isEmpty()) {
+            return "Không có căn hộ nội bộ phù hợp.";
+        }
+
+        StringBuilder context = new StringBuilder();
+        int index = 1;
+
+        for (ChiTietCanHo ct : apartments) {
+            BaiDang bd = ct.getBaiDang();
+
+            context.append(index++).append(". ")
+                    .append("maBaiDang=").append(bd != null ? safeText(bd.getMaBaiDang()) : "N/A")
+                    .append("; tieuDe=").append(bd != null ? safeText(bd.getTieuDe()) : "Căn hộ cho thuê")
+                    .append("; gia=").append(formatPrice(ct.getGia()))
+                    .append("; dienTich=").append(ct.getDienTich() != null ? ct.getDienTich() + " m2" : "chưa có")
+                    .append("; phongNgu=").append(ct.getPhongNgu() != null ? ct.getPhongNgu() : "chưa có")
+                    .append("; phuong=").append(safeText(ct.getPhuong()))
+                    .append("; diaChi=").append(safeText(ct.getDiaChiCuThe()))
+                    .append("; soLuongTrong=").append(ct.getSoLuongTrong() != null ? ct.getSoLuongTrong() : "chưa có")
+                    .append("; link=").append(bd != null ? "/posts/" + bd.getMaBaiDang() : "chưa có")
+                    .append(System.lineSeparator());
+        }
+
+        return context.toString();
+    }
+
+    private String formatPrice(Double price) {
+        if (price == null) {
+            return "Liên hệ";
+        }
+
+        return String.format(Locale.US, "%.0f VND/tháng", price);
+    }
+
+    private String safeText(String value) {
+        if (value == null || value.isBlank()) {
+            return "chưa có";
+        }
+
+        return value.trim().replace(System.lineSeparator(), " ");
     }
 
     private ChatbotSuggestionDTO toSuggestion(ChiTietCanHo ct) {
