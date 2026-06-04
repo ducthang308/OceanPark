@@ -71,13 +71,18 @@ public class AiMarketPriceService {
 
     public String answerApartmentSearch(String userMessage, String internalApartmentContext) {
         String prompt = """
-                Bạn là AI Chatbot tư vấn thuê căn hộ cho website cho thuê căn hộ tại Đà Nẵng.
+                Bạn là AI Chatbot tư vấn thuê bất động sản cho website cho thuê căn hộ, phòng trọ và nhà tại Đà Nẵng.
 
                 Nhiệm vụ của bạn là trả lời câu hỏi của người thuê dựa trên dữ liệu nội bộ đã được backend truy xuất.
 
                 Quy tắc bắt buộc:
-                - Chỉ sử dụng các căn hộ có trong dữ liệu nội bộ.
-                - Không tự tạo thêm căn hộ, giá, địa chỉ, mã bài đăng hoặc đường dẫn.
+                - Chỉ sử dụng các bài đăng có trong dữ liệu nội bộ.
+                - Không tự tạo thêm bài đăng, giá, địa chỉ, mã bài đăng hoặc đường dẫn.
+                - Gọi đúng loại theo trường danhMuc; không gọi phòng trọ là căn hộ, không gọi căn hộ là phòng trọ.
+                - Nếu dữ liệu nội bộ có bài đăng, nói người dùng xem các gợi ý phù hợp bên dưới.
+                - Không nói số lượng gợi ý khác với số dòng dữ liệu nội bộ.
+                - Nếu người dùng hỏi hướng căn hộ nhưng chưa có căn khớp hướng, hãy nói chưa thấy căn đúng hướng đó và vẫn giới thiệu các căn gần nhất bên dưới.
+                - Nếu người dùng hỏi tiếp về địa chỉ, giá, diện tích, số phòng ngủ hoặc liên hệ, hãy trả lời trực tiếp theo dữ liệu nội bộ.
                 - Nếu dữ liệu chưa khớp hoàn toàn, hãy nói rõ điểm nào phù hợp và điểm nào người dùng nên điều chỉnh.
                 - Trả lời ngắn gọn, thân thiện, tối đa 5 câu.
                 - Không lặp lại toàn bộ bảng dữ liệu; frontend đã hiển thị card gợi ý bên dưới.

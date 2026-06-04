@@ -363,15 +363,27 @@ export const generatePostContentByAI = async (
 export interface ChatbotRequestDTO {
   maNguoiDung?: string;
   message: string;
+  history?: ChatbotMessageContextDTO[];
 }
 
 export interface ChatbotSuggestionDTO {
-  maBaiDang: string;
-  tieuDe: string;
-  gia: number;
-  phuong?: string;
-  diaChi?: string;
-  link?: string;
+  maBaiDang?: string | null;
+  tieuDe?: string | null;
+  danhMuc?: string | null;
+  gia?: number | null;
+  dienTich?: number | null;
+  phongNgu?: number | null;
+  huongCanHo?: string | null;
+  phuong?: string | null;
+  diaChi?: string | null;
+  soLuongTrong?: number | null;
+  link?: string | null;
+}
+
+export interface ChatbotMessageContextDTO {
+  role: 'USER' | 'BOT';
+  content: string;
+  suggestions?: ChatbotSuggestionDTO[];
 }
 
 export interface ChatbotResponseDTO {
