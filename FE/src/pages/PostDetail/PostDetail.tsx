@@ -27,11 +27,13 @@ import { getUserById } from '../../services/api/UserService';
 import type { UserProfileResponse } from '../../services/api/UserService';
 import { getAuthSession } from '../../utils/storage';
 import { getOrCreateRoom } from '../../services/api/ChatService';
+import { addApartmentToCart } from '../../utils/apartmentCart';
 
 interface PostDetailView {
   id: string;
   title: string;
   priceText: string;
+  priceValue: number;
   areaText: string;
   directionText: string;
   addressText: string;
@@ -51,6 +53,7 @@ interface PostDetailView {
   isFeatured: boolean;
   isNew: boolean;
   ownerId?: string;
+  availableQuantity: number;
 }
 
 const PUBLIC_POST_STATUSES = new Set(['ACTIVE', 'APPROVED']);
@@ -61,13 +64,6 @@ const formatCurrency = (value?: number) => {
   }
 
   return `${new Intl.NumberFormat('vi-VN').format(value)}đ/tháng`;
-};
-
-const parsePriceToNumber = (priceText?: string) => {
-  if (!priceText) return 0;
-
-  const numberOnly = priceText.replace(/[^\d]/g, '');
-  return Number(numberOnly || 0);
 };
 
 const formatArea = (value?: number) => {
@@ -111,6 +107,7 @@ const findMockPost = (id?: string): PostDetailView | null => {
     ...post,
     id: String(post.id),
     directionText: 'Đang cập nhật',
+    priceValue: parseInt(post.priceText.replace(/[^\d]/g, ''), 10) || 0,
     gallery: post.gallery.length > 0 ? post.gallery : [post.coverImage || fallbackRoomImage],
     coverImage: post.coverImage || post.gallery[0] || fallbackRoomImage,
     ownerAvatar: null,
@@ -118,6 +115,7 @@ const findMockPost = (id?: string): PostDetailView | null => {
     isFeatured: Boolean(post.isFeatured),
     isNew: Boolean(post.isNew),
     hasVideo: Boolean(post.hasVideo),
+    availableQuantity: 1,
   };
 };
 
@@ -149,6 +147,7 @@ const buildApiPostDetail = (
     id: post.maBaiDang,
     title: post.tieuDe?.trim() || 'Bài đăng chưa có tiêu đề',
     priceText: formatCurrency(detail?.gia),
+    priceValue: detail?.gia || 0,
     areaText: formatArea(detail?.dienTich),
     directionText,
     addressText,
@@ -168,6 +167,7 @@ const buildApiPostDetail = (
     isFeatured: true,
     isNew: true,
     ownerId: post.maNguoiDung,
+    availableQuantity: Math.max(detail?.soLuongTrong ?? 1, 0),
   };
 };
 
@@ -357,11 +357,43 @@ const PostDetail: React.FC = () => {
       { label: 'Diện tích', value: post.areaText },
       { label: 'Hướng căn hộ', value: post.directionText },
       { label: 'Khu vực', value: post.wardText },
+      { label: 'Còn trống', value: `${post.availableQuantity} căn` },
       { label: 'Loại tin', value: post.categoryLabel },
       { label: 'Đăng lúc', value: post.postedAtText },
       { label: 'Liên hệ', value: post.phone },
     ];
   }, [post]);
+
+  const handleAddToCart = () => {
+    if (!post?.id) return;
+
+    if (post.availableQuantity <= 0) {
+      alert('Căn hộ này hiện không còn phòng trống');
+      return;
+    }
+
+    if (!post.priceValue || post.priceValue <= 0) {
+      alert('Không xác định được giá thuê căn hộ');
+      return;
+    }
+
+    try {
+      addApartmentToCart({
+        maBaiDang: post.id,
+        title: post.title,
+        price: post.priceValue,
+        quantity: 1,
+        availableQuantity: post.availableQuantity,
+        address: post.addressText,
+        ward: post.wardText,
+        areaText: post.areaText,
+        coverImage: post.coverImage,
+      });
+      alert('Đã thêm căn hộ vào giỏ hàng');
+    } catch (error: any) {
+      alert(error?.message || 'Không thể thêm căn hộ vào giỏ hàng');
+    }
+  };
 
   const handleRentApartment = async () => {
     try {
@@ -387,7 +419,12 @@ const PostDetail: React.FC = () => {
         return;
       }
 
-      const soTien = parsePriceToNumber(post.priceText);
+      if (post.availableQuantity <= 0) {
+        alert('Căn hộ này hiện không còn phòng trống');
+        return;
+      }
+
+      const soTien = post.priceValue;
 
       if (!soTien || soTien <= 0) {
         alert('Không xác định được giá thuê căn hộ');
@@ -397,10 +434,18 @@ const PostDetail: React.FC = () => {
       const payment = await createSepayPayment({
         maNguoiDung,
         maBaiDang: post.id,
-        // maBaiDangList: [post.id],
         loaiHoaDon: 'THUE_CAN_HO',
         soTien,
         ghiChu: `Thanh toán thuê căn hộ ${post.title}`,
+        chiTietHoaDon: [
+          {
+            maBaiDang: post.id,
+            soLuong: 1,
+            donGia: soTien,
+            thanhTien: soTien,
+            ghiChu: post.title,
+          },
+        ],
       });
 
       navigate('/payment/sepay', {
@@ -408,7 +453,6 @@ const PostDetail: React.FC = () => {
           ...payment,
           loaiHoaDon: 'THUE_CAN_HO',
           maBaiDang: post.id,
-          // maBaiDangList: [post.id],
         },
       });
     } catch (error: any) {
@@ -663,12 +707,12 @@ const PostDetail: React.FC = () => {
                   Gọi ngay
                 </a>
 
-                <button
+                {/* <button
                   type="button"
                   className="rental-detail-btn rental-detail-btn--zalo"
                 >
                   Nhắn Zalo
-                </button>
+                </button> */}
 
                 {maNguoiDung !== post?.ownerId && (
                   <button
@@ -682,7 +726,17 @@ const PostDetail: React.FC = () => {
 
                 <button
                   type="button"
+                  className="rental-detail-btn rental-detail-btn--secondary"
+                  disabled={post.availableQuantity <= 0}
+                  onClick={handleAddToCart}
+                >
+                  Thêm vào giỏ hàng
+                </button>
+
+                <button
+                  type="button"
                   className="rental-detail-btn rental-detail-btn--primary"
+                  disabled={post.availableQuantity <= 0}
                   onClick={handleRentApartment}
                 >
                   Thanh toán / Đặt cọc

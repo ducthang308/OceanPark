@@ -3,10 +3,19 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import './header.css';
 import { LANDLORD_ROLE_IDS, ROLE_ID } from '../../../constants/roles';
 import type { RoleId } from '../../../constants/roles';
-import { clearAuthSession, getAuthSession } from '../../../utils/storage';
+import {
+  AUTH_SESSION_CHANGED_EVENT,
+  AUTH_SESSION_CLEARED_EVENT,
+  clearAuthSession,
+  getAuthSession,
+} from '../../../utils/storage';
 import { getFavoritePostsByUser } from '../../../services/api/PostManagementService';
 import { useChatNotifications } from '../../../contexts/ChatNotificationProvider';
-import { MessageSquare } from 'lucide-react';
+import { MessageSquare, ShoppingCart } from 'lucide-react';
+import {
+  APARTMENT_CART_CHANGED_EVENT,
+  getApartmentCartTotalQuantity,
+} from '../../../utils/apartmentCart';
 
 type NavItem = {
   key: string;
@@ -56,6 +65,7 @@ const Header: React.FC = () => {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [favoriteTotal, setFavoriteTotal] = useState(0);
+  const [cartTotal, setCartTotal] = useState(0);
 
   const userMenuRef = useRef<HTMLDivElement | null>(null);
   const searchRef = useRef<HTMLDivElement | null>(null);
@@ -140,6 +150,12 @@ const Header: React.FC = () => {
         allowedRoles: [ROLE_ID.NGUOI_THUE],
       },
       {
+        key: 'apartment-cart',
+        label: 'Giỏ căn hộ',
+        to: '/apartment-cart',
+        allowedRoles: [ROLE_ID.NGUOI_THUE],
+      },
+      {
         key: 'my-posts',
         label: 'Bài đăng của tôi',
         to: '/list-post',
@@ -185,7 +201,14 @@ const Header: React.FC = () => {
   useEffect(() => {
     const syncUser = () => setCurrentUser(getUserFromStorage());
     window.addEventListener('storage', syncUser);
-    return () => window.removeEventListener('storage', syncUser);
+    window.addEventListener(AUTH_SESSION_CHANGED_EVENT, syncUser);
+    window.addEventListener(AUTH_SESSION_CLEARED_EVENT, syncUser);
+
+    return () => {
+      window.removeEventListener('storage', syncUser);
+      window.removeEventListener(AUTH_SESSION_CHANGED_EVENT, syncUser);
+      window.removeEventListener(AUTH_SESSION_CLEARED_EVENT, syncUser);
+    };
   }, []);
 
   // Cập nhật lại user mỗi khi chuyển trang (sau khi login navigate về /)
@@ -223,6 +246,23 @@ const Header: React.FC = () => {
       window.removeEventListener('favorite-posts:changed', loadFavoriteTotal);
     };
   }, [currentUser?.maNguoiDung, location.pathname]);
+
+  useEffect(() => {
+    const syncCartTotal = () => setCartTotal(getApartmentCartTotalQuantity());
+
+    syncCartTotal();
+    window.addEventListener(APARTMENT_CART_CHANGED_EVENT, syncCartTotal);
+    window.addEventListener(AUTH_SESSION_CHANGED_EVENT, syncCartTotal);
+    window.addEventListener(AUTH_SESSION_CLEARED_EVENT, syncCartTotal);
+    window.addEventListener('storage', syncCartTotal);
+
+    return () => {
+      window.removeEventListener(APARTMENT_CART_CHANGED_EVENT, syncCartTotal);
+      window.removeEventListener(AUTH_SESSION_CHANGED_EVENT, syncCartTotal);
+      window.removeEventListener(AUTH_SESSION_CLEARED_EVENT, syncCartTotal);
+      window.removeEventListener('storage', syncCartTotal);
+    };
+  }, [location.pathname, currentUser?.maNguoiDung]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -495,6 +535,32 @@ const Header: React.FC = () => {
               </div>
             </div>
           </div>
+
+          <button
+            type="button"
+            className="rental-header__icon-button rental-header__icon-button--cart"
+            aria-label="Giỏ căn hộ"
+            onClick={() => {
+              if (!currentUser) {
+                navigate('/login', {
+                  state: {
+                    from: {
+                      pathname: '/apartment-cart',
+                      search: '',
+                    },
+                  },
+                });
+                return;
+              }
+
+              navigate('/apartment-cart');
+            }}
+          >
+            <ShoppingCart size={20} strokeWidth={1.8} />
+            {cartTotal > 0 && (
+              <span className="rental-header__cart-badge">{cartTotal > 99 ? '99+' : cartTotal}</span>
+            )}
+          </button>
 
           <button
             type="button"

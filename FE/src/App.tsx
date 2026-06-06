@@ -15,6 +15,7 @@ import RoomList from './pages/RoomList/RoomList.tsx';
 import TopUpPage from './pages/TopUpPages/TopUpPage.tsx';
 import AccountManagement from './pages/AccountManagement/AccountManagement.tsx';
 import TenantTransactionsPage from './pages/TenantTransactions/TenantTransactionsPage.tsx';
+import ApartmentCartPage from './pages/ApartmentCart/ApartmentCartPage.tsx';
 import BlogAboutUs from './pages/Blog/AboutUsBlog.tsx';
 import PostDetail from './pages/PostDetail/PostDetail.tsx';
 import PaymentPage from './pages/Payment/PaymentPage.tsx';
@@ -100,6 +101,7 @@ function App() {
           </Route>
 
           <Route element={<ProtectedRoute allowedRoles={[ROLE_ID.NGUOI_THUE]} />}>
+            <Route path="/apartment-cart" element={<ApartmentCartPage />} />
             <Route path="/tenant-transactions" element={<TenantTransactionsPage />} />
           </Route>
 

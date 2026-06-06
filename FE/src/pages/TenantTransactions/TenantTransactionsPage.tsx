@@ -87,6 +87,8 @@ const getPaymentStatusTone = (status?: string | null) => {
 const isInvoicePrintable = (invoice: HoaDonDTO) =>
   normalizeStatus(invoice.trangThaiThanhToan) === 'SUCCESS';
 
+const getInvoiceDetails = (invoice: HoaDonDTO) => invoice.chiTietHoaDon || [];
+
 const getEffectiveStatusLabel = (status?: string | null) => {
   switch (normalizeStatus(status)) {
     case 'DANG_HIEU_LUC':
@@ -194,10 +196,12 @@ const TenantTransactionsPage = () => {
       return;
     }
 
+    const invoiceDetails = getInvoiceDetails(invoice);
+
     const invoiceRows: InvoicePrintRow[] = [
       ['Mã hóa đơn', invoice.maHoaDon],
       ['Người dùng', invoice.maNguoiDung || '-'],
-      ['Bài đăng', invoice.maBaiDang || '-'],
+      ['Bài đăng', invoiceDetails.length > 0 ? `${invoiceDetails.length} dòng căn hộ` : invoice.maBaiDang || '-'],
       ['Loại giao dịch', getInvoiceTypeLabel(invoice.loaiHoaDon)],
       ['Số tiền', formatCurrency(invoice.soTien)],
       ['Trạng thái thanh toán', getPaymentStatusLabel(invoice.trangThaiThanhToan)],
@@ -215,6 +219,21 @@ const TenantTransactionsPage = () => {
       documentTitle: `Hóa đơn ${invoice.maHoaDon}`,
       generatedAt: formatDateTime(new Date().toISOString()),
       rows: invoiceRows,
+      lineItems: invoiceDetails.length > 0
+        ? {
+            title: 'Chi tiết căn hộ',
+            headers: ['Mã bài', 'Căn hộ', 'Địa chỉ', 'SL', 'Đơn giá', 'Thành tiền'],
+            rows: invoiceDetails.map((item) => [
+              item.maBaiDang || '-',
+              item.tieuDeBaiDang || item.ghiChu || '-',
+              item.diaChiCanHo || item.phuong || '-',
+              String(item.soLuong || 1),
+              formatCurrency(item.donGia),
+              formatCurrency(item.thanhTien),
+            ]),
+            footerRows: [['Tổng cộng', formatCurrency(invoice.soTien)]],
+          }
+        : undefined,
       footer: 'Hóa đơn được xuất từ hệ thống quản lý giao dịch người thuê.',
       signerLabel: 'Chữ ký người thuê',
     });
@@ -399,6 +418,39 @@ const TenantTransactionsPage = () => {
                     <strong>{selectedInvoice.ghiChu || '-'}</strong>
                   </div>
                 </div>
+
+                {getInvoiceDetails(selectedInvoice).length > 0 && (
+                  <div className="tenant-invoice-items">
+                    <h4>Chi tiết căn hộ</h4>
+                    <div className="tenant-invoice-items__table-wrap">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Mã bài</th>
+                            <th>Căn hộ</th>
+                            <th>Số lượng</th>
+                            <th>Đơn giá</th>
+                            <th>Thành tiền</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {getInvoiceDetails(selectedInvoice).map((item) => (
+                            <tr key={item.maChiTietHoaDon || item.maBaiDang}>
+                              <td>{item.maBaiDang || '-'}</td>
+                              <td>
+                                <strong>{item.tieuDeBaiDang || item.ghiChu || '-'}</strong>
+                                <span>{item.diaChiCanHo || item.phuong || ''}</span>
+                              </td>
+                              <td>{item.soLuong || 1}</td>
+                              <td>{formatCurrency(item.donGia)}</td>
+                              <td>{formatCurrency(item.thanhTien)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
 
                 <div className="tenant-invoice-modal__actions">
                   <button

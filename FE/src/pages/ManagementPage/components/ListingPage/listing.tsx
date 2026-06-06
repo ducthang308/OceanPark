@@ -116,6 +116,7 @@ const Listing = () => {
     dienTich: "",
     phongNgu: "",
     huongCanHo: "",
+    soLuongTrong: "1",
   });
 
   const [address, setAddress] = useState({
@@ -462,6 +463,7 @@ const Listing = () => {
       !formData.gia ||
       !formData.dienTich ||
       !formData.phongNgu ||
+      !formData.soLuongTrong ||
       !formData.huongCanHo ||
       !address.phuong ||
       !fullAddress
@@ -473,9 +475,20 @@ const Listing = () => {
     const gia = Number(formData.gia);
     const dienTich = Number(formData.dienTich);
     const phongNgu = Number(formData.phongNgu);
+    const soLuongTrong = Number(formData.soLuongTrong);
 
-    if (Number.isNaN(gia) || Number.isNaN(dienTich) || Number.isNaN(phongNgu)) {
-      message.error("Giá, diện tích và phòng ngủ phải là số hợp lệ");
+    if (
+      Number.isNaN(gia) ||
+      Number.isNaN(dienTich) ||
+      Number.isNaN(phongNgu) ||
+      Number.isNaN(soLuongTrong)
+    ) {
+      message.error("Giá, diện tích, phòng ngủ và số lượng trống phải là số hợp lệ");
+      return;
+    }
+
+    if (soLuongTrong < 0) {
+      message.error("Số lượng phòng trống không được nhỏ hơn 0");
       return;
     }
 
@@ -506,6 +519,7 @@ const Listing = () => {
         phuong: address.phuong,
         lat: position[0],
         lng: position[1],
+        soLuongTrong,
       });
 
       if (images.length > 0) {
@@ -532,6 +546,7 @@ const Listing = () => {
         dienTich: "",
         phongNgu: "",
         huongCanHo: "",
+        soLuongTrong: "1",
       });
       setImages([]);
       if (video?.url) {
@@ -859,6 +874,20 @@ const Listing = () => {
                   <Option value="2">2 phòng ngủ</Option>
                   <Option value="3">3 phòng ngủ</Option>
                 </Select>
+              </div>
+
+              <div className="form-group-listing gap">
+                <label className="label">
+                  Số lượng phòng trống <span className="required">(*)</span>
+                </label>
+                <Input
+                  className="input-height"
+                  placeholder="Nhập số lượng còn trống"
+                  value={formData.soLuongTrong}
+                  onChange={(event) =>
+                    setFormData((prev) => ({ ...prev, soLuongTrong: event.target.value }))
+                  }
+                />
               </div>
 
               <div className="form-group-listing gap">

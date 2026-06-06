@@ -334,6 +334,56 @@
   overflow-wrap: anywhere;
 }
 
+.tenant-invoice-items {
+  padding: 0 24px 24px;
+}
+
+.tenant-invoice-items h4 {
+  margin: 0 0 12px;
+  color: #1e293b;
+  font-size: 16px;
+}
+
+.tenant-invoice-items__table-wrap {
+  overflow-x: auto;
+  border: 1px solid #eef2f7;
+  border-radius: 12px;
+}
+
+.tenant-invoice-items table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+}
+
+.tenant-invoice-items th,
+.tenant-invoice-items td {
+  padding: 12px;
+  border-bottom: 1px solid #eef2f7;
+  text-align: left;
+  vertical-align: top;
+  font-size: 13px;
+}
+
+.tenant-invoice-items th {
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.tenant-invoice-items tr:last-child td {
+  border-bottom: 0;
+}
+
+.tenant-invoice-items td span {
+  display: block;
+  margin-top: 4px;
+  color: #64748b;
+  line-height: 1.45;
+}
+
 .tenant-invoice-modal__actions {
   display: flex;
   justify-content: flex-end;

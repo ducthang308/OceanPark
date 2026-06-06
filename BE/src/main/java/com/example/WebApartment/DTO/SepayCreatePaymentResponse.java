@@ -2,6 +2,8 @@ package com.example.WebApartment.DTO;
 
 import lombok.*;
 
+import java.util.List;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -15,4 +17,5 @@ public class SepayCreatePaymentResponse {
     private String bankAccount;
     private String accountName;
     private String qrUrl;
+    private List<ChiTietHoaDonDTO> chiTietHoaDon;
 }

@@ -494,6 +494,7 @@ const Home: React.FC = () => {
         <div className="site-home-post__meta">
           <strong>{post.priceText}</strong>
           <small>{post.areaText}</small>
+          <small>Còn {post.availableQuantity ?? 1} căn</small>
         </div>
         {showRecommendation && post.recommendationReasons && post.recommendationReasons.length > 0 && (
           <div className="site-home-post__reasons">

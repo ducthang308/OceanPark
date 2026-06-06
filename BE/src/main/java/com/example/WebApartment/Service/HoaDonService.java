@@ -2,10 +2,12 @@ package com.example.WebApartment.Service;
 
 import com.example.WebApartment.DTO.HoaDonDTO;
 import com.example.WebApartment.Models.BaiDang;
+import com.example.WebApartment.Models.ChiTietHoaDon;
 import com.example.WebApartment.Models.GoiDangBai;
 import com.example.WebApartment.Models.HoaDon;
 import com.example.WebApartment.Models.NguoiDung;
 import com.example.WebApartment.Repository.BaiDangRepository;
+import com.example.WebApartment.Repository.ChiTietHoaDonRepository;
 import com.example.WebApartment.Repository.GoiDangBaiRepository;
 import com.example.WebApartment.Repository.HoaDonRepository;
 import com.example.WebApartment.Repository.NguoiDungRepository;
@@ -25,6 +27,8 @@ public class HoaDonService {
     private final NguoiDungRepository nguoiDungRepository;
     private final BaiDangRepository baiDangRepository;
     private final GoiDangBaiRepository goiDangBaiRepository;
+    private final ChiTietHoaDonRepository chiTietHoaDonRepository;
+    private final ChiTietHoaDonService chiTietHoaDonService;
 
     public List<HoaDonDTO> getAll() {
         return hoaDonRepository.findAll().stream().map(this::toDto).collect(Collectors.toList());
@@ -56,9 +60,16 @@ public class HoaDonService {
         NguoiDung nguoiDung = nguoiDungRepository.findById(dto.getMaNguoiDung())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
 
+        String maBaiDang = dto.getMaBaiDang();
+        if ((maBaiDang == null || maBaiDang.isBlank())
+                && dto.getChiTietHoaDon() != null
+                && !dto.getChiTietHoaDon().isEmpty()) {
+            maBaiDang = dto.getChiTietHoaDon().get(0).getMaBaiDang();
+        }
+
         BaiDang baiDang = null;
-        if (dto.getMaBaiDang() != null && !dto.getMaBaiDang().isBlank()) {
-            baiDang = baiDangRepository.findById(dto.getMaBaiDang())
+        if (maBaiDang != null && !maBaiDang.isBlank()) {
+            baiDang = baiDangRepository.findById(maBaiDang)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy bài đăng"));
         }
 
@@ -72,13 +83,27 @@ public class HoaDonService {
                 ? dto.getMaHoaDon()
                 : generateMaHoaDon();
 
+        double soTien = dto.getSoTien() != null ? dto.getSoTien() : 0D;
+        if (dto.getChiTietHoaDon() != null && !dto.getChiTietHoaDon().isEmpty()) {
+            soTien = dto.getChiTietHoaDon()
+                    .stream()
+                    .mapToDouble(item -> {
+                        int soLuong = item.getSoLuong() != null && item.getSoLuong() > 0
+                                ? item.getSoLuong()
+                                : 1;
+                        Double donGia = item.getDonGia() != null ? item.getDonGia() : 0D;
+                        return item.getThanhTien() != null ? item.getThanhTien() : donGia * soLuong;
+                    })
+                    .sum();
+        }
+
         HoaDon hoaDon = HoaDon.builder()
                 .maHoaDon(maHoaDon)
                 .nguoiDung(nguoiDung)
                 .baiDang(baiDang)
                 .goiDangBai(goiDangBai)
                 .loaiHoaDon(dto.getLoaiHoaDon())
-                .soTien(dto.getSoTien())
+                .soTien(soTien)
                 .trangThaiThanhToan(dto.getTrangThaiThanhToan() != null ? dto.getTrangThaiThanhToan() : "PENDING")
                 .trangThaiHieuLuc(dto.getTrangThaiHieuLuc() != null ? dto.getTrangThaiHieuLuc() : "CHUA_HIEU_LUC")
                 .ngayBatDau(dto.getNgayBatDau())
@@ -89,7 +114,34 @@ public class HoaDonService {
                 .ngayThanhToan(dto.getNgayThanhToan())
                 .build();
 
-        return toDto(hoaDonRepository.save(hoaDon));
+        HoaDon saved = hoaDonRepository.save(hoaDon);
+
+        if (dto.getChiTietHoaDon() != null) {
+            dto.getChiTietHoaDon().forEach(item -> {
+                if (item.getMaBaiDang() == null || item.getMaBaiDang().isBlank()) return;
+
+                BaiDang itemBaiDang = baiDangRepository.findById(item.getMaBaiDang())
+                        .orElseThrow(() -> new RuntimeException("Không tìm thấy bài đăng"));
+
+                int soLuong = item.getSoLuong() != null && item.getSoLuong() > 0 ? item.getSoLuong() : 1;
+                double donGia = item.getDonGia() != null ? item.getDonGia() : 0D;
+                double thanhTien = item.getThanhTien() != null ? item.getThanhTien() : donGia * soLuong;
+
+                ChiTietHoaDon detail = ChiTietHoaDon.builder()
+                        .maChiTietHoaDon(generateMaChiTietHoaDon())
+                        .hoaDon(saved)
+                        .baiDang(itemBaiDang)
+                        .soLuong(soLuong)
+                        .donGia(donGia)
+                        .thanhTien(thanhTien)
+                        .ghiChu(item.getGhiChu())
+                        .build();
+
+                chiTietHoaDonRepository.save(detail);
+            });
+        }
+
+        return toDto(saved);
     }
 
     public HoaDonDTO update(String maHoaDon, HoaDonDTO dto) {
@@ -119,6 +171,10 @@ public class HoaDonService {
         return "HD" + UUID.randomUUID().toString().replace("-", "").substring(0, 10).toUpperCase();
     }
 
+    private String generateMaChiTietHoaDon() {
+        return "CTHD" + UUID.randomUUID().toString().replace("-", "").substring(0, 10).toUpperCase();
+    }
+
     private HoaDonDTO toDto(HoaDon entity) {
         if (entity == null) return null;
 
@@ -137,6 +193,12 @@ public class HoaDonService {
                 .ghiChu(entity.getGhiChu())
                 .ngayTao(entity.getNgayTao())
                 .ngayThanhToan(entity.getNgayThanhToan())
+                .chiTietHoaDon(
+                        chiTietHoaDonRepository.findByHoaDon_MaHoaDon(entity.getMaHoaDon())
+                                .stream()
+                                .map(chiTietHoaDonService::toDto)
+                                .collect(Collectors.toList())
+                )
                 .build();
     }
 }

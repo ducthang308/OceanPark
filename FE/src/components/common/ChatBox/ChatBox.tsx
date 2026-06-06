@@ -1,6 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { askChatbot } from '../../../services/api/PostManagementService';
-import type { ChatbotSuggestionDTO } from '../../../services/api/PostManagementService';
+import type {
+  ChatbotMessageContextDTO,
+  ChatbotSuggestionDTO,
+} from '../../../services/api/PostManagementService';
 import { AUTH_SESSION_CLEARED_EVENT } from '../../../utils/storage';
 import './ChatBox.css';
 
@@ -12,6 +15,7 @@ interface ChatMessage {
 
 const CHATBOT_HISTORY_KEY = 'chatbot_history';
 const CHATBOT_HISTORY_TTL = 3 * 24 * 60 * 60 * 1000;
+const CHATBOT_CONTEXT_LIMIT = 8;
 const DEFAULT_MESSAGES: ChatMessage[] = [
   {
     role: 'BOT',
@@ -40,11 +44,35 @@ const getInitialMessages = () => {
   return DEFAULT_MESSAGES;
 };
 
+const buildChatbotContext = (items: ChatMessage[]): ChatbotMessageContextDTO[] =>
+  items.slice(-CHATBOT_CONTEXT_LIMIT).map((item) => ({
+    role: item.role,
+    content: item.content,
+    suggestions: item.suggestions,
+  }));
+
+const formatSuggestionPrice = (price?: number | null) =>
+  price ? `${price.toLocaleString('vi-VN')}đ/tháng` : 'Liên hệ';
+
+const buildSuggestionDetails = (suggestion: ChatbotSuggestionDTO) =>
+  [
+    suggestion.danhMuc,
+    suggestion.dienTich ? `${suggestion.dienTich} m²` : null,
+    suggestion.phongNgu !== null && suggestion.phongNgu !== undefined
+      ? `${suggestion.phongNgu} PN`
+      : null,
+    suggestion.huongCanHo ? `Hướng ${suggestion.huongCanHo}` : null,
+    suggestion.soLuongTrong !== null && suggestion.soLuongTrong !== undefined
+      ? `Còn ${suggestion.soLuongTrong}`
+      : null,
+  ].filter(Boolean);
+
 const ChatbotBox: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>(getInitialMessages);
+  const bottomRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     localStorage.setItem(
@@ -71,8 +99,14 @@ const ChatbotBox: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (open) {
+      bottomRef.current?.scrollIntoView({ block: 'end' });
+    }
+  }, [messages, loading, open]);
+
   const handleSend = async () => {
-    if (!message.trim()) return;
+    if (loading || !message.trim()) return;
 
     const userMessage = message.trim();
 
@@ -96,6 +130,7 @@ const ChatbotBox: React.FC = () => {
       const res = await askChatbot({
         maNguoiDung,
         message: userMessage,
+        history: buildChatbotContext(messages),
       });
 
       setMessages((prev) => [
@@ -150,27 +185,32 @@ const ChatbotBox: React.FC = () => {
 
                   {item.suggestions && item.suggestions.length > 0 && (
                     <div className="chatbot-suggestions">
-                      {item.suggestions.map((s) => (
+                      {item.suggestions.map((s, suggestionIndex) => {
+                        const details = buildSuggestionDetails(s);
+                        const href = s.link || (s.maBaiDang ? `/posts/${s.maBaiDang}` : '#');
+
+                        return (
                         <a
-                          key={s.maBaiDang}
-                          href={s.link || `/listing/${s.maBaiDang}`}
+                          key={s.maBaiDang || `${index}-${suggestionIndex}`}
+                          href={href}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="chatbot-suggestion-card"
                         >
-                          <strong>{s.tieuDe}</strong>
+                          <strong>{s.tieuDe || 'Căn hộ cho thuê'}</strong>
 
-                          <span>
-                            {s.gia
-                              ? `${s.gia.toLocaleString('vi-VN')}đ/tháng`
-                              : 'Liên hệ'}
-                          </span>
+                          <span>{formatSuggestionPrice(s.gia)}</span>
+
+                          {details.length > 0 && (
+                            <em>{details.join(' • ')}</em>
+                          )}
 
                           <small>
                             {s.diaChi || s.phuong || 'Đà Nẵng'}
                           </small>
                         </a>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -184,6 +224,8 @@ const ChatbotBox: React.FC = () => {
                 </div>
               </div>
             )}
+
+            <div ref={bottomRef} />
           </div>
 
           <div className="chatbot-input">
@@ -200,7 +242,7 @@ const ChatbotBox: React.FC = () => {
               }}
             />
 
-            <button onClick={handleSend} disabled={loading}>
+            <button onClick={handleSend} disabled={loading || !message.trim()}>
               Gửi
             </button>
           </div>

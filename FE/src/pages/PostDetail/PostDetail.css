@@ -440,9 +440,21 @@
   color: #fff;
 }
 
+.rental-detail-btn--secondary {
+  background: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
+}
+
 .rental-detail-btn--primary {
   background: linear-gradient(135deg, #ea7b2c, #d65b10);
   color: #fff;
+}
+
+.rental-detail-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+  transform: none;
 }
 
 .rental-detail-owner-note {

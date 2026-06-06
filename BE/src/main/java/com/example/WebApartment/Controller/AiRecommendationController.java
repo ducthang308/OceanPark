@@ -14,7 +14,7 @@ import java.util.List;
 @RestController
 @RequestMapping("${api.prefix}/recommendation")
 @RequiredArgsConstructor
-public class RecommendationController {
+public class AiRecommendationController {
 
     private final RecommendationService recommendationService;
 
