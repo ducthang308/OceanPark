@@ -1,9 +1,13 @@
 package com.example.WebApartment.Repository;
 
 import com.example.WebApartment.Models.HoaDon;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -38,4 +42,25 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, String> {
     );
 
     long countByTrangThaiThanhToanIgnoreCase(String trangThaiThanhToan);
+
+    @Query("""
+            select distinct h.ngayKetThuc
+            from HoaDon h
+            left join h.baiDang bd
+            left join h.chiTietHoaDon cthd
+            left join cthd.baiDang ctb
+            where h.ngayKetThuc is not null
+              and upper(h.trangThaiHieuLuc) = 'DANG_HIEU_LUC'
+              and upper(h.trangThaiThanhToan) = 'SUCCESS'
+              and upper(h.loaiHoaDon) = 'THUE_CAN_HO'
+              and (
+                    bd.maBaiDang = :maBaiDang
+                    or ctb.maBaiDang = :maBaiDang
+              )
+            order by h.ngayKetThuc asc
+            """)
+    List<LocalDateTime> findActiveRentEndDatesByBaiDang(
+            @Param("maBaiDang") String maBaiDang,
+            Pageable pageable
+    );
 }

@@ -5,6 +5,7 @@ import {
   BankOutlined,
   BellOutlined,
   BulbOutlined,
+  CalendarOutlined,
   EditOutlined,
   EnvironmentOutlined,
   FireFilled,
@@ -471,6 +472,9 @@ const Home: React.FC = () => {
         {showRecommendation && typeof post.recommendationScore === 'number' && (
           <span className="site-home-post__score">{post.recommendationScore}% match</span>
         )}
+        {post.isRented && (
+          <span className="site-home-post__availability-badge">Đã thuê</span>
+        )}
         <span className="site-home-post__favorite-count">
           <HeartFilled />
           {post.likeCount ?? 0}
@@ -494,7 +498,14 @@ const Home: React.FC = () => {
         <div className="site-home-post__meta">
           <strong>{post.priceText}</strong>
           <small>{post.areaText}</small>
-          <small>Còn {post.availableQuantity ?? 1} căn</small>
+          {post.isRented ? (
+            <small className="site-home-post__availability">
+              <CalendarOutlined />
+              {post.nextAvailableAtText || 'Đang chờ lịch trống'}
+            </small>
+          ) : (
+            <small>Còn {post.availableQuantity ?? 1} căn</small>
+          )}
         </div>
         {showRecommendation && post.recommendationReasons && post.recommendationReasons.length > 0 && (
           <div className="site-home-post__reasons">

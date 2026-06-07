@@ -16,7 +16,6 @@ import {
   DownloadOutlined,
   FieldTimeOutlined,
   HistoryOutlined,
-  ReloadOutlined,
   SendOutlined,
   WalletOutlined,
 } from "@ant-design/icons";

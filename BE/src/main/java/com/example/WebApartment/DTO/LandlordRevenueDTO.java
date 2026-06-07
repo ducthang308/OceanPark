@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class LandlordRevenueDTO {
+    private String maGiaoDichVi;
     private String maHoaDon;
     private String maBaiDang;
     private String tieuDeBaiDang;

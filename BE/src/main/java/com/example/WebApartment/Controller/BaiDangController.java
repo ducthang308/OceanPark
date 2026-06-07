@@ -21,6 +21,13 @@ public class BaiDangController {
         return ResponseEntity.ok(service.getAll());
     }
 
+    @GetMapping("/home")
+    public ResponseEntity<List<BaiDangDTO>> getHomeVisible(
+            @RequestParam(defaultValue = "20") Integer limit
+    ) {
+        return ResponseEntity.ok(service.getHomeVisible(limit));
+    }
+
     @PutMapping("/{id}/view")
     public ResponseEntity<BaiDangDTO> increaseView(@PathVariable String id) {
         return ResponseEntity.ok(service.increaseView(id));

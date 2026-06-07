@@ -29,6 +29,7 @@ export interface ChiTietCanHoDTO {
   lng?: number;
   soLuongTrong?: number;
   ngayTao?: string;
+  ngayTrong?: string | null;
 }
 
 export interface HinhAnhBaiDangDTO {
@@ -126,6 +127,14 @@ export const getPosts = async () => {
   }
 
   return mergePostsById([...listPosts, ...detailPosts]);
+};
+
+export const getHomeVisiblePosts = async (limit = 20) => {
+  const res = await axiosClient.get<BaiDangDTO[]>("/api/v1/bai-dang/home", {
+    params: { limit },
+  });
+
+  return res.data;
 };
 
 export const getPostById = async (maBaiDang: string) => {
