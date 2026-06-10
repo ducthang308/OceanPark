@@ -261,6 +261,7 @@ export interface SepayCreatePaymentRequest {
   maNguoiDung: string;
   loaiHoaDon: 'DANG_BAI' | 'THUE_CAN_HO';
   soTien?: number;
+  thoiHanThang?: number;
   maBaiDang?: string;
   ghiChu?: string;
   chiTietHoaDon?: ChiTietHoaDonDTO[];
@@ -287,6 +288,9 @@ export interface SepayCreatePaymentResponse {
   bankAccount: string;
   accountName: string;
   qrUrl: string;
+  thoiHanThang?: number | null;
+  ngayBatDau?: string | null;
+  ngayKetThuc?: string | null;
   chiTietHoaDon?: ChiTietHoaDonDTO[];
 }
 

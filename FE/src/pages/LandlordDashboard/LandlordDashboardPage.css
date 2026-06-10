@@ -54,9 +54,10 @@
 }
 
 .landlord-dashboard-kpi {
-  min-height: 142px;
+  min-height: 112px;
   padding: 18px;
   display: flex;
+  align-items: center;
   gap: 14px;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
@@ -108,13 +109,6 @@
   line-height: 1.15;
   font-weight: 800;
   overflow-wrap: anywhere;
-}
-
-.landlord-dashboard-kpi p {
-  margin: 8px 0 0;
-  color: #64748b;
-  font-size: 12px;
-  line-height: 1.4;
 }
 
 .landlord-dashboard-grid {
@@ -181,14 +175,13 @@
 }
 
 .landlord-dashboard-revenue-filters {
-  width: min(100%, 520px);
+  width: min(100%, 180px);
   display: grid;
-  grid-template-columns: 150px repeat(2, minmax(128px, 1fr));
+  grid-template-columns: 1fr;
   gap: 10px;
 }
 
-.landlord-dashboard-revenue-filters .ant-select-selector,
-.landlord-dashboard-revenue-filters .ant-input {
+.landlord-dashboard-revenue-filters .ant-select-selector {
   min-height: 40px;
   border-radius: 8px !important;
 }

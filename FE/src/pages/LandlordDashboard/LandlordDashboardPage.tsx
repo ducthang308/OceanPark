@@ -141,8 +141,6 @@ const LandlordDashboardPage = () => {
   const [postKeyword, setPostKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [revenuePeriod, setRevenuePeriod] = useState<RevenuePeriod>("month");
-  const [revenueFrom, setRevenueFrom] = useState("");
-  const [revenueTo, setRevenueTo] = useState("");
 
   const loadDashboard = useCallback(async () => {
     if (!maNguoiDung) {
@@ -157,8 +155,6 @@ const LandlordDashboardPage = () => {
 
       const data = await getLandlordDashboard(maNguoiDung, {
         period: revenuePeriod,
-        from: revenueFrom || undefined,
-        to: revenueTo || undefined,
       });
       setDashboard(data);
     } catch (err) {
@@ -168,7 +164,7 @@ const LandlordDashboardPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [maNguoiDung, revenueFrom, revenuePeriod, revenueTo]);
+  }, [maNguoiDung, revenuePeriod]);
 
   useEffect(() => {
     void loadDashboard();
@@ -373,35 +369,30 @@ const LandlordDashboardPage = () => {
       key: "revenue",
       label: "Doanh thu nhận được",
       value: formatCurrency(safeNumber(dashboard?.totalRevenue)),
-      note: "Từ ví và hóa đơn SUCCESS",
       icon: <DollarCircleOutlined />,
     },
     {
       key: "posts",
       label: "Tổng bài đăng",
       value: safeNumber(dashboard?.totalPosts).toLocaleString("vi-VN"),
-      note: `${safeNumber(dashboard?.activePosts)} đang hiển thị`,
       icon: <FileTextOutlined />,
     },
     {
       key: "rented",
       label: "Bài đã thuê",
       value: safeNumber(dashboard?.rentedPosts).toLocaleString("vi-VN"),
-      note: "Trạng thái DA_THUE",
       icon: <HomeOutlined />,
     },
     {
       key: "views",
       label: "Tổng lượt xem",
       value: safeNumber(dashboard?.totalViews).toLocaleString("vi-VN"),
-      note: "Cộng từ các bài đăng",
       icon: <EyeOutlined />,
     },
     {
       key: "likes",
       label: "Tổng lượt thích",
       value: safeNumber(dashboard?.totalLikes).toLocaleString("vi-VN"),
-      note: "Từ danh sách yêu thích",
       icon: <HeartOutlined />,
     },
   ];
@@ -447,7 +438,6 @@ const LandlordDashboardPage = () => {
               <div>
                 <span>{item.label}</span>
                 <strong>{item.value}</strong>
-                <p>{item.note}</p>
               </div>
             </article>
           ))}
@@ -465,16 +455,6 @@ const LandlordDashboardPage = () => {
                   value={revenuePeriod}
                   options={revenuePeriodOptions}
                   onChange={(value) => setRevenuePeriod(value)}
-                />
-                <Input
-                  type="date"
-                  value={revenueFrom}
-                  onChange={(event) => setRevenueFrom(event.target.value)}
-                />
-                <Input
-                  type="date"
-                  value={revenueTo}
-                  onChange={(event) => setRevenueTo(event.target.value)}
                 />
               </div>
             </div>

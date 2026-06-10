@@ -264,7 +264,7 @@ public class EmailService {
 
     private String formatInvoiceType(String loaiHoaDon) {
         if ("DANG_BAI".equalsIgnoreCase(loaiHoaDon)) return "Thanh toán gói đăng bài";
-        if ("THUE_CAN_HO".equalsIgnoreCase(loaiHoaDon)) return "Thanh toán thuê căn hộ";
+        if ("THUE_CAN_HO".equalsIgnoreCase(loaiHoaDon)) return "Đặt cọc/giữ phòng";
         return loaiHoaDon == null ? "-" : loaiHoaDon;
     }
 
