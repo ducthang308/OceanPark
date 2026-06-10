@@ -72,9 +72,13 @@ public class AdminDashboardService {
     }
 
     public DashboardChartDTO getRevenueChart(String type) {
+        return getRevenueChart(type, null);
+    }
+
+    public DashboardChartDTO getRevenueChart(String type, LocalDate anchorDate) {
         String normalizedType = normalizeType(type);
         List<RevenueRecord> revenueRecords = findRevenueRecords();
-        List<ChartBucket> buckets = buildBuckets(normalizedType);
+        List<ChartBucket> buckets = buildBuckets(normalizedType, anchorDate);
         Map<String, Double> revenueByBucket = initBucketMap(buckets);
 
         for (RevenueRecord record : revenueRecords) {
@@ -104,9 +108,13 @@ public class AdminDashboardService {
     }
 
     public DashboardChartDTO getPostChart(String type) {
+        return getPostChart(type, null);
+    }
+
+    public DashboardChartDTO getPostChart(String type, LocalDate anchorDate) {
         String normalizedType = normalizeType(type);
         List<BaiDang> posts = baiDangRepository.findAll();
-        List<ChartBucket> buckets = buildBuckets(normalizedType);
+        List<ChartBucket> buckets = buildBuckets(normalizedType, anchorDate);
         Map<String, Double> totalByBucket = initBucketMap(buckets);
         Map<String, Double> activeByBucket = initBucketMap(buckets);
         Map<String, Double> rentedByBucket = initBucketMap(buckets);
@@ -286,27 +294,31 @@ public class AdminDashboardService {
     }
 
     private List<ChartBucket> buildBuckets(String type) {
-        LocalDate today = LocalDate.now();
+        return buildBuckets(type, null);
+    }
+
+    private List<ChartBucket> buildBuckets(String type, LocalDate anchorDate) {
+        LocalDate baseDate = anchorDate != null ? anchorDate : LocalDate.now();
 
         if (TYPE_DAY.equals(type)) {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM");
 
             return IntStream.range(0, 7)
-                    .mapToObj(index -> today.minusDays(6L - index))
+                    .mapToObj(index -> baseDate.minusDays(6L - index))
                     .map(date -> new ChartBucket(date.toString(), date.format(formatter)))
                     .toList();
         }
 
         if (TYPE_YEAR.equals(type)) {
-            int currentYear = today.getYear();
+            int currentYear = baseDate.getYear();
 
             return IntStream.range(0, 5)
                     .mapToObj(index -> String.valueOf(currentYear - 4 + index))
                     .map(year -> new ChartBucket(year, year))
-                    .toList();
+                .toList();
         }
 
-        YearMonth currentMonth = YearMonth.from(today);
+        YearMonth currentMonth = YearMonth.from(baseDate);
 
         return IntStream.range(0, 12)
                 .mapToObj(index -> currentMonth.minusMonths(11L - index))

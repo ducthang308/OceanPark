@@ -91,6 +91,30 @@
   box-shadow: none;
 }
 
+.admin-dashboard-chart-controls {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.admin-dashboard-date-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.admin-dashboard-date-filter .ant-picker {
+  min-height: 40px;
+  border-radius: 8px;
+}
+
 .admin-dashboard-periods {
   flex-shrink: 0;
   display: inline-flex;
@@ -591,6 +615,10 @@
     flex-direction: column;
   }
 
+  .admin-dashboard-chart-controls {
+    justify-content: flex-start;
+  }
+
   .admin-dashboard-panels {
     grid-template-columns: 1fr;
   }
@@ -618,6 +646,17 @@
   }
 
   .admin-dashboard-periods {
+    width: 100%;
+  }
+
+  .admin-dashboard-date-filter {
+    width: 100%;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-dashboard-date-filter .ant-picker,
+  .admin-dashboard-chart-controls {
     width: 100%;
   }
 

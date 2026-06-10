@@ -5,10 +5,12 @@ import com.example.WebApartment.DTO.DashboardChartDTO;
 import com.example.WebApartment.DTO.BaiDangDTO;
 import com.example.WebApartment.Service.AdminDashboardService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -27,17 +29,23 @@ public class AdminDashboardController {
     @GetMapping("/revenue-chart")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<DashboardChartDTO> getRevenueChart(
-            @RequestParam(defaultValue = "month") String type
+            @RequestParam(defaultValue = "month") String type,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate date
     ) {
-        return ResponseEntity.ok(adminDashboardService.getRevenueChart(type));
+        return ResponseEntity.ok(adminDashboardService.getRevenueChart(type, date));
     }
 
     @GetMapping("/post-chart")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<DashboardChartDTO> getPostChart(
-            @RequestParam(defaultValue = "month") String type
+            @RequestParam(defaultValue = "month") String type,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate date
     ) {
-        return ResponseEntity.ok(adminDashboardService.getPostChart(type));
+        return ResponseEntity.ok(adminDashboardService.getPostChart(type, date));
     }
 
     @GetMapping("/user-chart")

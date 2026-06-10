@@ -34,18 +34,20 @@ export const getDashboardOverview = async (): Promise<DashboardStatsDTO> => {
 
 export const getRevenueChart = async (
   type: DashboardChartType,
+  date?: string,
 ): Promise<DashboardChartDTO> => {
   const res = await axiosClient.get<DashboardChartDTO>('/api/v1/admin/dashboard/revenue-chart', {
-    params: { type },
+    params: { type, date },
   });
   return res.data;
 };
 
 export const getPostChart = async (
   type: DashboardChartType,
+  date?: string,
 ): Promise<DashboardChartDTO> => {
   const res = await axiosClient.get<DashboardChartDTO>('/api/v1/admin/dashboard/post-chart', {
-    params: { type },
+    params: { type, date },
   });
   return res.data;
 };
