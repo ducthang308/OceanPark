@@ -29,6 +29,7 @@ export interface ChiTietCanHoDTO {
   lng?: number;
   soLuongTrong?: number;
   ngayTao?: string;
+  ngayTrong?: string | null;
 }
 
 export interface HinhAnhBaiDangDTO {
@@ -126,6 +127,14 @@ export const getPosts = async () => {
   }
 
   return mergePostsById([...listPosts, ...detailPosts]);
+};
+
+export const getHomeVisiblePosts = async (limit = 20) => {
+  const res = await axiosClient.get<BaiDangDTO[]>("/api/v1/bai-dang/home", {
+    params: { limit },
+  });
+
+  return res.data;
 };
 
 export const getPostById = async (maBaiDang: string) => {
@@ -252,6 +261,7 @@ export interface SepayCreatePaymentRequest {
   maNguoiDung: string;
   loaiHoaDon: 'DANG_BAI' | 'THUE_CAN_HO';
   soTien?: number;
+  thoiHanThang?: number;
   maBaiDang?: string;
   ghiChu?: string;
   chiTietHoaDon?: ChiTietHoaDonDTO[];
@@ -278,6 +288,9 @@ export interface SepayCreatePaymentResponse {
   bankAccount: string;
   accountName: string;
   qrUrl: string;
+  thoiHanThang?: number | null;
+  ngayBatDau?: string | null;
+  ngayKetThuc?: string | null;
   chiTietHoaDon?: ChiTietHoaDonDTO[];
 }
 

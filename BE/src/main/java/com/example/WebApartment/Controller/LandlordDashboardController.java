@@ -17,10 +17,13 @@ public class LandlordDashboardController {
     @GetMapping("/{maNguoiDung}")
     @PreAuthorize("hasAnyRole('ADMIN','NGUOI_CHO_THUE')")
     public ResponseEntity<LandlordDashboardDTO> getStats(
-            @PathVariable String maNguoiDung
+            @PathVariable String maNguoiDung,
+            @RequestParam(defaultValue = "month") String period,
+            @RequestParam(required = false) String from,
+            @RequestParam(required = false) String to
     ) {
         return ResponseEntity.ok(
-                landlordDashboardService.getStats(maNguoiDung)
+                landlordDashboardService.getStats(maNguoiDung, period, from, to)
         );
     }
 }

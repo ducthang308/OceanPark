@@ -231,6 +231,39 @@
   font-size: 22px;
 }
 
+.apartment-cart-term {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.apartment-cart-term > span {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.apartment-cart-term > div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.apartment-cart-term button {
+  min-height: 38px;
+  padding: 0 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #334155;
+}
+
+.apartment-cart-term button.active {
+  border-color: #0f766e;
+  background: #e6f4f2;
+  color: #0f766e;
+}
+
 .apartment-cart-summary__checkout,
 .apartment-cart-summary__clear {
   width: 100%;

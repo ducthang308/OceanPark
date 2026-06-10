@@ -3,7 +3,6 @@ package com.example.WebApartment.Service;
 import com.example.WebApartment.DTO.ChiTietHoaDonDTO;
 import com.example.WebApartment.DTO.SepayCreatePaymentRequest;
 import com.example.WebApartment.DTO.SepayCreatePaymentResponse;
-import com.example.WebApartment.DTO.SepayWebhookRequest;
 import com.example.WebApartment.Models.*;
 import com.example.WebApartment.Repository.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -45,6 +44,8 @@ public class SepayService {
     private String accountName;
 
     private static final double GIA_GOI_DANG_BAI_TEST = 50000D;
+    private static final int DEFAULT_RENTAL_TERM_MONTHS = 6;
+    private static final List<Integer> ALLOWED_RENTAL_TERM_MONTHS = List.of(3, 6, 12);
 
     @Transactional
     public SepayCreatePaymentResponse createPayment(SepayCreatePaymentRequest request) {
@@ -56,6 +57,10 @@ public class SepayService {
         BaiDang baiDang = null;
         GoiDangBai goiDangBai = null;
         List<RentPaymentLine> rentLines = List.of();
+        LocalDateTime now = LocalDateTime.now();
+        Integer thoiHanThang = null;
+        LocalDateTime ngayBatDau = null;
+        LocalDateTime ngayKetThuc = null;
 
         double soTienThanhToan = request.getSoTien() != null ? request.getSoTien() : 0D;
 
@@ -68,7 +73,7 @@ public class SepayService {
                     .tenGoi("Gói đăng bài 1 tháng")
                     .giaTien(GIA_GOI_DANG_BAI_TEST)
                     .trangThai("PENDING")
-                    .ngayTao(LocalDateTime.now())
+                    .ngayTao(now)
                     .build();
 
             goiDangBaiRepository.save(goiDangBai);
@@ -78,6 +83,9 @@ public class SepayService {
             rentLines = buildRentPaymentLines(request);
             baiDang = rentLines.get(0).baiDang();
             soTienThanhToan = rentLines.stream().mapToDouble(RentPaymentLine::thanhTien).sum();
+            thoiHanThang = resolveRequestedRentalTermMonths(request);
+            ngayBatDau = now;
+            ngayKetThuc = now.plusMonths(thoiHanThang);
         }
 
         String maHoaDon = generateMaHoaDon();
@@ -92,9 +100,11 @@ public class SepayService {
                 .soTien(soTienThanhToan)
                 .trangThaiThanhToan("PENDING")
                 .trangThaiHieuLuc("CHUA_HIEU_LUC")
+                .ngayBatDau(ngayBatDau)
+                .ngayKetThuc(ngayKetThuc)
                 .noiDungChuyenKhoan(noiDungChuyenKhoan)
                 .ghiChu(request.getGhiChu())
-                .ngayTao(LocalDateTime.now())
+                .ngayTao(now)
                 .build();
 
         hoaDonRepository.save(hoaDon);
@@ -117,7 +127,7 @@ public class SepayService {
                 .providerTxnRef(noiDungChuyenKhoan)
                 .orderInfo(noiDungChuyenKhoan)
                 .noiDung("Tạo giao dịch SePay chờ thanh toán")
-                .ngayTao(LocalDateTime.now())
+                .ngayTao(now)
                 .build();
 
         giaoDichRepository.save(giaoDich);
@@ -132,6 +142,9 @@ public class SepayService {
                 .bankAccount(bankAccount)
                 .accountName(accountName)
                 .qrUrl(qrUrl)
+                .thoiHanThang(thoiHanThang)
+                .ngayBatDau(ngayBatDau)
+                .ngayKetThuc(ngayKetThuc)
                 .chiTietHoaDon(
                         rentLines.stream()
                                 .map(line -> toChiTietHoaDonDto(hoaDon.getMaHoaDon(), line))
@@ -186,17 +199,28 @@ public class SepayService {
         }
 
         if (transferAmount < hoaDon.getSoTien()) {
-            saveFailedGiaoDichFromMap(hoaDon, payload, transferAmount, transactionNo, "Số tiền chuyển khoản không đủ");
+            saveWebhookGiaoDichFromMap(
+                    hoaDon,
+                    payload,
+                    transferAmount,
+                    transactionNo,
+                    "FAILED",
+                    "Số tiền chuyển khoản không đủ",
+                    LocalDateTime.now()
+            );
             return Map.of("success", false, "message", "Số tiền chuyển khoản không đủ");
         }
 
         LocalDateTime now = LocalDateTime.now();
+        int effectiveMonths = "THUE_CAN_HO".equalsIgnoreCase(hoaDon.getLoaiHoaDon())
+                ? resolvePersistedRentalTermMonths(hoaDon)
+                : 1;
 
         hoaDon.setTrangThaiThanhToan("SUCCESS");
         hoaDon.setTrangThaiHieuLuc("DANG_HIEU_LUC");
         hoaDon.setNgayThanhToan(now);
         hoaDon.setNgayBatDau(now);
-        hoaDon.setNgayKetThuc(now.plusMonths(1));
+        hoaDon.setNgayKetThuc(now.plusMonths(effectiveMonths));
         hoaDonRepository.save(hoaDon);
 
         if ("DANG_BAI".equalsIgnoreCase(hoaDon.getLoaiHoaDon())) {
@@ -219,36 +243,15 @@ public class SepayService {
             processSuccessfulRentInvoice(hoaDon);
         }
 
-        PhuongThucThanhToan phuongThuc = phuongThucThanhToanRepository.findByProvider("SEPAY")
-                .orElseThrow(() -> new RuntimeException("Chưa có phương thức thanh toán SEPAY"));
-
-        GiaoDich giaoDich = GiaoDich.builder()
-                .maGiaoDich(generateMaGiaoDich())
-                .hoaDon(hoaDon)
-                .nguoiDung(hoaDon.getNguoiDung())
-                .phuongThucThanhToan(phuongThuc)
-                .soTien(transferAmount)
-                .trangThai("SUCCESS")
-                .provider("SEPAY")
-                .providerTxnRef(hoaDon.getNoiDungChuyenKhoan())
-                .providerTransactionNo(transactionNo)
-                .providerTransactionStatus("SUCCESS")
-                .bankCode(getString(payload, "gateway"))
-                .bankAccount(firstNotBlank(
-                        getString(payload, "accountNumber"),
-                        getString(payload, "account_number")
-                ))
-                .payDate(firstNotBlank(
-                        getString(payload, "transactionDate"),
-                        getString(payload, "transaction_date")
-                ))
-                .orderInfo(content)
-                .rawData(toJson(payload))
-                .noiDung("Thanh toán SePay thành công")
-                .ngayTao(now)
-                .build();
-
-        giaoDichRepository.save(giaoDich);
+        saveWebhookGiaoDichFromMap(
+                hoaDon,
+                payload,
+                transferAmount,
+                transactionNo,
+                "SUCCESS",
+                "Thanh toán SePay thành công",
+                now
+        );
 
         sendPaymentSuccessEmailSafely(hoaDon);
 
@@ -268,32 +271,6 @@ public class SepayService {
                         && content.toUpperCase().contains(hd.getNoiDungChuyenKhoan().toUpperCase()))
                 .findFirst()
                 .orElse(null);
-    }
-
-    private void saveFailedGiaoDich(HoaDon hoaDon, SepayWebhookRequest request, String reason) {
-        PhuongThucThanhToan phuongThuc = phuongThucThanhToanRepository.findByProvider("SEPAY").orElse(null);
-
-        GiaoDich giaoDich = GiaoDich.builder()
-                .maGiaoDich(generateMaGiaoDich())
-                .hoaDon(hoaDon)
-                .nguoiDung(hoaDon.getNguoiDung())
-                .phuongThucThanhToan(phuongThuc)
-                .soTien(request.getTransferAmount())
-                .trangThai("FAILED")
-                .provider("SEPAY")
-                .providerTxnRef(hoaDon.getNoiDungChuyenKhoan())
-                .providerTransactionNo(request.getReferenceCode())
-                .providerTransactionStatus("FAILED")
-                .bankCode(request.getGateway())
-                .bankAccount(request.getAccountNumber())
-                .payDate(request.getTransactionDate())
-                .orderInfo(firstNotBlank(request.getContent(), request.getDescription(), request.getCode()))
-                .rawData(toJson(request))
-                .noiDung(reason)
-                .ngayTao(LocalDateTime.now())
-                .build();
-
-        giaoDichRepository.save(giaoDich);
     }
 
     private void validateCreatePayment(SepayCreatePaymentRequest request) {
@@ -319,7 +296,37 @@ public class SepayService {
             if (!hasLegacyPost && !hasItems) {
                 throw new RuntimeException("Danh sách căn hộ thuê không được để trống");
             }
+
+            resolveRequestedRentalTermMonths(request);
         }
+    }
+
+    private int resolveRequestedRentalTermMonths(SepayCreatePaymentRequest request) {
+        Integer thoiHanThang = request.getThoiHanThang();
+
+        if (thoiHanThang == null) {
+            return DEFAULT_RENTAL_TERM_MONTHS;
+        }
+
+        if (!ALLOWED_RENTAL_TERM_MONTHS.contains(thoiHanThang)) {
+            throw new RuntimeException("Thời hạn thuê chỉ hỗ trợ 3, 6 hoặc 12 tháng");
+        }
+
+        return thoiHanThang;
+    }
+
+    private int resolvePersistedRentalTermMonths(HoaDon hoaDon) {
+        LocalDateTime start = hoaDon.getNgayBatDau();
+        LocalDateTime end = hoaDon.getNgayKetThuc();
+
+        if (start == null || end == null || !end.isAfter(start)) {
+            return DEFAULT_RENTAL_TERM_MONTHS;
+        }
+
+        int months = (end.getYear() - start.getYear()) * 12
+                + end.getMonthValue() - start.getMonthValue();
+
+        return months > 0 ? months : DEFAULT_RENTAL_TERM_MONTHS;
     }
 
     private List<RentPaymentLine> buildRentPaymentLines(SepayCreatePaymentRequest request) {
@@ -562,14 +569,17 @@ public class SepayService {
     ) {
     }
 
-    private void saveFailedGiaoDichFromMap(
+    private void saveWebhookGiaoDichFromMap(
             HoaDon hoaDon,
             Map<String, Object> payload,
             Double transferAmount,
             String transactionNo,
-            String reason
+            String status,
+            String message,
+            LocalDateTime timestamp
     ) {
-        PhuongThucThanhToan phuongThuc = phuongThucThanhToanRepository.findByProvider("SEPAY").orElse(null);
+        PhuongThucThanhToan phuongThuc = phuongThucThanhToanRepository.findByProvider("SEPAY")
+                .orElseThrow(() -> new RuntimeException("Chưa có phương thức thanh toán SEPAY"));
 
         String content = firstNotBlank(
                 getString(payload, "content"),
@@ -578,31 +588,43 @@ public class SepayService {
                 getString(payload, "transaction_content")
         );
 
-        GiaoDich giaoDich = GiaoDich.builder()
-                .maGiaoDich(generateMaGiaoDich())
-                .hoaDon(hoaDon)
-                .nguoiDung(hoaDon.getNguoiDung())
-                .phuongThucThanhToan(phuongThuc)
-                .soTien(transferAmount)
-                .trangThai("FAILED")
-                .provider("SEPAY")
-                .providerTxnRef(hoaDon.getNoiDungChuyenKhoan())
-                .providerTransactionNo(transactionNo)
-                .providerTransactionStatus("FAILED")
-                .bankCode(getString(payload, "gateway"))
-                .bankAccount(firstNotBlank(
-                        getString(payload, "accountNumber"),
-                        getString(payload, "account_number")
-                ))
-                .payDate(firstNotBlank(
-                        getString(payload, "transactionDate"),
-                        getString(payload, "transaction_date")
-                ))
-                .orderInfo(content)
-                .rawData(toJson(payload))
-                .noiDung(reason)
-                .ngayTao(LocalDateTime.now())
-                .build();
+        GiaoDich giaoDich = giaoDichRepository
+                .findFirstByHoaDon_MaHoaDonAndProviderAndTrangThaiIgnoreCaseOrderByNgayTaoDesc(
+                        hoaDon.getMaHoaDon(),
+                        "SEPAY",
+                        "PENDING"
+                )
+                .orElseGet(() -> GiaoDich.builder()
+                        .maGiaoDich(generateMaGiaoDich())
+                        .hoaDon(hoaDon)
+                        .nguoiDung(hoaDon.getNguoiDung())
+                        .phuongThucThanhToan(phuongThuc)
+                        .provider("SEPAY")
+                        .providerTxnRef(hoaDon.getNoiDungChuyenKhoan())
+                        .ngayTao(timestamp)
+                        .build());
+
+        giaoDich.setHoaDon(hoaDon);
+        giaoDich.setNguoiDung(hoaDon.getNguoiDung());
+        giaoDich.setPhuongThucThanhToan(phuongThuc);
+        giaoDich.setSoTien(transferAmount);
+        giaoDich.setTrangThai(status);
+        giaoDich.setProvider("SEPAY");
+        giaoDich.setProviderTxnRef(hoaDon.getNoiDungChuyenKhoan());
+        giaoDich.setProviderTransactionNo(transactionNo);
+        giaoDich.setProviderTransactionStatus(status);
+        giaoDich.setBankCode(getString(payload, "gateway"));
+        giaoDich.setBankAccount(firstNotBlank(
+                getString(payload, "accountNumber"),
+                getString(payload, "account_number")
+        ));
+        giaoDich.setPayDate(firstNotBlank(
+                getString(payload, "transactionDate"),
+                getString(payload, "transaction_date")
+        ));
+        giaoDich.setOrderInfo(content);
+        giaoDich.setRawData(toJson(payload));
+        giaoDich.setNoiDung(message);
 
         giaoDichRepository.save(giaoDich);
     }

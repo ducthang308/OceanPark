@@ -103,7 +103,7 @@ const getInvoiceTypeLabel = (type?: string | null) => {
     case "DANG_BAI":
       return "Mua gói đăng bài";
     case "THUE_CAN_HO":
-      return "Thanh toán thuê căn hộ";
+      return "Đặt cọc/giữ phòng";
     default:
       return type || "-";
   }

@@ -5,6 +5,7 @@ import {
   BankOutlined,
   BellOutlined,
   BulbOutlined,
+  CalendarOutlined,
   EditOutlined,
   EnvironmentOutlined,
   FireFilled,
@@ -25,6 +26,13 @@ import {
   normalizeText,
 } from '../../services/api/HomeService';
 import type { IHomeCategory, IHomePageData, IHomePostCard } from '../../services/types/home.types';
+import {
+  addFavoritePost,
+  getFavoriteCountByPost,
+  getFavoritePostsByUser,
+  removeFavoritePost,
+} from '../../services/api/PostManagementService';
+import type { BaiDangYeuThichDTO } from '../../services/api/PostManagementService';
 
 import { useUserNeedDialog } from '../../hooks/useUserNeedDialog';
 import { useAuth } from '../../hooks/useAuth';
@@ -72,7 +80,6 @@ const categoryIconMap: Record<string, React.ReactNode> = {
 
 const featuredTabs: Array<{ key: FeaturedTab; label: string }> = [
   { key: 'featured', label: 'Nổi bật' },
-  { key: 'newest', label: 'Mới nhất' },
   { key: 'budget', label: 'Giá rẻ' },
   { key: 'large', label: 'Diện tích lớn' },
 ];
@@ -130,6 +137,31 @@ const formatNeedPriceRange = (minPrice?: number | null, maxPrice?: number | null
 
 const getUniquePosts = (posts: IHomePostCard[]) =>
   posts.filter((post, index, arr) => arr.findIndex((item) => String(item.id) === String(post.id)) === index);
+
+const toPostId = (postId: string | number) => String(postId).trim();
+
+const getFavoritePostIds = (favorites: BaiDangYeuThichDTO[]) =>
+  Array.from(
+    new Set(
+      favorites
+        .map((favorite) => favorite.maBaiDang?.trim())
+        .filter((postId): postId is string => Boolean(postId)),
+    ),
+  );
+
+const updateLikeCountForPosts = (
+  posts: IHomePostCard[],
+  postId: string,
+  likeCount: number,
+) =>
+  posts.map((post) =>
+    toPostId(post.id) === postId
+      ? {
+          ...post,
+          likeCount,
+        }
+      : post,
+  );
 
 const getCategoryCount = (category: IHomeCategory, posts: IHomePostCard[]) =>
   posts.filter((post) => post.categorySlug === category.slug).length;
@@ -211,7 +243,8 @@ const Home: React.FC = () => {
   const [recommendationTab, setRecommendationTab] = useState<RecommendationTab>('match');
   const [recommendedPosts, setRecommendedPosts] = useState<IHomePostCard[]>([]);
   const [recommendationLoading, setRecommendationLoading] = useState(false);
-  const [savedPostIds, setSavedPostIds] = useState<Array<string | number>>([]);
+  const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
+  const [favoriteActionIds, setFavoriteActionIds] = useState<string[]>([]);
   const [notifyEnabled, setNotifyEnabled] = useState(false);
   const [showPriceRangeError, setShowPriceRangeError] = useState(false);
   const [searchFilters, setSearchFilters] = useState<SearchFilters>({
@@ -295,6 +328,30 @@ const Home: React.FC = () => {
       ignore = true;
     };
   }, [canManageUserNeed, hasNeed, maNguoiDung, initialValues]);
+
+  useEffect(() => {
+    let ignore = false;
+
+    const loadFavoriteIds = async () => {
+      if (!maNguoiDung) {
+        setFavoriteIds([]);
+        return;
+      }
+
+      try {
+        const favoritesResponse = await getFavoritePostsByUser(maNguoiDung);
+        if (!ignore) setFavoriteIds(getFavoritePostIds(favoritesResponse));
+      } catch {
+        if (!ignore) setFavoriteIds([]);
+      }
+    };
+
+    loadFavoriteIds();
+
+    return () => {
+      ignore = true;
+    };
+  }, [maNguoiDung]);
 
   const allHomePosts = useMemo(
     () =>
@@ -442,7 +499,20 @@ const Home: React.FC = () => {
     navigate(query ? `${path}?${query}` : path);
   };
 
-  const toggleSavedPost = (postId: string | number) => {
+  const updatePostLikeCount = (postId: string, likeCount: number) => {
+    setHomeData((current) => ({
+      ...current,
+      allPosts: updateLikeCountForPosts(current.allPosts, postId, likeCount),
+      featuredPosts: updateLikeCountForPosts(current.featuredPosts, postId, likeCount),
+      newestPosts: updateLikeCountForPosts(current.newestPosts, postId, likeCount),
+    }));
+    setRecommendedPosts((current) => updateLikeCountForPosts(current, postId, likeCount));
+  };
+
+  const toggleSavedPost = async (postIdValue: string | number) => {
+    const postId = toPostId(postIdValue);
+    if (!postId) return;
+
     if (!isAuthenticated || !maNguoiDung) {
       navigate('/login', {
         state: {
@@ -455,68 +525,114 @@ const Home: React.FC = () => {
       return;
     }
 
-    setSavedPostIds((current) =>
-      current.includes(postId) ? current.filter((id) => id !== postId) : [...current, postId],
+    if (favoriteActionIds.includes(postId)) return;
+
+    setFavoriteActionIds((current) =>
+      current.includes(postId) ? current : [...current, postId],
     );
+
+    try {
+      const isFavorite = favoriteIds.includes(postId);
+
+      if (isFavorite) {
+        await removeFavoritePost(maNguoiDung, postId);
+      } else {
+        await addFavoritePost(maNguoiDung, postId);
+      }
+    } catch {
+      // The favorite state may already have changed elsewhere; refresh below keeps Home in sync.
+    }
+
+    try {
+      const [favoritesResponse, likeCountResponse] = await Promise.all([
+        getFavoritePostsByUser(maNguoiDung),
+        getFavoriteCountByPost(postId),
+      ]);
+
+      setFavoriteIds(getFavoritePostIds(favoritesResponse));
+      updatePostLikeCount(postId, likeCountResponse);
+      window.dispatchEvent(new Event('favorite-posts:changed'));
+    } catch {
+      // Keep the current UI if the follow-up refresh fails.
+    } finally {
+      setFavoriteActionIds((current) => current.filter((id) => id !== postId));
+    }
   };
 
-  const renderPostCard = (post: IHomePostCard, showRecommendation = false) => (
-    <Link
-      key={post.id}
-      to={`/posts/${post.id}`}
-      className={`site-home-post ${showRecommendation ? 'site-home-post--recommendation' : ''}`}
-    >
-      <div className="site-home-post__image-wrap">
-        <img src={post.coverImage} alt={post.title} loading="lazy" decoding="async" />
-        {showRecommendation && typeof post.recommendationScore === 'number' && (
-          <span className="site-home-post__score">{post.recommendationScore}% match</span>
-        )}
-        <span className="site-home-post__favorite-count">
-          <HeartFilled />
-          {post.likeCount ?? 0}
-        </span>
-        <button
-          type="button"
-          className={`site-home-save-btn ${savedPostIds.includes(post.id) ? 'is-saved' : ''}`}
-          aria-label="Lưu tin"
-          onClick={(event) => {
-            event.preventDefault();
-            toggleSavedPost(post.id);
-          }}
-        >
-          {savedPostIds.includes(post.id) ? <HeartFilled /> : <HeartOutlined />}
-        </button>
-      </div>
-      <div className="site-home-post__body">
-        <span>{post.categoryLabel}</span>
-        <h3>{post.title}</h3>
-        <p>{post.addressText}</p>
-        <div className="site-home-post__meta">
-          <strong>{post.priceText}</strong>
-          <small>{post.areaText}</small>
-          <small>Còn {post.availableQuantity ?? 1} căn</small>
+  const renderPostCard = (post: IHomePostCard, showRecommendation = false) => {
+    const postId = toPostId(post.id);
+    const isFavorite = favoriteIds.includes(postId);
+    const isFavoriteProcessing = favoriteActionIds.includes(postId);
+    const likeCount = post.likeCount ?? 0;
+
+    return (
+      <Link
+        key={post.id}
+        to={`/posts/${post.id}`}
+        className={`site-home-post ${showRecommendation ? 'site-home-post--recommendation' : ''}`}
+      >
+        <div className="site-home-post__image-wrap">
+          <img src={post.coverImage} alt={post.title} loading="lazy" decoding="async" />
+          {showRecommendation && typeof post.recommendationScore === 'number' && (
+            <span className="site-home-post__score">{post.recommendationScore}% match</span>
+          )}
+          {post.isRented && (
+            <span className="site-home-post__availability-badge">Đã thuê</span>
+          )}
+          <button
+            type="button"
+            className={`site-home-post__favorite-btn ${isFavorite ? 'is-saved' : ''}`}
+            aria-label={isFavorite ? 'Bỏ yêu thích bài đăng' : 'Yêu thích bài đăng'}
+            aria-pressed={isFavorite}
+            disabled={isFavoriteProcessing}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              void toggleSavedPost(post.id);
+            }}
+          >
+            {isFavorite ? <HeartFilled /> : <HeartOutlined />}
+            <span>{likeCount}</span>
+          </button>
         </div>
-        {showRecommendation && post.recommendationReasons && post.recommendationReasons.length > 0 && (
-          <div className="site-home-post__reasons">
-            {post.recommendationReasons.slice(0, 3).map((reason) => (
-              <small key={reason}>{reason}</small>
-            ))}
+        <div className="site-home-post__body">
+          <span>{post.categoryLabel}</span>
+          <h3>{post.title}</h3>
+          <p>{post.addressText}</p>
+          <div className="site-home-post__meta">
+            <strong>{post.priceText}</strong>
+            <small>{post.areaText}</small>
+            {post.isRented ? (
+              <small className="site-home-post__availability">
+                <CalendarOutlined />
+                {post.nextAvailableAtText || 'Đang chờ lịch trống'}
+              </small>
+            ) : (
+              <small>Còn {post.availableQuantity ?? 1} căn</small>
+            )}
           </div>
-        )}
-        {showRecommendation && post.aiSuggestion && (
-          <div className="site-home-post__ai">
-            <BulbOutlined />
-            <span>{post.aiSuggestion}</span>
+          {showRecommendation && post.recommendationReasons && post.recommendationReasons.length > 0 && (
+            <div className="site-home-post__reasons">
+              {post.recommendationReasons.slice(0, 3).map((reason) => (
+                <small key={reason}>{reason}</small>
+              ))}
+            </div>
+          )}
+          {showRecommendation && post.aiSuggestion && (
+            <div className="site-home-post__ai">
+              <BulbOutlined />
+              <span>{post.aiSuggestion}</span>
+            </div>
+          )}
+          <div className="site-home-post__signals">
+            <small>{post.postedAtText}</small>
+            <small>{likeCount} lượt lưu</small>
+            {post.hasVideo && <small>Có video</small>}
           </div>
-        )}
-        <div className="site-home-post__signals">
-          <small>{post.postedAtText}</small>
-          <small>{post.likeCount ?? 0} lượt lưu</small>
-          {post.hasVideo && <small>Có video</small>}
         </div>
-      </div>
-    </Link>
-  );
+      </Link>
+    );
+  };
 
   return (
     <>

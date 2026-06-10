@@ -14,6 +14,7 @@ public class SepayCreatePaymentRequest {
     private String maBaiDang;
     private String loaiHoaDon;
     private Double soTien;
+    private Integer thoiHanThang;
     private String ghiChu;
     private List<ChiTietHoaDonDTO> chiTietHoaDon;
 }

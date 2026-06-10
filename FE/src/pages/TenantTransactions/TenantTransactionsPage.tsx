@@ -50,7 +50,7 @@ const formatDateTime = (value?: string | null) => {
 const getInvoiceTypeLabel = (type?: string | null) => {
   switch (normalizeStatus(type)) {
     case 'THUE_CAN_HO':
-      return 'Thanh toán thuê căn hộ';
+      return 'Đặt cọc/giữ phòng';
     case 'DANG_BAI':
       return 'Mua gói đăng bài';
     default:

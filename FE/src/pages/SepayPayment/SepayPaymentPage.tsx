@@ -10,6 +10,19 @@ type SepayPaymentState = SepayCreatePaymentResponse & {
     cartCheckoutPostIds?: string[];
 };
 
+const formatDate = (value?: string | null) => {
+    if (!value) return '';
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+
+    return date.toLocaleDateString('vi-VN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+    });
+};
+
 const SepayPaymentPage: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
@@ -35,7 +48,7 @@ const SepayPaymentPage: React.FC = () => {
                 }
 
                 if (hoaDon.loaiHoaDon === 'THUE_CAN_HO') {
-                    setTitle('Thanh toán thuê căn hộ');
+                    setTitle('Đặt cọc giữ phòng');
                 }
 
                 if (hoaDon.trangThaiThanhToan === 'SUCCESS') {
@@ -51,7 +64,7 @@ const SepayPaymentPage: React.FC = () => {
                         if (payment.cartCheckoutPostIds?.length) {
                             clearApartmentCartItems(payment.cartCheckoutPostIds);
                         }
-                        alert('Thanh toán thuê căn hộ thành công!');
+                        alert('Đặt cọc giữ phòng thành công!');
                         navigate('/tenant-transactions');
                         return;
                     }
@@ -119,12 +132,26 @@ const SepayPaymentPage: React.FC = () => {
                                     </b>
                                 </div>
 
+                                {payment.thoiHanThang ? (
+                                    <div className="sepay-info-item">
+                                        <span className="sepay-info-label">Thời hạn dự kiến</span>
+                                        <b className="sepay-info-value">{payment.thoiHanThang} tháng</b>
+                                    </div>
+                                ) : null}
+
+                                {payment.ngayKetThuc ? (
+                                    <div className="sepay-info-item">
+                                        <span className="sepay-info-label">Dự kiến trống lại</span>
+                                        <b className="sepay-info-value">{formatDate(payment.ngayKetThuc)}</b>
+                                    </div>
+                                ) : null}
+
                                 <div className={`sepay-status ${status.toLowerCase()}`}>
                                     Trạng thái: <b>{status}</b>
                                 </div>
 
                                 <p className="sepay-note">
-                                    Vui lòng chuyển khoản đúng số tiền và đúng nội dung để hệ thống tự động xác nhận.
+                                    Vui lòng chuyển khoản đúng số tiền cọc/giữ phòng và đúng nội dung để hệ thống tự động xác nhận.
                                 </p>
                             </div>
                         </div>

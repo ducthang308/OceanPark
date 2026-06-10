@@ -25,4 +25,5 @@ public class ChiTietCanHoDTO {
     private Integer soLuongTrong;
 
     private LocalDateTime ngayTao;
+    private LocalDateTime ngayTrong;
 }

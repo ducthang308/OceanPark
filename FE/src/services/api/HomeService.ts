@@ -3,9 +3,9 @@ import {
   getApartmentDetailByPost,
   getCategories,
   getFavoriteCountByPost,
+  getHomeVisiblePosts,
   getPostImages,
   getPostImageUrls,
-  getPosts,
   getPostVideoUrls,
   getRecommendedPosts,
 } from './PostManagementService';
@@ -44,7 +44,8 @@ interface ListingData {
   stats: IHomeStat[];
 }
 
-const PUBLIC_POST_STATUSES = new Set(['ACTIVE', 'APPROVED']);
+const PUBLIC_POST_STATUSES = new Set(['ACTIVE', 'APPROVED', 'DA_THUE']);
+const RENTED_POST_STATUS = 'DA_THUE';
 
 export const HOME_STATIC_CONTENT = {
   heroTitle: 'Nền tảng cho thuê nhà, phòng trọ và căn hộ đáng tin cậy tại Đà Nẵng',
@@ -218,6 +219,19 @@ const formatPostedAt = (value?: string) => {
   });
 };
 
+const formatNextAvailableAt = (value?: string | null) => {
+  if (!value) return 'Đang chờ lịch trống';
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Đang chờ lịch trống';
+
+  return `Dự kiến trống: ${date.toLocaleDateString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })}`;
+};
+
 const getDateTime = (value?: string) => {
   if (!value) return 0;
 
@@ -229,6 +243,11 @@ const isPublicPost = (post: BaiDangDTO) => {
   const status = post.trangThai?.trim().toUpperCase();
   return Boolean(status && PUBLIC_POST_STATUSES.has(status));
 };
+
+const getPostStatus = (post: BaiDangDTO) => post.trangThai?.trim().toUpperCase() || '';
+
+const getPublicStatusPriority = (status?: string) =>
+  status === RENTED_POST_STATUS ? 2 : 0;
 
 const mapCategoryDto = (category: DanhMucDTO): IHomeCategory => {
   const label = category.tenDanhMuc || category.maDanhMuc || 'Danh mục';
@@ -292,6 +311,8 @@ const buildPostCard = (
   const videoUrls = getPostVideoUrls(sortedImages);
   const price = typeof detail?.gia === 'number' ? detail.gia : null;
   const area = typeof detail?.dienTich === 'number' ? detail.dienTich : null;
+  const postStatus = getPostStatus(post);
+  const isRented = postStatus === RENTED_POST_STATUS;
   const wardText = detail?.phuong?.trim() || 'Đang cập nhật';
   const addressText =
     [detail?.diaChiCuThe, detail?.phuong].filter(Boolean).join(', ') ||
@@ -320,7 +341,11 @@ const buildPostCard = (
     districtId: resolveDistrictId(addressText, wardText),
     createdAtTime: getDateTime(post.ngayDang) || index,
     likeCount: 0,
-    availableQuantity: Math.max(detail?.soLuongTrong ?? 1, 0),
+    availableQuantity: isRented ? 0 : Math.max(detail?.soLuongTrong ?? 1, 0),
+    postStatus,
+    isRented,
+    nextAvailableAtText: isRented ? formatNextAvailableAt(detail?.ngayTrong) : undefined,
+    nextAvailableAtTime: isRented ? getDateTime(detail?.ngayTrong ?? undefined) : undefined,
     hasVideo: videoUrls.length > 0,
     isFeatured: false,
     isNew: false,
@@ -384,9 +409,19 @@ const buildStats = (posts: IHomePostCard[], districts: IHomeDistrict[], sourcePo
   ];
 };
 
+const sortHomePosts = (posts: IHomePostCard[]) =>
+  posts.sort((a, b) => {
+    const statusDiff =
+      getPublicStatusPriority(a.postStatus) - getPublicStatusPriority(b.postStatus);
+
+    if (statusDiff !== 0) return statusDiff;
+
+    return (b.createdAtTime ?? 0) - (a.createdAtTime ?? 0);
+  });
+
 export const getRentalListingData = async (): Promise<ListingData> => {
   const [postsResponse, categoriesResponse] = await Promise.all([
-    getPosts(),
+    getHomeVisiblePosts(20),
     getCategories().catch(() => [] as DanhMucDTO[]),
   ]);
 
@@ -416,9 +451,7 @@ export const getRentalListingData = async (): Promise<ListingData> => {
     }),
   );
 
-  const posts = mappedPosts
-    .filter((post): post is IHomePostCard => Boolean(post))
-    .sort((a, b) => (b.createdAtTime ?? 0) - (a.createdAtTime ?? 0))
+  const posts = sortHomePosts(mappedPosts.filter((post): post is IHomePostCard => Boolean(post)))
     .map((post, index) => ({
       ...post,
       isFeatured: index < 3,

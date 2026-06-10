@@ -9,6 +9,7 @@ import com.example.WebApartment.Repository.DanhMucRepository;
 import com.example.WebApartment.Repository.GoiDangBaiRepository;
 import com.example.WebApartment.Repository.NguoiDungRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -33,6 +34,15 @@ public class BaiDangService {
 
     public List<BaiDangDTO> getAll() {
         return repo.findByTrangThai("ACTIVE")
+                .stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
+    public List<BaiDangDTO> getHomeVisible(Integer limit) {
+        int safeLimit = limit != null && limit > 0 ? Math.min(limit, 50) : 20;
+
+        return repo.findHomeVisiblePosts(PageRequest.of(0, safeLimit))
                 .stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());

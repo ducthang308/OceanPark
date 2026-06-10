@@ -2,6 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { createSepayPayment } from '../../services/api/PostManagementService';
 import {
+  DEFAULT_RENTAL_TERM_MONTHS,
+  RENTAL_TERM_OPTIONS,
+  getRentalTermLabel,
+} from '../../constants/rental';
+import {
   AUTH_SESSION_CHANGED_EVENT,
   AUTH_SESSION_CLEARED_EVENT,
   getAuthSession,
@@ -24,6 +29,7 @@ const ApartmentCartPage = () => {
   const location = useLocation();
   const [items, setItems] = useState<ApartmentCartItem[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [selectedRentalTerm, setSelectedRentalTerm] = useState(DEFAULT_RENTAL_TERM_MONTHS);
 
   const loadCart = () => setItems(getApartmentCartItems());
 
@@ -87,7 +93,8 @@ const ApartmentCartPage = () => {
         maNguoiDung,
         loaiHoaDon: 'THUE_CAN_HO',
         soTien: totalAmount,
-        ghiChu: `Thanh toán ${totalQuantity} căn hộ trong giỏ hàng`,
+        thoiHanThang: selectedRentalTerm,
+        ghiChu: `Đặt cọc/giữ phòng ${totalQuantity} căn hộ trong giỏ hàng - Thời hạn ${selectedRentalTerm} tháng`,
         chiTietHoaDon: items.map((item) => ({
           maBaiDang: item.maBaiDang,
           soLuong: item.quantity,
@@ -197,8 +204,24 @@ const ApartmentCartPage = () => {
                 <strong>{items.length}</strong>
               </div>
               <div className="apartment-cart-summary__total">
-                <span>Tổng tiền</span>
+                <span>Tiền cọc giữ phòng</span>
                 <strong>{formatCurrency(totalAmount)}</strong>
+              </div>
+
+              <div className="apartment-cart-term">
+                <span>Thời hạn dự kiến</span>
+                <div>
+                  {RENTAL_TERM_OPTIONS.map((months) => (
+                    <button
+                      key={months}
+                      type="button"
+                      className={selectedRentalTerm === months ? 'active' : ''}
+                      onClick={() => setSelectedRentalTerm(months)}
+                    >
+                      {getRentalTermLabel(months)}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <button
@@ -207,7 +230,7 @@ const ApartmentCartPage = () => {
                 disabled={submitting}
                 onClick={handleCheckout}
               >
-                {submitting ? 'Đang tạo thanh toán...' : 'Thanh toán'}
+                {submitting ? 'Đang tạo thanh toán...' : 'Đặt cọc giữ phòng'}
               </button>
 
               <button

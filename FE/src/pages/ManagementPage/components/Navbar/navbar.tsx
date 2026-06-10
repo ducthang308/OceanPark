@@ -44,7 +44,7 @@ const items: MenuProps['items'] = [
     {
         key: '6',
         icon: <FileTextOutlined />,
-        label: 'Lịch sử thanh toán thuê căn hộ',
+        label: 'Lịch sử đặt cọc giữ phòng',
     },
     {
         key: '7',

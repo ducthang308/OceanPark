@@ -41,6 +41,10 @@ export interface IHomePostCard {
   createdAtTime?: number;
   likeCount?: number;
   availableQuantity?: number;
+  postStatus?: string;
+  isRented?: boolean;
+  nextAvailableAtText?: string;
+  nextAvailableAtTime?: number;
   hasVideo?: boolean;
   isFeatured?: boolean;
   isNew?: boolean;

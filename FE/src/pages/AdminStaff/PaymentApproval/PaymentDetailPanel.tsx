@@ -44,7 +44,7 @@ const getLoaiHoaDonLabel = (type: string): string => {
   if (!type) return 'Dịch vụ';
   const clean = type.toUpperCase();
   if (clean === 'DANG_BAI') return 'Thanh toán phí đăng tin';
-  if (clean === 'THUE_CAN_HO') return 'Đặt cọc thuê căn hộ';
+  if (clean === 'THUE_CAN_HO') return 'Đặt cọc/giữ phòng';
   if (clean === 'MUA_GOI') return 'Mua gói bài đăng';
   return `Thanh toán ${type}`;
 };
