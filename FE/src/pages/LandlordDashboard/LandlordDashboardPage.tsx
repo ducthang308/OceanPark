@@ -462,7 +462,7 @@ const LandlordDashboardPage = () => {
             <div className="landlord-dashboard-chart">
               {revenueChartData.length ? (
                 <ResponsiveContainer width="100%" height={260}>
-                  <BarChart data={revenueChartData}>
+                  <BarChart data={revenueChartData} barCategoryGap="42%">
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis dataKey="label" />
                     <YAxis tickFormatter={(value) => `${Number(value) / 1000000}tr`} />
@@ -471,6 +471,7 @@ const LandlordDashboardPage = () => {
                       dataKey="revenue"
                       name="Doanh thu"
                       fill="#0f766e"
+                      maxBarSize={54}
                       radius={[6, 6, 0, 0]}
                     />
                   </BarChart>
@@ -493,7 +494,7 @@ const LandlordDashboardPage = () => {
             <div className="landlord-dashboard-chart">
               {postChartData.length ? (
                 <ResponsiveContainer width="100%" height={260}>
-                  <BarChart data={postChartData}>
+                  <BarChart data={postChartData} barCategoryGap="46%" barGap={8}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis dataKey="name" />
                     <YAxis allowDecimals={false} />
@@ -505,15 +506,18 @@ const LandlordDashboardPage = () => {
                     />
                     <Legend />
                     <Bar
-                      dataKey="views"
-                      name="Lượt xem"
-                      fill="#2563eb"
-                      radius={[6, 6, 0, 0]}
-                    />
-                    <Bar
                       dataKey="likes"
                       name="Lượt thích"
                       fill="#e11d48"
+                      maxBarSize={28}
+                      minPointSize={8}
+                      radius={[6, 6, 0, 0]}
+                    />
+                    <Bar
+                      dataKey="views"
+                      name="Lượt xem"
+                      fill="#2563eb"
+                      maxBarSize={28}
                       radius={[6, 6, 0, 0]}
                     />
                   </BarChart>

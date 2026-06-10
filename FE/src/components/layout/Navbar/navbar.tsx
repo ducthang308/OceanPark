@@ -6,16 +6,19 @@ import {
     FolderOpenOutlined,
     FileTextOutlined,
     BarChartOutlined,
+    CustomerServiceOutlined,
     UserOutlined,
     LogoutOutlined,
     WalletOutlined,
 } from '@ant-design/icons';
-import { Menu } from 'antd';
+import { Menu, message } from 'antd';
 import type { MenuProps } from 'antd';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { LANDLORD_ROLE_IDS, ROLE_ID } from '../../../constants/roles';
 import type { RoleId } from '../../../constants/roles';
 import { useAuth } from '../../../hooks/useAuth';
+import { getOrCreateRoom } from '../../../services/api/ChatService';
+import { getSupportAdminUser } from '../../../services/api/UserService';
 import { clearAuthSession } from '../../../utils/storage';
 
 type SidebarItem = NonNullable<MenuProps['items']>[number] & {
@@ -66,6 +69,12 @@ const items: SidebarItem[] = [
         label: 'Gói đăng tin',
         allowedRoles: LANDLORD_ROLE_IDS,
     },
+    {
+        key: '11',
+        icon: <CustomerServiceOutlined />,
+        label: 'Liên hệ admin',
+        allowedRoles: LANDLORD_ROLE_IDS,
+    },
     // {
     //     key: '7',
     //     icon: <DollarOutlined />,
@@ -99,6 +108,34 @@ const Navbar = () => {
         return Boolean(roleId && item.allowedRoles.includes(roleId));
     });
 
+    const handleContactAdmin = async () => {
+        if (!user?.maNguoiDung) {
+            message.warning('Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.');
+            return;
+        }
+
+        try {
+            const admin = await getSupportAdminUser();
+
+            if (!admin?.maNguoiDung) {
+                message.warning('Chưa có tài khoản admin hỗ trợ trong hệ thống.');
+                return;
+            }
+
+            const room = await getOrCreateRoom({
+                maNguoiDung1: user.maNguoiDung,
+                maNguoiDung2: admin.maNguoiDung,
+                maBaiDang: null,
+                loaiPhongChat: 'USER_ADMIN',
+            });
+
+            navigate(`/chat?room=${room.maPhongChat}`);
+        } catch (error) {
+            console.error('Open admin support chat failed:', error);
+            message.error('Không thể mở liên hệ admin. Vui lòng thử lại sau.');
+        }
+    };
+
     const handleMenuClick: MenuProps['onClick'] = (e) => {
         switch (e.key) {
             case '1':
@@ -128,6 +165,9 @@ const Navbar = () => {
             case '10':
                 navigate('/tenant-transactions');
                 break;
+            case '11':
+                void handleContactAdmin();
+                break;
             case '9':
                 clearAuthSession();
                 navigate('/login');
@@ -144,6 +184,7 @@ const Navbar = () => {
         if (location.pathname === '/history') return ['6'];
         if (location.pathname === '/AccountManagement') return ['8'];
         if (location.pathname === '/tenant-transactions') return ['10'];
+        if (location.pathname === '/chat') return ['11'];
         return [];
     })();
 
