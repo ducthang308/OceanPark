@@ -92,10 +92,11 @@ public class EmailService {
             );
 
             helper.setText(html, true);
-            helper.addAttachment(
+            addAttachmentSafely(
+                    helper,
                     buildInvoiceFileName("hoa-don", hoaDon.getMaHoaDon()),
-                    new ByteArrayResource(invoicePdfService.buildCustomerPaymentInvoice(hoaDon, chiTietHoaDon)),
-                    "application/pdf"
+                    () -> invoicePdfService.buildCustomerPaymentInvoice(hoaDon, chiTietHoaDon),
+                    hoaDon.getMaHoaDon()
             );
 
             mailSender.send(message);
@@ -155,10 +156,11 @@ public class EmailService {
             );
 
             helper.setText(html, true);
-            helper.addAttachment(
+            addAttachmentSafely(
+                    helper,
                     buildInvoiceFileName("phieu-doanh-thu", hoaDon.getMaHoaDon() + "-" + baiDang.getMaBaiDang()),
-                    new ByteArrayResource(invoicePdfService.buildLandlordRentInvoice(hoaDon, item)),
-                    "application/pdf"
+                    () -> invoicePdfService.buildLandlordRentInvoice(hoaDon, item),
+                    hoaDon.getMaHoaDon()
             );
             mailSender.send(message);
 
@@ -205,5 +207,28 @@ public class EmailService {
     private String buildInvoiceFileName(String prefix, String code) {
         String safeCode = code == null || code.isBlank() ? "hoa-don" : code.replaceAll("[^A-Za-z0-9_-]", "-");
         return prefix + "-" + safeCode + ".pdf";
+    }
+
+    private void addAttachmentSafely(
+            MimeMessageHelper helper,
+            String fileName,
+            PdfContentBuilder pdfContentBuilder,
+            String invoiceCode
+    ) {
+        try {
+            helper.addAttachment(
+                    fileName,
+                    new ByteArrayResource(pdfContentBuilder.build()),
+                    "application/pdf"
+            );
+        } catch (Exception e) {
+            System.err.println("Không thể đính kèm PDF cho hóa đơn " + invoiceCode + ": " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    @FunctionalInterface
+    private interface PdfContentBuilder {
+        byte[] build() throws Exception;
     }
 }
