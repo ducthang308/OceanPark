@@ -216,13 +216,30 @@ public class EmailService {
             String invoiceCode
     ) {
         try {
+            byte[] pdfBytes = pdfContentBuilder.build();
+
+            System.out.println("PDF FILE NAME = " + fileName);
+            System.out.println("PDF SIZE = " + pdfBytes.length + " bytes");
+
+            if (pdfBytes.length == 0) {
+                throw new RuntimeException("PDF rỗng");
+            }
+
             helper.addAttachment(
                     fileName,
-                    new ByteArrayResource(pdfContentBuilder.build()),
+                    new ByteArrayResource(pdfBytes) {
+                        @Override
+                        public String getFilename() {
+                            return fileName;
+                        }
+                    },
                     "application/pdf"
             );
+
+            System.out.println("Đã đính kèm PDF cho hóa đơn " + invoiceCode);
+
         } catch (Exception e) {
-            System.err.println("Không thể đính kèm PDF cho hóa đơn " + invoiceCode + ": " + e.getMessage());
+            System.err.println("Không thể đính kèm PDF cho hóa đơn " + invoiceCode);
             e.printStackTrace();
         }
     }

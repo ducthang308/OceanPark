@@ -188,18 +188,69 @@ public class InvoicePdfService {
 
     private void drawFooter(PdfCanvas canvas, boolean landlordCopy) throws IOException {
         canvas.ensureSpace(112F);
-        canvas.drawHorizontalLine(MARGIN, PAGE_WIDTH - MARGIN, canvas.getY(), 0.7F, Color.LIGHT_BORDER);
+
+        canvas.drawHorizontalLine(
+                MARGIN,
+                PAGE_WIDTH - MARGIN,
+                canvas.getY(),
+                0.7F,
+                Color.LIGHT_BORDER
+        );
+
         canvas.moveY(-20F);
-        canvas.drawText("Hóa đơn được tạo tự động bởi DThang Home. Vui lòng lưu giữ chứng từ này để đối chiếu khi cần.", MARGIN, canvas.getY(), 9.5F, false);
+
+        // Đen đậm
+        canvas.setColor(Color.BLACK);
+
+        canvas.drawText(
+                "Hóa đơn được tạo tự động bởi DThang Home. Vui lòng lưu giữ chứng từ này để đối chiếu khi cần.",
+                MARGIN,
+                canvas.getY(),
+                9.5F,
+                false
+        );
+
         canvas.moveY(-44F);
 
         float leftCenter = MARGIN + 95F;
         float rightCenter = PAGE_WIDTH - MARGIN - 95F;
-        canvas.drawCenteredText(landlordCopy ? "Người cho thuê" : "Người thanh toán", leftCenter, canvas.getY(), 10F, true);
-        canvas.drawCenteredText(BRAND_NAME, rightCenter, canvas.getY(), 10F, true);
+
+        // Đen đậm
+        canvas.setColor(Color.BLACK);
+
+        canvas.drawCenteredText(
+                landlordCopy ? "Người cho thuê" : "Người thanh toán",
+                leftCenter,
+                canvas.getY(),
+                10F,
+                true
+        );
+
+        canvas.drawCenteredText(
+                BRAND_NAME,
+                rightCenter,
+                canvas.getY(),
+                10F,
+                true
+        );
+
         canvas.moveY(-16F);
-        canvas.drawCenteredText("(Ký, ghi rõ họ tên)", leftCenter, canvas.getY(), 9F, false);
-        canvas.drawCenteredText("(Xác nhận tự động)", rightCenter, canvas.getY(), 9F, false);
+
+        canvas.drawCenteredText(
+                "(Ký, ghi rõ họ tên)",
+                leftCenter,
+                canvas.getY(),
+                9F,
+                false
+        );
+
+        canvas.drawCenteredText(
+                "(Xác nhận tự động)",
+                rightCenter,
+                canvas.getY(),
+                9F,
+                false
+        );
     }
 
     private List<InvoiceLine> buildInvoiceLines(HoaDon hoaDon, List<ChiTietHoaDon> details) {
@@ -328,6 +379,7 @@ public class InvoicePdfService {
     }
 
     private enum Color {
+        BLACK(0, 0, 0),
         TEXT(17, 24, 39),
         MUTED(107, 114, 128),
         BRAND(20, 83, 45),
@@ -618,8 +670,13 @@ public class InvoicePdfService {
         }
 
         private void setColor(Color color) throws IOException {
-            content.setNonStrokingColor(color.red, color.green, color.blue);
-            content.setStrokingColor(color.red, color.green, color.blue);
+
+            float r = color.red / 255f;
+            float g = color.green / 255f;
+            float b = color.blue / 255f;
+
+            content.setNonStrokingColor(r, g, b);
+            content.setStrokingColor(r, g, b);
         }
 
         private String formatCurrency(Double value) {
