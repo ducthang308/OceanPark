@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "HoaDon")
@@ -59,4 +61,8 @@ public class HoaDon {
     @ManyToOne
     @JoinColumn(name = "maGoiDangBai")
     private GoiDangBai goiDangBai;
+
+    @Builder.Default
+    @OneToMany(mappedBy = "hoaDon", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ChiTietHoaDon> chiTietHoaDon = new ArrayList<>();
 }

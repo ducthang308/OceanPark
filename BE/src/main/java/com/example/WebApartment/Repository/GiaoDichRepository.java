@@ -7,10 +7,17 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface GiaoDichRepository extends JpaRepository<GiaoDich, String> {
     boolean existsByProviderTransactionNo(String providerTransactionNo);
+
+    Optional<GiaoDich> findFirstByHoaDon_MaHoaDonAndProviderAndTrangThaiIgnoreCaseOrderByNgayTaoDesc(
+            String maHoaDon,
+            String provider,
+            String trangThai
+    );
 
     @Query("""
             SELECT gd

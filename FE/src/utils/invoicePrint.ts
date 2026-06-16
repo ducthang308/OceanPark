@@ -1,10 +1,18 @@
 export type InvoicePrintRow = [string, string];
 
+type InvoicePrintLineItems = {
+  title: string;
+  headers: string[];
+  rows: string[][];
+  footerRows?: InvoicePrintRow[];
+};
+
 type InvoicePrintOptions = {
   title: string;
   documentTitle: string;
   generatedAt: string;
   rows: InvoicePrintRow[];
+  lineItems?: InvoicePrintLineItems;
   footer: string;
   signerLabel: string;
   printButtonLabel?: string;
@@ -23,6 +31,7 @@ export const openInvoicePrintWindow = ({
   documentTitle,
   generatedAt,
   rows,
+  lineItems,
   footer,
   signerLabel,
   printButtonLabel = "In hóa đơn",
@@ -33,6 +42,36 @@ export const openInvoicePrintWindow = ({
         `<tr><th>${escapeHtml(label)}</th><td>${escapeHtml(value)}</td></tr>`,
     )
     .join("");
+  const lineItemsHtml = lineItems
+    ? `
+      <div class="line-items">
+        <h2>${escapeHtml(lineItems.title)}</h2>
+        <table class="line-items-table">
+          <thead>
+            <tr>${lineItems.headers.map((header) => `<th>${escapeHtml(header)}</th>`).join("")}</tr>
+          </thead>
+          <tbody>
+            ${lineItems.rows
+              .map(
+                (row) =>
+                  `<tr>${row.map((value) => `<td>${escapeHtml(value)}</td>`).join("")}</tr>`,
+              )
+              .join("")}
+          </tbody>
+        </table>
+        ${
+          lineItems.footerRows?.length
+            ? `<table class="line-items-footer">${lineItems.footerRows
+                .map(
+                  ([label, value]) =>
+                    `<tr><th>${escapeHtml(label)}</th><td>${escapeHtml(value)}</td></tr>`,
+                )
+                .join("")}</table>`
+            : ""
+        }
+      </div>
+    `
+    : "";
   const printButtonLabelHtml = escapeHtml(printButtonLabel);
   const printButtonLabelScript = JSON.stringify(printButtonLabel);
 
@@ -122,6 +161,29 @@ export const openInvoicePrintWindow = ({
             width: 36%;
             background: #f8fafc;
             color: #334155;
+          }
+          .line-items {
+            margin-top: 26px;
+          }
+          .line-items h2 {
+            margin: 0 0 12px;
+            font-size: 18px;
+            color: #0f172a;
+          }
+          .line-items-table th,
+          .line-items-table td {
+            font-size: 13px;
+            vertical-align: top;
+          }
+          .line-items-table th {
+            width: auto;
+          }
+          .line-items-footer {
+            width: 50%;
+            margin: 14px 0 0 auto;
+          }
+          .line-items-footer th {
+            width: 48%;
           }
           .signature-section {
             display: grid;
@@ -265,6 +327,7 @@ export const openInvoicePrintWindow = ({
           <h1>${escapeHtml(title)}</h1>
           <div class="subtitle">DThang Home - ${escapeHtml(generatedAt)}</div>
           <table>${rowsHtml}</table>
+          ${lineItemsHtml}
 
           <div class="signature-section">
             <div class="signature-card">

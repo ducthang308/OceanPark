@@ -43,6 +43,8 @@ import {
 } from "../../services/api/LandlordDashboardService";
 import "./LandlordDashboardPage.css";
 
+type RevenuePeriod = "day" | "month" | "year";
+
 const normalizeStatus = (status?: string | null) => status?.trim().toUpperCase() || "";
 
 const safeNumber = (value?: number | null) => value ?? 0;
@@ -84,14 +86,44 @@ const getDateTimeValue = (value?: string | null) => {
 const getRevenueTime = (revenue: LandlordRevenueDTO) =>
   getDateTimeValue(getRevenueDate(revenue));
 
-const getMonthKey = (value?: string | null) => {
+const revenuePeriodOptions: Array<{ label: string; value: RevenuePeriod }> = [
+  { label: "Theo tháng", value: "month" },
+  { label: "Theo ngày", value: "day" },
+  { label: "Theo năm", value: "year" },
+];
+
+const revenuePeriodTitle: Record<RevenuePeriod, string> = {
+  day: "Doanh thu theo ngày",
+  month: "Doanh thu theo tháng",
+  year: "Doanh thu theo năm",
+};
+
+const getRevenuePeriodKey = (
+  value: string | null | undefined,
+  period: RevenuePeriod,
+) => {
   if (!value) return { label: "Không rõ", sortTime: 0 };
 
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return { label: "Không rõ", sortTime: 0 };
 
+  const day = date.getDate();
   const month = date.getMonth();
   const year = date.getFullYear();
+
+  if (period === "day") {
+    return {
+      label: `${String(day).padStart(2, "0")}/${String(month + 1).padStart(2, "0")}/${year}`,
+      sortTime: new Date(year, month, day).getTime(),
+    };
+  }
+
+  if (period === "year") {
+    return {
+      label: String(year),
+      sortTime: new Date(year, 0, 1).getTime(),
+    };
+  }
 
   return {
     label: `${String(month + 1).padStart(2, "0")}/${year}`,
@@ -108,6 +140,7 @@ const LandlordDashboardPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [postKeyword, setPostKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [revenuePeriod, setRevenuePeriod] = useState<RevenuePeriod>("month");
 
   const loadDashboard = useCallback(async () => {
     if (!maNguoiDung) {
@@ -120,7 +153,9 @@ const LandlordDashboardPage = () => {
       setLoading(true);
       setError(null);
 
-      const data = await getLandlordDashboard(maNguoiDung);
+      const data = await getLandlordDashboard(maNguoiDung, {
+        period: revenuePeriod,
+      });
       setDashboard(data);
     } catch (err) {
       console.error("Load landlord dashboard failed:", err);
@@ -129,7 +164,7 @@ const LandlordDashboardPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [maNguoiDung]);
+  }, [maNguoiDung, revenuePeriod]);
 
   useEffect(() => {
     void loadDashboard();
@@ -185,21 +220,21 @@ const LandlordDashboardPage = () => {
   }, [posts]);
 
   const revenueChartData = useMemo(() => {
-    const months = new Map<string, { month: string; revenue: number; sortTime: number }>();
+    const buckets = new Map<string, { label: string; revenue: number; sortTime: number }>();
 
     revenues.forEach((item) => {
-      const { label, sortTime } = getMonthKey(getRevenueDate(item));
-      const current = months.get(label) || { month: label, revenue: 0, sortTime };
+      const { label, sortTime } = getRevenuePeriodKey(getRevenueDate(item), revenuePeriod);
+      const current = buckets.get(label) || { label, revenue: 0, sortTime };
 
       current.revenue += safeNumber(item.soTien);
       current.sortTime = sortTime || current.sortTime;
-      months.set(label, current);
+      buckets.set(label, current);
     });
 
-    return Array.from(months.values())
+    return Array.from(buckets.values())
       .sort((a, b) => a.sortTime - b.sortTime)
-      .slice(-6);
-  }, [revenues]);
+      .slice(-8);
+  }, [revenues, revenuePeriod]);
 
   const postColumns: TableProps<LandlordPostStatsDTO>["columns"] = [
     {
@@ -334,35 +369,30 @@ const LandlordDashboardPage = () => {
       key: "revenue",
       label: "Doanh thu nhận được",
       value: formatCurrency(safeNumber(dashboard?.totalRevenue)),
-      note: "Từ hóa đơn thuê SUCCESS",
       icon: <DollarCircleOutlined />,
     },
     {
       key: "posts",
       label: "Tổng bài đăng",
       value: safeNumber(dashboard?.totalPosts).toLocaleString("vi-VN"),
-      note: `${safeNumber(dashboard?.activePosts)} đang hiển thị`,
       icon: <FileTextOutlined />,
     },
     {
       key: "rented",
       label: "Bài đã thuê",
       value: safeNumber(dashboard?.rentedPosts).toLocaleString("vi-VN"),
-      note: "Trạng thái DA_THUE",
       icon: <HomeOutlined />,
     },
     {
       key: "views",
       label: "Tổng lượt xem",
       value: safeNumber(dashboard?.totalViews).toLocaleString("vi-VN"),
-      note: "Cộng từ các bài đăng",
       icon: <EyeOutlined />,
     },
     {
       key: "likes",
       label: "Tổng lượt thích",
       value: safeNumber(dashboard?.totalLikes).toLocaleString("vi-VN"),
-      note: "Từ danh sách yêu thích",
       icon: <HeartOutlined />,
     },
   ];
@@ -408,7 +438,6 @@ const LandlordDashboardPage = () => {
               <div>
                 <span>{item.label}</span>
                 <strong>{item.value}</strong>
-                <p>{item.note}</p>
               </div>
             </article>
           ))}
@@ -418,24 +447,31 @@ const LandlordDashboardPage = () => {
           <div className="landlord-dashboard-panel">
             <div className="landlord-dashboard-panel__header">
               <div>
-                <h2>Doanh thu theo tháng</h2>
-                <p>6 tháng gần nhất có giao dịch thành công.</p>
+                <h2>{revenuePeriodTitle[revenuePeriod]}</h2>
+                <p>Dữ liệu lấy từ giao dịch ví và hóa đơn thuê đã thanh toán.</p>
               </div>
-              <DollarCircleOutlined />
+              <div className="landlord-dashboard-revenue-filters">
+                <Select
+                  value={revenuePeriod}
+                  options={revenuePeriodOptions}
+                  onChange={(value) => setRevenuePeriod(value)}
+                />
+              </div>
             </div>
 
             <div className="landlord-dashboard-chart">
               {revenueChartData.length ? (
                 <ResponsiveContainer width="100%" height={260}>
-                  <BarChart data={revenueChartData}>
+                  <BarChart data={revenueChartData} barCategoryGap="42%">
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="month" />
+                    <XAxis dataKey="label" />
                     <YAxis tickFormatter={(value) => `${Number(value) / 1000000}tr`} />
                     <Tooltip formatter={(value) => formatCurrency(Number(value))} />
                     <Bar
                       dataKey="revenue"
                       name="Doanh thu"
                       fill="#0f766e"
+                      maxBarSize={54}
                       radius={[6, 6, 0, 0]}
                     />
                   </BarChart>
@@ -458,7 +494,7 @@ const LandlordDashboardPage = () => {
             <div className="landlord-dashboard-chart">
               {postChartData.length ? (
                 <ResponsiveContainer width="100%" height={260}>
-                  <BarChart data={postChartData}>
+                  <BarChart data={postChartData} barCategoryGap="46%" barGap={8}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis dataKey="name" />
                     <YAxis allowDecimals={false} />
@@ -470,15 +506,18 @@ const LandlordDashboardPage = () => {
                     />
                     <Legend />
                     <Bar
-                      dataKey="views"
-                      name="Lượt xem"
-                      fill="#2563eb"
-                      radius={[6, 6, 0, 0]}
-                    />
-                    <Bar
                       dataKey="likes"
                       name="Lượt thích"
                       fill="#e11d48"
+                      maxBarSize={28}
+                      minPointSize={8}
+                      radius={[6, 6, 0, 0]}
+                    />
+                    <Bar
+                      dataKey="views"
+                      name="Lượt xem"
+                      fill="#2563eb"
+                      maxBarSize={28}
                       radius={[6, 6, 0, 0]}
                     />
                   </BarChart>
@@ -528,12 +567,20 @@ const LandlordDashboardPage = () => {
           <div className="landlord-dashboard-panel__header">
             <div>
               <h2>Doanh thu nhận được</h2>
-              <p>Danh sách hóa đơn thuê căn hộ đã thanh toán thành công.</p>
+              <p>Danh sách khoản doanh thu theo bộ lọc thời gian.</p>
             </div>
           </div>
 
           <Table
-            rowKey="maHoaDon"
+            rowKey={(record) =>
+              record.maGiaoDichVi ||
+              [
+                record.maHoaDon,
+                record.maBaiDang || "invoice",
+                record.soTien ?? 0,
+                getRevenueDate(record) || "",
+              ].join("-")
+            }
             columns={revenueColumns}
             dataSource={revenues}
             loading={loading}

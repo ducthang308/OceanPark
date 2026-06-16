@@ -128,8 +128,18 @@
   margin-bottom: 4px;
 }
 
+.chatbot-suggestion-card em {
+  display: block;
+  color: #334155;
+  font-size: 12px;
+  font-style: normal;
+  margin-bottom: 4px;
+  overflow-wrap: anywhere;
+}
+
 .chatbot-suggestion-card small {
   color: #64748b;
+  overflow-wrap: anywhere;
 }
 
 .chatbot-input {

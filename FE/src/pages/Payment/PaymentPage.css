@@ -123,7 +123,7 @@
   box-shadow: 0 14px 36px rgba(15, 23, 42, 0.08);
 }
 
-.rental-payment-card span {
+.rental-payment-card__eyebrow {
   color: #c89b67;
   font-size: 13px;
   font-weight: 800;
@@ -144,23 +144,69 @@
   line-height: 1.7;
 }
 
+.rental-payment-term {
+  display: grid;
+  gap: 10px;
+}
+
+.rental-payment-term__label,
+.rental-payment-amount span {
+  color: #526173;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.rental-payment-term__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.rental-payment-term__options button {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid #d8e5e3;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #28423f;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.rental-payment-term__options button.active {
+  border-color: #0e8f8c;
+  background: #e5f4f2;
+  color: #087b78;
+}
+
+.rental-payment-amount {
+  display: grid;
+  gap: 4px;
+}
+
 .rental-payment-card strong {
   color: #0e8f8c;
   font-size: 28px;
 }
 
-.rental-payment-card button {
+.rental-payment-amount small {
+  color: #718096;
+}
+
+.rental-payment-submit {
   width: fit-content;
   min-height: 48px;
   padding: 0 22px;
+  border: 0;
   border-radius: 12px;
   background: linear-gradient(135deg, #0b8b7f, #098976);
   color: #ffffff;
+  cursor: pointer;
   font-weight: 800;
   box-shadow: 0 14px 28px rgba(11, 139, 127, 0.22);
 }
 
-.rental-payment-card button:disabled {
+.rental-payment-submit:disabled {
   cursor: not-allowed;
   opacity: 0.58;
 }

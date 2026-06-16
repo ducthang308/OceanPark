@@ -1,6 +1,7 @@
 import axios from 'axios';
 import type { AuthUserResponse, LoginResponse, IRegisterRequest } from '../types/auth.types';
 import { saveAuthSession } from '../../utils/storage';
+import { ROLE_ID } from '../../constants/roles';
 import axiosClient from './AxiosClient';
 
 export type UserProfileResponse = AuthUserResponse & {
@@ -67,6 +68,17 @@ export const register = async (userData: IRegisterRequest): Promise<unknown> => 
 export const getCurrentUser = async (): Promise<AuthUserResponse> => {
     const response = await axiosClient.get<AuthUserResponse>('/api/v1/nguoi-dung/me');
     return response.data;
+};
+
+export const getUsers = async (): Promise<UserProfileResponse[]> => {
+    const response = await axiosClient.get<UserProfileResponse[]>('/api/v1/nguoi-dung');
+    return response.data;
+};
+
+export const getSupportAdminUser = async (): Promise<UserProfileResponse | null> => {
+    const users = await getUsers();
+
+    return users.find((item) => item.maVaiTro === ROLE_ID.ADMIN && item.trangThai !== false) ?? null;
 };
 
 export const getUserById = async (maNguoiDung: string): Promise<UserProfileResponse> => {

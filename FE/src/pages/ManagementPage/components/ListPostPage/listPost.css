@@ -5,7 +5,7 @@
 .post-page-layout {
   background-color: #f4f6fb;
   min-height: 100vh;
-  padding: 100px 0 48px;
+  padding: 80px 0 0px;
   display: grid;
   grid-template-columns: 265px minmax(0, 1fr);
   align-items: start;

@@ -631,7 +631,13 @@
 
 .room-list-filter-list li a.is-active {
   background: #0e8f8c;
-  color: #ffffff;
+  color: #ffffff !important;
+}
+
+.room-list-sidebar .room-list-filter-list li a.is-active,
+.room-list-sidebar .room-list-filter-list li a.is-active:hover,
+.room-list-sidebar .room-list-filter-list li a.is-active:focus {
+  color: #ffffff !important;
 }
 
 .room-list-new-posts {

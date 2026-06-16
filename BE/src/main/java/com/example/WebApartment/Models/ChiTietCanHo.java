@@ -48,4 +48,8 @@ public class ChiTietCanHo {
 
     @Column(name = "ngayTao")
     private LocalDateTime ngayTao;
+
+    @Builder.Default
+    @Column(name = "soLuongTrong")
+    private Integer soLuongTrong = 1;
 }

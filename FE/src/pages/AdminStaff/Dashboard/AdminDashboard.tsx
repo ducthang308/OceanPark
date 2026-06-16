@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import dayjs from 'dayjs';
+import type { Dayjs } from 'dayjs';
 import {
   BankOutlined,
   CheckCircleOutlined,
@@ -11,7 +13,7 @@ import {
   TeamOutlined,
   UserOutlined,
 } from '@ant-design/icons';
-import { message } from 'antd';
+import { DatePicker, message } from 'antd';
 import {
   getDashboardOverview,
   getPendingPosts,
@@ -99,6 +101,8 @@ const chartTypeOptions: Array<{ label: string; value: DashboardChartType }> = [
   { label: 'Theo tháng', value: 'month' },
   { label: 'Theo năm', value: 'year' },
 ];
+
+const CHART_DATE_FORMAT = 'YYYY-MM-DD';
 
 const safeNumber = (value: unknown) =>
   typeof value === 'number' && Number.isFinite(value) ? value : 0;
@@ -589,6 +593,7 @@ const AdminDashboard: React.FC = () => {
   const [userChart, setUserChart] = useState<DashboardChartDTO | null>(null);
   const [pendingPosts, setPendingPosts] = useState<BaiDangDTO[]>([]);
   const [chartType, setChartType] = useState<DashboardChartType>('month');
+  const [chartDate, setChartDate] = useState<Dayjs>(() => dayjs());
   const [loadingOverview, setLoadingOverview] = useState(false);
   const [loadingCharts, setLoadingCharts] = useState(false);
   const [error, setError] = useState('');
@@ -609,13 +614,14 @@ const AdminDashboard: React.FC = () => {
     }
   }, []);
 
-  const loadCharts = useCallback(async (type: DashboardChartType) => {
+  const loadCharts = useCallback(async (type: DashboardChartType, date: Dayjs) => {
     setLoadingCharts(true);
+    const selectedDate = date.format(CHART_DATE_FORMAT);
 
     try {
       const [revenueResult, postResult, userResult, pendingResult] = await Promise.allSettled([
-        getRevenueChart(type),
-        getPostChart(type),
+        getRevenueChart(type, selectedDate),
+        getPostChart(type, selectedDate),
         getUserChart(),
         getPendingPosts(6),
       ]);
@@ -639,16 +645,16 @@ const AdminDashboard: React.FC = () => {
   }, []);
 
   const refreshDashboard = useCallback(async () => {
-    await Promise.all([loadOverview(), loadCharts(chartType)]);
-  }, [chartType, loadCharts, loadOverview]);
+    await Promise.all([loadOverview(), loadCharts(chartType, chartDate)]);
+  }, [chartDate, chartType, loadCharts, loadOverview]);
 
   useEffect(() => {
     void loadOverview();
   }, [loadOverview]);
 
   useEffect(() => {
-    void loadCharts(chartType);
-  }, [chartType, loadCharts]);
+    void loadCharts(chartType, chartDate);
+  }, [chartDate, chartType, loadCharts]);
 
   const cards = useMemo(() => (overview ? buildCards(overview) : []), [overview]);
   const initialLoading = loadingOverview && !overview;
@@ -721,17 +727,29 @@ const AdminDashboard: React.FC = () => {
           <p>Áp dụng cho doanh thu và bài đăng.</p>
         </div>
 
-        <div className="admin-dashboard-periods" aria-label="Chọn kiểu thống kê">
-          {chartTypeOptions.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              className={chartType === option.value ? 'is-active' : ''}
-              onClick={() => setChartType(option.value)}
-            >
-              {option.label}
-            </button>
-          ))}
+        <div className="admin-dashboard-chart-controls">
+          <label className="admin-dashboard-date-filter">
+            <span>Mốc ngày</span>
+            <DatePicker
+              allowClear={false}
+              format="DD/MM/YYYY"
+              value={chartDate}
+              onChange={(value) => setChartDate(value ?? dayjs())}
+            />
+          </label>
+
+          <div className="admin-dashboard-periods" aria-label="Chọn kiểu thống kê">
+            {chartTypeOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                className={chartType === option.value ? 'is-active' : ''}
+                onClick={() => setChartType(option.value)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
         </div>
       </section>
 

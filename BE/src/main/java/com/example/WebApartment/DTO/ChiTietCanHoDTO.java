@@ -22,6 +22,8 @@ public class ChiTietCanHoDTO {
     private String phuong;
     private Double lat;
     private Double lng;
+    private Integer soLuongTrong;
 
     private LocalDateTime ngayTao;
+    private LocalDateTime ngayTrong;
 }

@@ -25,13 +25,20 @@ import type {
 import { homeMockData } from '../../services/mock/home.mock';
 import { getUserById } from '../../services/api/UserService';
 import type { UserProfileResponse } from '../../services/api/UserService';
+import {
+  DEFAULT_RENTAL_TERM_MONTHS,
+  RENTAL_TERM_OPTIONS,
+  getRentalTermLabel,
+} from '../../constants/rental';
 import { getAuthSession } from '../../utils/storage';
 import { getOrCreateRoom } from '../../services/api/ChatService';
+import { addApartmentToCart } from '../../utils/apartmentCart';
 
 interface PostDetailView {
   id: string;
   title: string;
   priceText: string;
+  priceValue: number;
   areaText: string;
   directionText: string;
   addressText: string;
@@ -51,6 +58,16 @@ interface PostDetailView {
   isFeatured: boolean;
   isNew: boolean;
   ownerId?: string;
+  availableQuantity: number;
+}
+
+type CartNoticeType = 'success' | 'error';
+
+interface CartNotice {
+  type: CartNoticeType;
+  title: string;
+  message: string;
+  actionLabel?: string;
 }
 
 const PUBLIC_POST_STATUSES = new Set(['ACTIVE', 'APPROVED']);
@@ -61,13 +78,6 @@ const formatCurrency = (value?: number) => {
   }
 
   return `${new Intl.NumberFormat('vi-VN').format(value)}đ/tháng`;
-};
-
-const parsePriceToNumber = (priceText?: string) => {
-  if (!priceText) return 0;
-
-  const numberOnly = priceText.replace(/[^\d]/g, '');
-  return Number(numberOnly || 0);
 };
 
 const formatArea = (value?: number) => {
@@ -111,6 +121,7 @@ const findMockPost = (id?: string): PostDetailView | null => {
     ...post,
     id: String(post.id),
     directionText: 'Đang cập nhật',
+    priceValue: parseInt(post.priceText.replace(/[^\d]/g, ''), 10) || 0,
     gallery: post.gallery.length > 0 ? post.gallery : [post.coverImage || fallbackRoomImage],
     coverImage: post.coverImage || post.gallery[0] || fallbackRoomImage,
     ownerAvatar: null,
@@ -118,6 +129,7 @@ const findMockPost = (id?: string): PostDetailView | null => {
     isFeatured: Boolean(post.isFeatured),
     isNew: Boolean(post.isNew),
     hasVideo: Boolean(post.hasVideo),
+    availableQuantity: 1,
   };
 };
 
@@ -149,6 +161,7 @@ const buildApiPostDetail = (
     id: post.maBaiDang,
     title: post.tieuDe?.trim() || 'Bài đăng chưa có tiêu đề',
     priceText: formatCurrency(detail?.gia),
+    priceValue: detail?.gia || 0,
     areaText: formatArea(detail?.dienTich),
     directionText,
     addressText,
@@ -168,6 +181,7 @@ const buildApiPostDetail = (
     isFeatured: true,
     isNew: true,
     ownerId: post.maNguoiDung,
+    availableQuantity: Math.max(detail?.soLuongTrong ?? 1, 0),
   };
 };
 
@@ -182,6 +196,8 @@ const PostDetail: React.FC = () => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [favoriteCount, setFavoriteCount] = useState(0);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
+  const [selectedRentalTerm, setSelectedRentalTerm] = useState(DEFAULT_RENTAL_TERM_MONTHS);
+  const [cartNotice, setCartNotice] = useState<CartNotice | null>(null);
   const viewedRef = useRef(false);
 
   const maNguoiDung = getAuthSession()?.user.maNguoiDung || '';
@@ -304,6 +320,20 @@ const PostDetail: React.FC = () => {
     };
   }, [maNguoiDung, post?.id]);
 
+  useEffect(() => {
+    if (!cartNotice) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setCartNotice(null);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [cartNotice]);
+
   const handleToggleFavorite = async () => {
     if (!post?.id) return;
 
@@ -357,11 +387,60 @@ const PostDetail: React.FC = () => {
       { label: 'Diện tích', value: post.areaText },
       { label: 'Hướng căn hộ', value: post.directionText },
       { label: 'Khu vực', value: post.wardText },
+      { label: 'Còn trống', value: `${post.availableQuantity} căn` },
       { label: 'Loại tin', value: post.categoryLabel },
       { label: 'Đăng lúc', value: post.postedAtText },
       { label: 'Liên hệ', value: post.phone },
     ];
   }, [post]);
+
+  const handleAddToCart = () => {
+    if (!post?.id) return;
+
+    if (post.availableQuantity <= 0) {
+      setCartNotice({
+        type: 'error',
+        title: 'Chưa thể thêm vào giỏ hàng',
+        message: 'Căn hộ này hiện không còn phòng trống.',
+      });
+      return;
+    }
+
+    if (!post.priceValue || post.priceValue <= 0) {
+      setCartNotice({
+        type: 'error',
+        title: 'Thiếu thông tin giá thuê',
+        message: 'Không xác định được giá thuê căn hộ, vui lòng liên hệ chủ nhà để kiểm tra.',
+      });
+      return;
+    }
+
+    try {
+      addApartmentToCart({
+        maBaiDang: post.id,
+        title: post.title,
+        price: post.priceValue,
+        quantity: 1,
+        availableQuantity: post.availableQuantity,
+        address: post.addressText,
+        ward: post.wardText,
+        areaText: post.areaText,
+        coverImage: post.coverImage,
+      });
+      setCartNotice({
+        type: 'success',
+        title: 'Đã thêm vào giỏ hàng',
+        message: `${post.title} đã sẵn sàng trong giỏ hàng của bạn.`,
+        actionLabel: 'Xem giỏ hàng',
+      });
+    } catch (error: any) {
+      setCartNotice({
+        type: 'error',
+        title: 'Không thể thêm vào giỏ hàng',
+        message: error?.message || 'Vui lòng thử lại sau ít phút.',
+      });
+    }
+  };
 
   const handleRentApartment = async () => {
     try {
@@ -387,7 +466,12 @@ const PostDetail: React.FC = () => {
         return;
       }
 
-      const soTien = parsePriceToNumber(post.priceText);
+      if (post.availableQuantity <= 0) {
+        alert('Căn hộ này hiện không còn phòng trống');
+        return;
+      }
+
+      const soTien = post.priceValue;
 
       if (!soTien || soTien <= 0) {
         alert('Không xác định được giá thuê căn hộ');
@@ -397,10 +481,19 @@ const PostDetail: React.FC = () => {
       const payment = await createSepayPayment({
         maNguoiDung,
         maBaiDang: post.id,
-        // maBaiDangList: [post.id],
         loaiHoaDon: 'THUE_CAN_HO',
         soTien,
-        ghiChu: `Thanh toán thuê căn hộ ${post.title}`,
+        thoiHanThang: selectedRentalTerm,
+        ghiChu: `Đặt cọc/giữ phòng căn hộ ${post.title} - Thời hạn ${selectedRentalTerm} tháng`,
+        chiTietHoaDon: [
+          {
+            maBaiDang: post.id,
+            soLuong: 1,
+            donGia: soTien,
+            thanhTien: soTien,
+            ghiChu: post.title,
+          },
+        ],
       });
 
       navigate('/payment/sepay', {
@@ -408,14 +501,13 @@ const PostDetail: React.FC = () => {
           ...payment,
           loaiHoaDon: 'THUE_CAN_HO',
           maBaiDang: post.id,
-          // maBaiDangList: [post.id],
         },
       });
     } catch (error: any) {
       console.error(error);
       alert(
         error?.response?.data?.message ||
-        'Không thể tạo thanh toán thuê căn hộ'
+        'Không thể tạo thanh toán đặt cọc giữ phòng'
       );
     }
   };
@@ -539,7 +631,7 @@ const PostDetail: React.FC = () => {
                   disabled={favoriteLoading}
                   onClick={handleToggleFavorite}
                 >
-                  {isFavorite ? `♥ Đã lưu (${favoriteCount})` : `♡ Lưu tin (${favoriteCount})`}
+                  {isFavorite ? `♥ ${favoriteCount}` : `♡ ${favoriteCount} `}
                 </button>
               </div>
 
@@ -663,12 +755,12 @@ const PostDetail: React.FC = () => {
                   Gọi ngay
                 </a>
 
-                <button
+                {/* <button
                   type="button"
                   className="rental-detail-btn rental-detail-btn--zalo"
                 >
                   Nhắn Zalo
-                </button>
+                </button> */}
 
                 {maNguoiDung !== post?.ownerId && (
                   <button
@@ -682,11 +774,37 @@ const PostDetail: React.FC = () => {
 
                 <button
                   type="button"
+                  className="rental-detail-btn rental-detail-btn--secondary"
+                  disabled={post.availableQuantity <= 0}
+                  onClick={handleAddToCart}
+                >
+                  Thêm vào giỏ hàng
+                </button>
+
+                <button
+                  type="button"
                   className="rental-detail-btn rental-detail-btn--primary"
+                  disabled={post.availableQuantity <= 0}
                   onClick={handleRentApartment}
                 >
-                  Thanh toán / Đặt cọc
+                  Đặt cọc / Giữ phòng
                 </button>
+
+                <div className="rental-detail-term-selector">
+                  <span>Thời gian hợp đồng</span>
+                  <div>
+                    {RENTAL_TERM_OPTIONS.map((months) => (
+                      <button
+                        key={months}
+                        type="button"
+                        className={selectedRentalTerm === months ? 'active' : ''}
+                        onClick={() => setSelectedRentalTerm(months)}
+                      >
+                        {getRentalTermLabel(months)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               <div className="rental-detail-owner-note">
@@ -705,6 +823,53 @@ const PostDetail: React.FC = () => {
           </aside>
         </div>
       </div>
+
+      {cartNotice && (
+        <div
+          className="rental-detail-cart-notice-backdrop"
+          role="presentation"
+          onMouseDown={() => setCartNotice(null)}
+        >
+          <form
+            className="rental-detail-cart-notice"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cart-notice-title"
+            onMouseDown={(event) => event.stopPropagation()}
+            onSubmit={(event) => {
+              event.preventDefault();
+
+              if (cartNotice.type === 'success') {
+                navigate('/apartment-cart');
+                return;
+              }
+
+              setCartNotice(null);
+            }}
+          >
+            <div
+              className={`rental-detail-cart-notice__icon rental-detail-cart-notice__icon--${cartNotice.type}`}
+              aria-hidden="true"
+            >
+              {cartNotice.type === 'success' ? '✓' : '!'}
+            </div>
+            <h2 id="cart-notice-title">{cartNotice.title}</h2>
+            <p>{cartNotice.message}</p>
+            <div className="rental-detail-cart-notice__actions">
+              <button
+                type="button"
+                className="rental-detail-cart-notice__secondary"
+                onClick={() => setCartNotice(null)}
+              >
+                {cartNotice.type === 'success' ? 'Tiếp tục xem tin' : 'Đóng'}
+              </button>
+              <button type="submit" className="rental-detail-cart-notice__primary">
+                {cartNotice.actionLabel || 'Đã hiểu'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 };

@@ -27,7 +27,9 @@ export interface ChiTietCanHoDTO {
   phuong?: string;
   lat?: number;
   lng?: number;
+  soLuongTrong?: number;
   ngayTao?: string;
+  ngayTrong?: string | null;
 }
 
 export interface HinhAnhBaiDangDTO {
@@ -125,6 +127,14 @@ export const getPosts = async () => {
   }
 
   return mergePostsById([...listPosts, ...detailPosts]);
+};
+
+export const getHomeVisiblePosts = async (limit = 20) => {
+  const res = await axiosClient.get<BaiDangDTO[]>("/api/v1/bai-dang/home", {
+    params: { limit },
+  });
+
+  return res.data;
 };
 
 export const getPostById = async (maBaiDang: string) => {
@@ -250,9 +260,24 @@ export const isFavoritePostOfUser = async (maNguoiDung: string, maBaiDang: strin
 export interface SepayCreatePaymentRequest {
   maNguoiDung: string;
   loaiHoaDon: 'DANG_BAI' | 'THUE_CAN_HO';
-  soTien: number;
+  soTien?: number;
+  thoiHanThang?: number;
   maBaiDang?: string;
   ghiChu?: string;
+  chiTietHoaDon?: ChiTietHoaDonDTO[];
+}
+
+export interface ChiTietHoaDonDTO {
+  maChiTietHoaDon?: string;
+  maHoaDon?: string;
+  maBaiDang?: string;
+  soLuong?: number;
+  donGia?: number;
+  thanhTien?: number;
+  ghiChu?: string | null;
+  tieuDeBaiDang?: string | null;
+  diaChiCanHo?: string | null;
+  phuong?: string | null;
 }
 
 export interface SepayCreatePaymentResponse {
@@ -263,6 +288,10 @@ export interface SepayCreatePaymentResponse {
   bankAccount: string;
   accountName: string;
   qrUrl: string;
+  thoiHanThang?: number | null;
+  ngayBatDau?: string | null;
+  ngayKetThuc?: string | null;
+  chiTietHoaDon?: ChiTietHoaDonDTO[];
 }
 
 export interface HoaDonDTO {
@@ -280,6 +309,7 @@ export interface HoaDonDTO {
   ghiChu?: string | null;
   ngayTao?: string | null;
   ngayThanhToan?: string | null;
+  chiTietHoaDon?: ChiTietHoaDonDTO[];
 }
 
 export const createSepayPayment = async (payload: SepayCreatePaymentRequest) => {
@@ -297,6 +327,13 @@ export const getHoaDonById = async (maHoaDon: string) => {
 
 export const getHoaDonByNguoiDung = async (maNguoiDung: string) => {
   const res = await axiosClient.get<HoaDonDTO[]>(`/api/v1/hoa-don/nguoi-dung/${maNguoiDung}`);
+  return res.data;
+};
+
+export const getChiTietHoaDonByHoaDon = async (maHoaDon: string) => {
+  const res = await axiosClient.get<ChiTietHoaDonDTO[]>(
+    `/api/v1/chi-tiet-hoa-don/hoa-don/${maHoaDon}`
+  );
   return res.data;
 };
 
@@ -339,15 +376,27 @@ export const generatePostContentByAI = async (
 export interface ChatbotRequestDTO {
   maNguoiDung?: string;
   message: string;
+  history?: ChatbotMessageContextDTO[];
 }
 
 export interface ChatbotSuggestionDTO {
-  maBaiDang: string;
-  tieuDe: string;
-  gia: number;
-  phuong?: string;
-  diaChi?: string;
-  link?: string;
+  maBaiDang?: string | null;
+  tieuDe?: string | null;
+  danhMuc?: string | null;
+  gia?: number | null;
+  dienTich?: number | null;
+  phongNgu?: number | null;
+  huongCanHo?: string | null;
+  phuong?: string | null;
+  diaChi?: string | null;
+  soLuongTrong?: number | null;
+  link?: string | null;
+}
+
+export interface ChatbotMessageContextDTO {
+  role: 'USER' | 'BOT';
+  content: string;
+  suggestions?: ChatbotSuggestionDTO[];
 }
 
 export interface ChatbotResponseDTO {

@@ -1,7 +1,7 @@
 .main-layout {
   display: flex;
   align-items: flex-start;
-  padding-top: 100px;
+  padding-top: 80px;
   background-color: #f8f9fa;
   min-height: 100vh;
 }

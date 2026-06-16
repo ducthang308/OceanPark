@@ -18,4 +18,5 @@ public class LandlordDashboardDTO {
 
     private List<LandlordPostStatsDTO> posts;
     private List<LandlordRevenueDTO> revenues;
+    private List<LandlordRevenueChartDTO> revenueChart;
 }

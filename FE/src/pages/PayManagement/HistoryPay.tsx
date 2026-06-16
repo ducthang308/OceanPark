@@ -103,7 +103,7 @@ const getInvoiceTypeLabel = (type?: string | null) => {
     case "DANG_BAI":
       return "Mua gói đăng bài";
     case "THUE_CAN_HO":
-      return "Thanh toán thuê căn hộ";
+      return "Đặt cọc/giữ phòng";
     default:
       return type || "-";
   }
@@ -340,7 +340,7 @@ const History = () => {
         <div className="content-area">
           <main className="history-content">
             <div className="history-header">
-              <h1>Quản lý tài chính</h1>
+              <h1>Quản lý giao dịch</h1>
               <Link to="/payment/all">
                 <Button type="primary" size="large">Mua gói tin ngay</Button>
               </Link>

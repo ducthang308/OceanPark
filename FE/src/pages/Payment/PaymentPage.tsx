@@ -9,6 +9,11 @@ import {
   getApartmentDetailByPost,
 } from '../../services/api/PostManagementService';
 import { LANDLORD_ROLE_IDS, ROLE_ID } from '../../constants/roles';
+import {
+  DEFAULT_RENTAL_TERM_MONTHS,
+  RENTAL_TERM_OPTIONS,
+  getRentalTermLabel,
+} from '../../constants/rental';
 import { getAuthSession } from '../../utils/storage';
 
 const getPaymentErrorMessage = (error: unknown) => {
@@ -31,6 +36,7 @@ const PaymentPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [rentalAmount, setRentalAmount] = useState<number | null>(null);
   const [rentalAmountLoading, setRentalAmountLoading] = useState(false);
+  const [selectedRentalTerm, setSelectedRentalTerm] = useState(DEFAULT_RENTAL_TERM_MONTHS);
   const session = getAuthSession();
   const paymentTarget = type && type !== 'all' ? type : '';
   const isTenantRentalPayment = Boolean(
@@ -106,7 +112,7 @@ const PaymentPage: React.FC = () => {
 
       if (isTenantRentalPayment) {
         soTien = rentalAmount ?? 0;
-        ghiChu = `Thanh toán thuê/cọc căn hộ - Bài đăng ${paymentTarget}`;
+        ghiChu = `Đặt cọc/giữ phòng căn hộ - Bài đăng ${paymentTarget} - Thời hạn ${selectedRentalTerm} tháng`;
 
         if (soTien <= 0) {
           alert('Không tìm thấy giá căn hộ để tạo thanh toán');
@@ -118,6 +124,7 @@ const PaymentPage: React.FC = () => {
         maNguoiDung,
         loaiHoaDon,
         soTien,
+        thoiHanThang: isTenantRentalPayment ? selectedRentalTerm : undefined,
         maBaiDang: paymentTarget || undefined,
         ghiChu,
       });
@@ -147,7 +154,7 @@ const PaymentPage: React.FC = () => {
             <div className="payment-breadcrumb">
               <span onClick={() => navigate('/')}>Trang chủ</span>
               <span>/</span>
-              <strong>{isTenantRentalPayment ? 'Thanh toán thuê căn hộ' : 'Bảng giá dịch vụ'}</strong>
+              <strong>{isTenantRentalPayment ? 'Đặt cọc giữ phòng' : 'Bảng giá dịch vụ'}</strong>
             </div>
 
             {/* <div className="payment-header-section">
@@ -157,25 +164,48 @@ const PaymentPage: React.FC = () => {
 
             {isTenantRentalPayment ? (
               <div className="rental-payment-card">
-                <span>Thanh toán thuê/cọc</span>
+                <span className="rental-payment-card__eyebrow">Đặt cọc giữ phòng</span>
                 <h1>Bài đăng {paymentTarget}</h1>
                 <p>
-                  Hóa đơn sẽ được tạo với loại giao dịch thuê căn hộ để hiển thị trong
-                  trang quản lý giao dịch của người thuê.
+                  Khoản thanh toán trên web chỉ dùng để cọc/giữ phòng. Tiền thuê hằng
+                  tháng sẽ do người thuê và chủ nhà xử lý ngoài nền tảng.
                 </p>
-                <strong>
-                  {rentalAmountLoading
-                    ? 'Đang tải giá...'
-                    : rentalAmount
-                      ? `${rentalAmount.toLocaleString('vi-VN')}đ`
-                      : 'Chưa có giá'}
-                </strong>
+
+                <div className="rental-payment-term">
+                  <span className="rental-payment-term__label">Thời hạn dự kiến</span>
+                  <div className="rental-payment-term__options">
+                    {RENTAL_TERM_OPTIONS.map((months) => (
+                      <button
+                        key={months}
+                        type="button"
+                        className={selectedRentalTerm === months ? 'active' : ''}
+                        onClick={() => setSelectedRentalTerm(months)}
+                      >
+                        {getRentalTermLabel(months)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rental-payment-amount">
+                  <span>Tiền cọc giữ phòng</span>
+                  <strong>
+                    {rentalAmountLoading
+                      ? 'Đang tải giá...'
+                      : rentalAmount
+                        ? `${rentalAmount.toLocaleString('vi-VN')}đ`
+                        : 'Chưa có giá'}
+                  </strong>
+                  <small>Bằng 1 tháng giá thuê, không nhân theo thời hạn.</small>
+                </div>
+
                 <button
                   type="button"
+                  className="rental-payment-submit"
                   onClick={handlePaymentTinThuong}
                   disabled={loading || rentalAmountLoading || !rentalAmount}
                 >
-                  {loading ? 'Đang tạo thanh toán...' : 'Tạo thanh toán'}
+                  {loading ? 'Đang tạo thanh toán...' : 'Tạo QR đặt cọc'}
                 </button>
               </div>
             ) : (

@@ -11,6 +11,7 @@ export interface LandlordPostStatsDTO {
 }
 
 export interface LandlordRevenueDTO {
+  maGiaoDichVi?: string | null;
   maHoaDon: string;
   maBaiDang?: string | null;
   tieuDeBaiDang?: string | null;
@@ -23,6 +24,13 @@ export interface LandlordRevenueDTO {
   ghiChu?: string | null;
 }
 
+export interface LandlordRevenueChartDTO {
+  period?: string | null;
+  label?: string | null;
+  revenue?: number | null;
+  transactionCount?: number | null;
+}
+
 export interface LandlordDashboardDTO {
   totalRevenue?: number | null;
   totalPosts?: number | null;
@@ -32,11 +40,24 @@ export interface LandlordDashboardDTO {
   totalLikes?: number | null;
   posts?: LandlordPostStatsDTO[] | null;
   revenues?: LandlordRevenueDTO[] | null;
+  revenueChart?: LandlordRevenueChartDTO[] | null;
 }
 
-export const getLandlordDashboard = async (maNguoiDung: string) => {
+export interface LandlordDashboardQuery {
+  period?: "day" | "month" | "year";
+  from?: string;
+  to?: string;
+}
+
+export const getLandlordDashboard = async (
+  maNguoiDung: string,
+  query: LandlordDashboardQuery = {},
+) => {
   const res = await axiosClient.get<LandlordDashboardDTO>(
     `/api/v1/landlord/dashboard/${maNguoiDung}`,
+    {
+      params: query,
+    },
   );
 
   return res.data;

@@ -4,7 +4,7 @@
 
 .listing-layout {
   min-height: 100vh;
-  padding: 100px 0 48px;
+  padding: 80px 0px 0px 0px;
   background-color: #f4f6fb;
   display: grid;
   grid-template-columns: 265px minmax(0, 1fr);
