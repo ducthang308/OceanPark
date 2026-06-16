@@ -43,6 +43,13 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, String> {
 
     long countByTrangThaiThanhToanIgnoreCase(String trangThaiThanhToan);
 
+    List<HoaDon> findByMaNguoiNhanTienAndTrangThaiNhanTienAndLoaiHoaDon(
+            String maNguoiNhanTien,
+            String trangThaiNhanTien,
+            String loaiHoaDon
+    );
+
+
     @Query("""
             select distinct h.ngayKetThuc
             from HoaDon h

@@ -1,6 +1,7 @@
 package com.example.WebApartment.Controller;
 
 import com.example.WebApartment.DTO.*;
+import com.example.WebApartment.Service.PaymentAccountService;
 import com.example.WebApartment.Service.ViNguoiChoThueService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +16,7 @@ import java.util.List;
 public class ViNguoiChoThueController {
 
     private final ViNguoiChoThueService service;
+    private final PaymentAccountService paymentAccountService;
 
     @GetMapping("/{maNguoiDung}")
     @PreAuthorize("hasAnyRole('ADMIN','NGUOI_CHO_THUE')")
@@ -68,5 +70,30 @@ public class ViNguoiChoThueController {
             @PathVariable String maYeuCauRutTien
     ) {
         return ResponseEntity.ok(service.rejectWithdraw(maYeuCauRutTien));
+    }
+
+    // ==================== PAYMENT ACCOUNTS (TaiKhoanNhanTien) ====================
+
+    /**
+     * Lấy danh sách tài khoản nhận tiền của người cho thuê.
+     */
+    @GetMapping("/{maNguoiDung}/payment-accounts")
+    @PreAuthorize("hasAnyRole('ADMIN','NGUOI_CHO_THUE')")
+    public ResponseEntity<List<PaymentAccountDTO>> getPaymentAccounts(
+            @PathVariable String maNguoiDung
+    ) {
+        return ResponseEntity.ok(paymentAccountService.getPaymentAccountsByUser(maNguoiDung));
+    }
+
+    /**
+     * Tạo mới hoặc cập nhật tài khoản nhận tiền mặc định của người cho thuê.
+     */
+    @PutMapping("/{maNguoiDung}/payment-accounts/default")
+    @PreAuthorize("hasAnyRole('ADMIN','NGUOI_CHO_THUE')")
+    public ResponseEntity<PaymentAccountDTO> upsertDefaultPaymentAccount(
+            @PathVariable String maNguoiDung,
+            @RequestBody UpsertPaymentAccountRequest request
+    ) {
+        return ResponseEntity.ok(paymentAccountService.upsertDefaultPaymentAccount(maNguoiDung, request));
     }
 }

@@ -20,16 +20,13 @@ import {
 } from '../../services/api/PaymentAccountService';
 import type { PaymentAccountFormState } from './AccountManagement_paymentTypes';
 
-type BankOption = { code: string; label: string };
 
-const BANK_OPTIONS: BankOption[] = [
-  { code: '', label: 'Chọn ngân hàng' },
-  { code: 'VCB', label: 'Vietcombank (VCB)' },
-  { code: 'BIDV', label: 'BIDV (BIDV)' },
-  { code: 'TCB', label: 'Techcombank (TCB)' },
-];
 
-const bankCodeOptions = BANK_OPTIONS;
+
+
+
+
+
 
 
 type TabKey = 'profile' | 'phone' | 'password' | 'payment-account';

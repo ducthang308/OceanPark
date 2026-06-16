@@ -55,10 +55,26 @@ public class HoaDonController {
         return ResponseEntity.ok(hoaDonService.update(maHoaDon, dto));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','NGUOI_CHO_THUE')")
+    @GetMapping("/cho-xac-nhan/{maNguoiDung}")
+    public ResponseEntity<List<HoaDonDTO>> getPendingConfirmationInvoices(@PathVariable String maNguoiDung) {
+        return ResponseEntity.ok(hoaDonService.getInvoicesPendingConfirmation(maNguoiDung));
+    }
+
+    @PreAuthorize("hasRole('ADMIN') or hasRole('NGUOI_CHO_THUE')")
+    @PutMapping("/{maHoaDon}/xac-nhan-nhan-tien")
+    public ResponseEntity<HoaDonDTO> confirmPaymentReceived(
+            @PathVariable String maHoaDon,
+            @RequestParam String maNguoiDung
+    ) {
+        return ResponseEntity.ok(hoaDonService.confirmPaymentReceived(maHoaDon, maNguoiDung));
+    }
+
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{maHoaDon}")
     public ResponseEntity<Void> delete(@PathVariable String maHoaDon) {
         hoaDonService.delete(maHoaDon);
         return ResponseEntity.noContent().build();
     }
+
 }

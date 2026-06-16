@@ -30,6 +30,7 @@ public class SepayService {
     private final GoiDangBaiRepository goiDangBaiRepository;
     private final ChiTietCanHoRepository chiTietCanHoRepository;
     private final ChiTietHoaDonRepository chiTietHoaDonRepository;
+    private final TaiKhoanNhanTienRepository taiKhoanNhanTienRepository;
     private final ObjectMapper objectMapper;
     private final ViNguoiChoThueService viNguoiChoThueService;
     private final EmailService emailService;
@@ -91,6 +92,44 @@ public class SepayService {
         String maHoaDon = generateMaHoaDon();
         String noiDungChuyenKhoan = maHoaDon;
 
+        // ====== Xác định thông tin tài khoản nhận tiền ======
+        // Mặc định: dùng tài khoản hệ thống (sepay config) – trung gian
+        String receiverBankCode = bankCode;
+        String receiverBankAccount = bankAccount;
+        String receiverAccountName = accountName;
+        String maNguoiNhanTien = null;
+
+        // Chỉ chuyển thẳng cho landlord nếu THUE_CAN_HO và TẤT CẢ căn hộ
+        // trong đơn đều thuộc CÙNG MỘT người cho thuê VÀ người đó có
+        // cấu hình tài khoản nhận tiền. Nếu khác chủ → dùng trung gian.
+        if ("THUE_CAN_HO".equalsIgnoreCase(request.getLoaiHoaDon()) && !rentLines.isEmpty()) {
+            // Xác định landlord từ line đầu tiên
+            NguoiDung firstLandlord = rentLines.get(0).baiDang().getNguoiDung();
+            if (firstLandlord != null) {
+                // Kiểm tra tất cả các line có cùng landlord không
+                boolean sameLandlord = rentLines.stream()
+                        .allMatch(line -> {
+                            NguoiDung owner = line.baiDang().getNguoiDung();
+                            return owner != null && owner.getMaNguoiDung().equals(firstLandlord.getMaNguoiDung());
+                        });
+
+                if (sameLandlord) {
+                    // Cùng chủ → có thể chuyển thẳng tới tài khoản của landlord đó
+                    TaiKhoanNhanTien landlordAccount = taiKhoanNhanTienRepository
+                            .findByNguoiDung_MaNguoiDungAndIsDefaultTrueAndTrangThai(
+                                    firstLandlord.getMaNguoiDung(), "ACTIVE")
+                            .orElse(null);
+                    if (landlordAccount != null) {
+                        receiverBankCode = landlordAccount.getBankCode();
+                        receiverBankAccount = landlordAccount.getBankAccount();
+                        receiverAccountName = landlordAccount.getAccountName();
+                        maNguoiNhanTien = firstLandlord.getMaNguoiDung();
+                    }
+                }
+                // Nếu khác chủ: giữ nguyên trung gian (receiverBankCode etc vẫn là system)
+            }
+        }
+
         HoaDon hoaDon = HoaDon.builder()
                 .maHoaDon(maHoaDon)
                 .nguoiDung(nguoiDung)
@@ -105,6 +144,11 @@ public class SepayService {
                 .noiDungChuyenKhoan(noiDungChuyenKhoan)
                 .ghiChu(request.getGhiChu())
                 .ngayTao(now)
+                // Lưu thông tin tài khoản nhận tiền vào hóa đơn
+                .maNguoiNhanTien(maNguoiNhanTien)
+                .receiverBankCode(receiverBankCode)
+                .receiverBankAccount(receiverBankAccount)
+                .receiverAccountName(receiverAccountName)
                 .build();
 
         hoaDonRepository.save(hoaDon);
@@ -132,15 +176,22 @@ public class SepayService {
 
         giaoDichRepository.save(giaoDich);
 
-        String qrUrl = buildVietQrUrl(soTienThanhToan, noiDungChuyenKhoan);
+        // Build QR với thông tin tài khoản nhận tiền (landlord nếu có, system nếu không)
+        String qrUrl = buildVietQrUrlForAccount(
+                soTienThanhToan,
+                noiDungChuyenKhoan,
+                receiverBankCode,
+                receiverBankAccount,
+                receiverAccountName
+        );
 
         return SepayCreatePaymentResponse.builder()
                 .maHoaDon(maHoaDon)
                 .noiDungChuyenKhoan(noiDungChuyenKhoan)
                 .soTien(soTienThanhToan)
-                .bankCode(bankCode)
-                .bankAccount(bankAccount)
-                .accountName(accountName)
+                .bankCode(receiverBankCode)
+                .bankAccount(receiverBankAccount)
+                .accountName(receiverAccountName)
                 .qrUrl(qrUrl)
                 .thoiHanThang(thoiHanThang)
                 .ngayBatDau(ngayBatDau)
@@ -218,7 +269,14 @@ public class SepayService {
 
         hoaDon.setTrangThaiThanhToan("SUCCESS");
         hoaDon.setTrangThaiHieuLuc("DANG_HIEU_LUC");
+        // Nếu thanh toán thuê căn hộ được chuyển thẳng cho landlord thì chờ landlord xác nhận đã nhận tiền
+        if ("THUE_CAN_HO".equalsIgnoreCase(hoaDon.getLoaiHoaDon())
+                && hoaDon.getMaNguoiNhanTien() != null
+                && !hoaDon.getMaNguoiNhanTien().isBlank()) {
+            hoaDon.setTrangThaiNhanTien("CHO_XAC_NHAN");
+        }
         hoaDon.setNgayThanhToan(now);
+
         hoaDon.setNgayBatDau(now);
         hoaDon.setNgayKetThuc(now.plusMonths(effectiveMonths));
         hoaDonRepository.save(hoaDon);
@@ -499,6 +557,25 @@ public class SepayService {
         return "https://img.vietqr.io/image/"
                 + bankCode + "-"
                 + bankAccount
+                + "-compact2.png"
+                + "?amount=" + amount.longValue()
+                + "&addInfo=" + encodedContent
+                + "&accountName=" + encodedName;
+    }
+
+    private String buildVietQrUrlForAccount(
+            Double amount,
+            String content,
+            String targetBankCode,
+            String targetBankAccount,
+            String targetAccountName
+    ) {
+        String encodedContent = URLEncoder.encode(content, StandardCharsets.UTF_8);
+        String encodedName = URLEncoder.encode(targetAccountName, StandardCharsets.UTF_8);
+
+        return "https://img.vietqr.io/image/"
+                + targetBankCode + "-"
+                + targetBankAccount
                 + "-compact2.png"
                 + "?amount=" + amount.longValue()
                 + "&addInfo=" + encodedContent

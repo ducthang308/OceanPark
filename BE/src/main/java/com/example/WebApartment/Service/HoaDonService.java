@@ -110,6 +110,10 @@ public class HoaDonService {
                 .ngayKetThuc(dto.getNgayKetThuc())
                 .noiDungChuyenKhoan(dto.getNoiDungChuyenKhoan() != null ? dto.getNoiDungChuyenKhoan() : maHoaDon)
                 .ghiChu(dto.getGhiChu())
+                .maNguoiNhanTien(dto.getMaNguoiNhanTien())
+                .receiverBankCode(dto.getReceiverBankCode())
+                .receiverBankAccount(dto.getReceiverBankAccount())
+                .receiverAccountName(dto.getReceiverAccountName())
                 .ngayTao(LocalDateTime.now())
                 .ngayThanhToan(dto.getNgayThanhToan())
                 .build();
@@ -144,7 +148,54 @@ public class HoaDonService {
         return toDto(saved);
     }
 
+    public HoaDonDTO confirmPaymentReceived(String maHoaDon, String maNguoiDung) {
+
+        HoaDon hoaDon = hoaDonRepository.findById(maHoaDon)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn"));
+
+        // Chỉ landlord đúng tài khoản nhận tiền mới được xác nhận
+        if (hoaDon.getMaNguoiNhanTien() == null || hoaDon.getMaNguoiNhanTien().isBlank()) {
+            throw new RuntimeException("Hóa đơn không thuộc dạng chờ xác nhận");
+        }
+
+        if (!hoaDon.getMaNguoiNhanTien().equals(maNguoiDung)) {
+            throw new RuntimeException("Không có quyền xác nhận hóa đơn này");
+        }
+
+        if (!"CHO_XAC_NHAN".equalsIgnoreCase(hoaDon.getTrangThaiNhanTien())) {
+            throw new RuntimeException("Hóa đơn chưa ở trạng thái chờ xác nhận");
+        }
+
+
+        hoaDon.setTrangThaiNhanTien("DA_NHAN");
+
+        // Khi xác nhận tiền thuê căn hộ thành công => cập nhật trạng thái bài đăng/căn hộ sang "đã thuê"
+        // để các trang như /posts/:id phản ánh đúng.
+        if (hoaDon.getLoaiHoaDon() != null && hoaDon.getBaiDang() != null) {
+            String loaiHoaDon = hoaDon.getLoaiHoaDon().trim();
+            if ("THUE_CAN_HO".equalsIgnoreCase(loaiHoaDon)) {
+                hoaDon.getBaiDang().setTrangThai("DA_THUE");
+                baiDangRepository.save(hoaDon.getBaiDang());
+            }
+        }
+
+        return toDto(hoaDonRepository.save(hoaDon));
+    }
+
+    public List<HoaDonDTO> getInvoicesPendingConfirmation(String maNguoiDung) {
+        return hoaDonRepository
+                .findByMaNguoiNhanTienAndTrangThaiNhanTienAndLoaiHoaDon(
+                        maNguoiDung,
+                        "CHO_XAC_NHAN",
+                        "THUE_CAN_HO"
+                )
+                .stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
     public HoaDonDTO update(String maHoaDon, HoaDonDTO dto) {
+
         HoaDon existing = hoaDonRepository.findById(maHoaDon)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn"));
 
@@ -191,6 +242,11 @@ public class HoaDonService {
                 .ngayKetThuc(entity.getNgayKetThuc())
                 .noiDungChuyenKhoan(entity.getNoiDungChuyenKhoan())
                 .ghiChu(entity.getGhiChu())
+                .maNguoiNhanTien(entity.getMaNguoiNhanTien())
+                .receiverBankCode(entity.getReceiverBankCode())
+                .receiverBankAccount(entity.getReceiverBankAccount())
+                .receiverAccountName(entity.getReceiverAccountName())
+                .trangThaiNhanTien(entity.getTrangThaiNhanTien())
                 .ngayTao(entity.getNgayTao())
                 .ngayThanhToan(entity.getNgayThanhToan())
                 .chiTietHoaDon(

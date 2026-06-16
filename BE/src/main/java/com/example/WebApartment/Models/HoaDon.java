@@ -52,6 +52,23 @@ public class HoaDon {
     @Column(name = "ghiChu")
     private String ghiChu;
 
+    // ====== Thông tin tài khoản nhận tiền trực tiếp (người cho thuê) ======
+
+    @Column(name = "maNguoiNhanTien")
+    private String maNguoiNhanTien;
+
+    @Column(name = "receiverBankCode")
+    private String receiverBankCode;
+
+    @Column(name = "receiverBankAccount")
+    private String receiverBankAccount;
+
+    @Column(name = "receiverAccountName")
+    private String receiverAccountName;
+
+    @Column(name = "trangThaiNhanTien")
+    private String trangThaiNhanTien;
+
     @Column(name = "ngayTao")
     private LocalDateTime ngayTao;
 

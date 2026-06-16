@@ -309,8 +309,14 @@ export interface HoaDonDTO {
   ghiChu?: string | null;
   ngayTao?: string | null;
   ngayThanhToan?: string | null;
+  maNguoiNhanTien?: string | null;
+  receiverBankCode?: string | null;
+  receiverBankAccount?: string | null;
+  receiverAccountName?: string | null;
+  trangThaiNhanTien?: string | null;
   chiTietHoaDon?: ChiTietHoaDonDTO[];
 }
+
 
 export const createSepayPayment = async (payload: SepayCreatePaymentRequest) => {
   const res = await axiosClient.post<SepayCreatePaymentResponse>(
@@ -337,8 +343,20 @@ export const getChiTietHoaDonByHoaDon = async (maHoaDon: string) => {
   return res.data;
 };
 
+export const getPendingConfirmationInvoices = async (maNguoiDung: string) => {
+  const res = await axiosClient.get<HoaDonDTO[]>(`/api/v1/hoa-don/cho-xac-nhan/${maNguoiDung}`);
+  return res.data;
+};
+
+export const confirmPaymentReceived = async (maHoaDon: string, maNguoiDung: string) => {
+  const res = await axiosClient.put<HoaDonDTO>(
+    `/api/v1/hoa-don/${maHoaDon}/xac-nhan-nhan-tien?maNguoiDung=${encodeURIComponent(maNguoiDung)}`
+  );
+  return res.data;
+};
 
 export const getRecommendedPosts = async (maNguoiDung: string) => {
+
   const res = await axiosClient.get<BaiDangDTO[]>(
     `/api/v1/recommendation/${maNguoiDung}`
   );

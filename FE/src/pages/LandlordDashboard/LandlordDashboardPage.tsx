@@ -41,7 +41,14 @@ import {
   type LandlordPostStatsDTO,
   type LandlordRevenueDTO,
 } from "../../services/api/LandlordDashboardService";
+import {
+  getPendingConfirmationInvoices,
+  confirmPaymentReceived,
+  type HoaDonDTO,
+} from "../../services/api/PostManagementService";
+
 import "./LandlordDashboardPage.css";
+
 
 type RevenuePeriod = "day" | "month" | "year";
 
@@ -142,6 +149,28 @@ const LandlordDashboardPage = () => {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [revenuePeriod, setRevenuePeriod] = useState<RevenuePeriod>("month");
 
+  const [pendingInvoices, setPendingInvoices] = useState<HoaDonDTO[]>([]);
+  const [pendingLoading, setPendingLoading] = useState(false);
+  const [pendingError, setPendingError] = useState<string | null>(null);
+
+
+  const loadPendingInvoices = useCallback(async () => {
+    if (!maNguoiDung) return;
+
+    try {
+      setPendingLoading(true);
+      setPendingError(null);
+      const data = await getPendingConfirmationInvoices(maNguoiDung);
+      setPendingInvoices(data);
+    } catch (err) {
+      console.error("Load pending confirmation invoices failed:", err);
+      setPendingError("Không tải được hóa đơn chờ xác nhận");
+      setPendingInvoices([]);
+    } finally {
+      setPendingLoading(false);
+    }
+  }, [maNguoiDung]);
+
   const loadDashboard = useCallback(async () => {
     if (!maNguoiDung) {
       setDashboard(null);
@@ -168,7 +197,9 @@ const LandlordDashboardPage = () => {
 
   useEffect(() => {
     void loadDashboard();
-  }, [loadDashboard]);
+    void loadPendingInvoices();
+  }, [loadDashboard, loadPendingInvoices]);
+
 
   const posts = useMemo(() => dashboard?.posts ?? [], [dashboard?.posts]);
   const revenues = useMemo(() => dashboard?.revenues ?? [], [dashboard?.revenues]);
@@ -566,12 +597,104 @@ const LandlordDashboardPage = () => {
         <section className="landlord-dashboard-panel landlord-dashboard-panel--wide">
           <div className="landlord-dashboard-panel__header">
             <div>
+              <h2>Hóa đơn chờ xác nhận nhận tiền</h2>
+              <p>Chủ nhà xác nhận đã nhận được tiền thuê.</p>
+            </div>
+
+          </div>
+
+          {pendingError && (
+            <Alert type="error" showIcon message={pendingError} />
+          )}
+
+          <Table
+            rowKey="maHoaDon"
+
+            columns={[
+              {
+                title: "Hóa đơn",
+                dataIndex: "maHoaDon",
+                key: "maHoaDon",
+                width: 170,
+                render: (value) => <strong>{value}</strong>,
+              },
+              {
+                title: "Mã CK",
+                dataIndex: "noiDungChuyenKhoan",
+                key: "noiDungChuyenKhoan",
+                width: 240,
+                render: (value) => value || "-",
+              },
+              {
+                title: "Số tiền",
+                dataIndex: "soTien",
+                key: "soTien",
+                align: "right",
+                width: 160,
+                render: (value) => (
+                  <span className="landlord-dashboard-money">
+                    {formatCurrency(safeNumber(value))}
+                  </span>
+                ),
+              },
+              {
+                title: "Trạng thái nhận tiền",
+                dataIndex: "trangThaiNhanTien",
+                key: "trangThaiNhanTien",
+                width: 180,
+                render: (value) => {
+                  const v = (value || "").trim().toUpperCase();
+                  if (v === "CHO_XAC_NHAN") {
+                    return <Tag color="processing">Chờ xác nhận</Tag>;
+                  }
+                  if (v === "DA_NHAN") {
+                    return <Tag color="success">Đã nhận</Tag>;
+                  }
+                  return <Tag>{value || "-"}</Tag>;
+                },
+              },
+              {
+                title: "Hành động",
+                key: "action",
+                width: 170,
+                render: (_value, record) => (
+                  <Button
+                    type="primary"
+                    size="small"
+                    loading={pendingLoading}
+                    disabled={(record.trangThaiNhanTien || "").trim().toUpperCase() !== "CHO_XAC_NHAN"}
+                    onClick={async () => {
+                      try {
+                        await confirmPaymentReceived(record.maHoaDon, maNguoiDung);
+                        await loadPendingInvoices();
+                      } catch (err) {
+                        console.error("Confirm payment received failed:", err);
+                      }
+                    }}
+                  >
+                    Xác nhận đã nhận tiền
+                  </Button>
+                ),
+              },
+            ]}
+            dataSource={pendingInvoices}
+            loading={pendingLoading}
+            pagination={{ pageSize: 6, showSizeChanger: false }}
+            scroll={{ x: 980 }}
+            locale={{ emptyText: "Không có hóa đơn chờ xác nhận" }}
+          />
+        </section>
+
+        <section className="landlord-dashboard-panel landlord-dashboard-panel--wide">
+          <div className="landlord-dashboard-panel__header">
+            <div>
               <h2>Doanh thu nhận được</h2>
               <p>Danh sách khoản doanh thu theo bộ lọc thời gian.</p>
             </div>
           </div>
 
           <Table
+
             rowKey={(record) =>
               record.maGiaoDichVi ||
               [

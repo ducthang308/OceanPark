@@ -33,5 +33,14 @@ public class HoaDonDTO {
     private LocalDateTime ngayTao;
     private LocalDateTime ngayThanhToan;
 
+    // ====== Thông tin tài khoản nhận tiền trực tiếp ======
+    private String maNguoiNhanTien;
+    private String receiverBankCode;
+    private String receiverBankAccount;
+    private String receiverAccountName;
+
+    private String trangThaiNhanTien;
+
     private List<ChiTietHoaDonDTO> chiTietHoaDon;
+
 }
