@@ -12,8 +12,28 @@ import {
   uploadUserAvatar,
   type UserProfileResponse,
 } from '../../services/api/UserService';
+import { ROLE_ID } from '../../constants/roles';
+import {
+  getPaymentAccountsByLandlord,
+  upsertDefaultPaymentAccount,
+  type PaymentAccountDTO,
+} from '../../services/api/PaymentAccountService';
+import type { PaymentAccountFormState } from './AccountManagement_paymentTypes';
 
-type TabKey = 'profile' | 'phone' | 'password';
+type BankOption = { code: string; label: string };
+
+const BANK_OPTIONS: BankOption[] = [
+  { code: '', label: 'Chọn ngân hàng' },
+  { code: 'VCB', label: 'Vietcombank (VCB)' },
+  { code: 'BIDV', label: 'BIDV (BIDV)' },
+  { code: 'TCB', label: 'Techcombank (TCB)' },
+];
+
+const bankCodeOptions = BANK_OPTIONS;
+
+
+type TabKey = 'profile' | 'phone' | 'password' | 'payment-account';
+
 
 type ProfileFormState = {
   hoVaTen: string;
@@ -35,6 +55,12 @@ const emptyProfileForm: ProfileFormState = {
 const emptyPasswordForm: PasswordFormState = {
   newPassword: '',
   confirmPassword: '',
+};
+
+const emptyPaymentAccountForm: PaymentAccountFormState = {
+  bankCode: '',
+  bankAccount: '',
+  accountName: '',
 };
 
 const getStringValue = (value: unknown) => (typeof value === 'string' ? value : '');
@@ -107,16 +133,26 @@ const AccountManagement = () => {
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const [activeTab, setActiveTab] = useState<TabKey>('profile');
   const [user, setUser] = useState<UserProfileResponse | null>(null);
+
   const [profileForm, setProfileForm] = useState<ProfileFormState>(emptyProfileForm);
   const [newPhone, setNewPhone] = useState('');
   const [passwordForm, setPasswordForm] = useState<PasswordFormState>(emptyPasswordForm);
+
+  const [paymentAccountForm, setPaymentAccountForm] =
+    useState<PaymentAccountFormState>(emptyPaymentAccountForm);
+  const [loadingPaymentAccount, setLoadingPaymentAccount] = useState(false);
+  const [savingPaymentAccount, setSavingPaymentAccount] = useState(false);
+
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
+
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPhone, setSavingPhone] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [isProfileFormOpen, setIsProfileFormOpen] = useState(false);
+
+  const isLandlord = user?.maVaiTro === ROLE_ID.NGUOI_CHO_THUE;
 
   const displayName = useMemo(() => user?.hoVaTen?.trim() || 'Tài khoản', [user]);
   const displayEmail = user?.email?.trim() || 'Chưa cập nhật';
@@ -162,7 +198,6 @@ const AccountManagement = () => {
   const applyUpdatedUser = (updatedUser: Partial<UserProfileResponse>) => {
     setUser((currentUser) => {
       if (!currentUser) return currentUser;
-
       const nextUser = mergeUserProfile(currentUser, updatedUser);
       syncStoredAccount(nextUser);
       return nextUser;
@@ -184,11 +219,11 @@ const AccountManagement = () => {
   };
 
   const handleTabChange = (tab: TabKey) => {
-    setActiveTab(tab);
+    // Gating payment-account
+    if (tab === 'payment-account' && !isLandlord) return;
 
-    if (tab !== 'profile') {
-      setIsProfileFormOpen(false);
-    }
+    setActiveTab(tab);
+    if (tab !== 'profile') setIsProfileFormOpen(false);
   };
 
   const handleUpdateProfile = async () => {
@@ -316,6 +351,70 @@ const AccountManagement = () => {
       message.error(getApiErrorMessage(error, 'Cập nhật mật khẩu thất bại'));
     } finally {
       setSavingPassword(false);
+    }
+  };
+
+  const loadPaymentAccount = useCallback(async () => {
+    if (!user) return;
+    if (!isLandlord) return;
+
+    setLoadingPaymentAccount(true);
+    try {
+      const accounts = await getPaymentAccountsByLandlord(user.maNguoiDung);
+      const defaultAccount = (accounts ?? []).find((a) => a.isDefault === true) as
+        | PaymentAccountDTO
+        | undefined;
+
+      if (!defaultAccount) {
+        setPaymentAccountForm(emptyPaymentAccountForm);
+        return;
+      }
+
+      setPaymentAccountForm({
+        bankCode: defaultAccount.bankCode ?? '',
+        bankAccount: defaultAccount.bankAccount ?? '',
+        accountName: defaultAccount.accountName ?? '',
+      });
+    } catch (error) {
+      message.error(getApiErrorMessage(error, 'Không tải được thông tin ví thanh toán'));
+    } finally {
+      setLoadingPaymentAccount(false);
+    }
+  }, [isLandlord, user]);
+
+  useEffect(() => {
+    if (activeTab === 'payment-account') {
+      void loadPaymentAccount();
+    }
+  }, [activeTab, loadPaymentAccount]);
+
+  const handleSavePaymentAccount = async () => {
+    if (!user) return;
+    if (!isLandlord) return;
+
+    const bankCode = paymentAccountForm.bankCode.trim();
+    const bankAccount = paymentAccountForm.bankAccount.trim();
+    const accountName = paymentAccountForm.accountName.trim();
+
+    if (!bankCode || !bankAccount || !accountName) {
+      message.warning('Vui lòng nhập đầy đủ thông tin ví thanh toán');
+      return;
+    }
+
+    setSavingPaymentAccount(true);
+    try {
+      await upsertDefaultPaymentAccount(user.maNguoiDung, {
+        bankCode,
+        bankAccount,
+        accountName,
+      });
+
+      message.success('Lưu ví thanh toán thành công');
+      await loadPaymentAccount();
+    } catch (error) {
+      message.error(getApiErrorMessage(error, 'Lưu ví thanh toán thất bại'));
+    } finally {
+      setSavingPaymentAccount(false);
     }
   };
 
@@ -571,6 +670,91 @@ const AccountManagement = () => {
     </div>
   );
 
+  const renderPaymentAccountTab = () => {
+    if (!user) {
+      return (
+        <div className="empty-state">
+          <i className="fas fa-user-lock"></i>
+          <p>{loadError || 'Không có thông tin tài khoản'}</p>
+          <button type="button" className="update-btn" onClick={loadAccount}>
+            Tải lại
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div id="payment-account-tab">
+        <div className="card">
+          <div className="card-header">
+            <div className="card-title">Ví thanh toán</div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Ngân hàng</label>
+            <input
+              type="text"
+              className="form-input"
+              value={paymentAccountForm.bankCode}
+              placeholder="Ví dụ: VCB, BIDV..."
+              onChange={(e) =>
+                setPaymentAccountForm((prev) => ({ ...prev, bankCode: e.target.value }))
+              }
+              disabled={loadingPaymentAccount || savingPaymentAccount}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Số tài khoản</label>
+            <input
+              type="text"
+              className="form-input"
+              value={paymentAccountForm.bankAccount}
+              placeholder="Nhập số tài khoản"
+              onChange={(e) =>
+                setPaymentAccountForm((prev) => ({ ...prev, bankAccount: e.target.value }))
+              }
+              disabled={loadingPaymentAccount || savingPaymentAccount}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Tên chủ tài khoản</label>
+            <input
+              type="text"
+              className="form-input"
+              value={paymentAccountForm.accountName}
+              placeholder="Nhập tên chủ tài khoản"
+              onChange={(e) =>
+                setPaymentAccountForm((prev) => ({ ...prev, accountName: e.target.value }))
+              }
+              disabled={loadingPaymentAccount || savingPaymentAccount}
+            />
+          </div>
+
+          <div className="action-group">
+            <button
+              type="button"
+              className="submit-btn secondary-btn"
+              onClick={() => handleTabChange('profile')}
+              disabled={loadingPaymentAccount || savingPaymentAccount}
+            >
+              <i className="fas fa-arrow-left"></i> Quay lại
+            </button>
+            <button
+              type="button"
+              className="submit-btn"
+              onClick={handleSavePaymentAccount}
+              disabled={loadingPaymentAccount || savingPaymentAccount}
+            >
+              <i className="fas fa-save"></i> {savingPaymentAccount ? 'Đang lưu...' : 'Lưu thay đổi'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderTabContent = () => {
     if (loading) {
       return (
@@ -588,6 +772,8 @@ const AccountManagement = () => {
         return renderPhoneTab();
       case 'password':
         return renderPasswordTab();
+      case 'payment-account':
+        return renderPaymentAccountTab();
       default:
         return null;
     }
@@ -619,6 +805,17 @@ const AccountManagement = () => {
           >
             Đổi mật khẩu
           </button>
+
+          {isLandlord && (
+            <button
+              type="button"
+              className={`tab ${activeTab === 'payment-account' ? 'active' : ''}`}
+              onClick={() => handleTabChange('payment-account')}
+            >
+              <i className="fas fa-wallet" style={{ marginRight: 8 }}></i>
+              Ví thanh toán
+            </button>
+          )}
         </div>
         <div className="content">{renderTabContent()}</div>
       </div>
@@ -627,3 +824,4 @@ const AccountManagement = () => {
 };
 
 export default AccountManagement;
+
