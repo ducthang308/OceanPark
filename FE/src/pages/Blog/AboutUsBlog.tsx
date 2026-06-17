@@ -1,6 +1,6 @@
 import './AboutUsBlog.css';
 import PageBanner from '../../components/sections/PageBanner/PageBanner';
-import heroImage from '../../assets/img/img2.png';
+import heroImage from '../../assets/img/background.png';
 
 export default function AboutUsPanels() {
   return (
