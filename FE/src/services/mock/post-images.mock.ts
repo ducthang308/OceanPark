@@ -1,5 +1,5 @@
-import img1 from '../../assets/img/img1.png';
-import img2 from '../../assets/img/img2.png';
+import img1 from '../../assets/img/background.png';
+import img2 from '../../assets/img/background.png';
 
 export const postImagesMock = [
   { id: 1, idBaiDang: 101, loai: 'image', duongDan: img1, thumbnailUrl: img1, thuTu: 1 },
